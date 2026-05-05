@@ -1,0 +1,248 @@
+/* @settings
+name: 📏 Phycat spacing setting
+name.zh: 📏 Phycat 文章间距设置
+id: phycat-spacing
+settings:
+    - 
+        id: file-line-width
+        title: File line width
+        title.zh: 阅读区宽度
+        description.zh: 单位px
+        type: variable-number
+        default: 900
+        format: px
+    - 
+        id: letter-spacing
+        title: Letter spacing
+        title.zh: 字间距
+        type: variable-number
+        default: 1
+        format: px
+    - 
+        id: line-height-customize
+        title: Line height
+        title.zh: 段落行高
+        type: variable-number
+        default: 2.2
+    - 
+        id: code-line-height
+        title: code Line height
+        title.zh: 代码行高
+        type: variable-number
+        default: 1.6
+    - 
+        id: blockquote-line-height
+        title: blockquote Line height
+        title.zh: 引用块行高
+        type: variable-number
+        default: 1.6
+    - 
+        id: table-line-height
+        title: Table Line height
+        title.zh: 表格行高
+        type: variable-number
+        default: 1.8
+    - 
+        id: p-spacing
+        title: Paragraph spacing (Reading mode)
+        title.zh:  段落间距（阅读模式）
+        type: variable-text
+        default: 1em
+*/
+
+/* @settings
+name: 📑 Phycat heading setting
+name.ZH: 📑 Phycat 标题设置
+id: phycat-headings
+settings:
+    - 
+        id: heading1-setting
+        title: H1 title
+        title.zh: 一级标题
+        type: heading
+        level: 3
+        collapsed: true
+    -  
+        id: h1-alignment
+        title: H1 Alignment
+        title.zh: H1 对齐方式
+        description: Choose whether H1 titles are centered or left-aligned.
+        description.zh: 选择 H1 标题是居中显示还是居左显示。
+        type: class-select
+        allowEmpty: false
+        default: h1-align-center
+        options:
+          - label: ↔️ Center (Default)
+            value: h1-align-center
+          - label: ⬅️ Left
+            value: h1-align-left
+    - 
+        id: h1-size
+        title: H1 font size
+        title.zh: H1字体大小
+        type: variable-number
+        default: 1.618
+        format: em
+    - 
+        id: heading2-setting
+        title: H2 title
+        title.zh: 二级标题
+        type: heading
+        level: 3
+        collapsed: true
+    - 
+        id: h2-style-select
+        title: Select Style
+        title.zh: 亮色模式风格
+        description: Choose between the original capsule style or the new twin pillars style.
+        description.zh: 选择原有的胶囊背景风格或新的双子塔风格。
+        type: class-select
+        allowEmpty: false
+        default: h2-style-twin
+        options:
+            - 
+                label: 🏛️ Twin Pillars (New)
+                value: h2-style-twin
+            - 
+                label: 💊 Capsule (Original)
+                value: h2-style-capsule
+    - 
+        id: h2-style-dark-select
+        title: Select Style
+        title.zh: 暗色模式选择风格
+        description: Choose between the original glass capsule style or the new neon twin pillars style.
+        description.zh: 选择原有的玻璃胶囊风格或新的霓虹双子塔风格。
+        type: class-select
+        allowEmpty: false
+        default: h2-style-dark-twin
+        options:
+            - 
+                label: 🏙️ Neon Twin (New)
+                value: h2-style-dark-twin
+            - 
+                label: 🔮 Glass Capsule (Original)
+                value: h2-style-dark-capsule
+    - 
+        id: h2-size
+        title: H2 font size
+        title.zh: H2字体大小
+        type: variable-number
+        default: 1.462
+        format: em
+    - 
+        id: h2-spacing-scale-start
+        title: H2 spacing start
+        title.zh: H2前间距
+        type: variable-number
+        default: 1.318
+    - 
+        id: h2-spacing-scale-end
+        title: H2 spacing end
+        title.zh: H2后间距
+        type: variable-number
+        default: 1.318
+    - 
+        id: heading3-setting
+        title: H3 title
+        title.zh: 三级标题
+        type: heading
+        level: 3
+        collapsed: true
+    - 
+        id: h3-size
+        title: H3 font size
+        title.zh: H3字体大小
+        type: variable-number
+        default: 1.318
+        format: em
+    - 
+        id: h3-spacing-scale-start
+        title: H3 spacing start
+        title.zh: H3前间距
+        type: variable-number
+        default: 1.5
+    - 
+        id: h3-spacing-scale-end
+        title: H3 spacing end
+        title.zh: H3后间距
+        type: variable-number
+        default: 1.5
+    - 
+        id: heading4-setting
+        title: H4 title
+        title.zh: 四级标题
+        type: heading
+        level: 3
+        collapsed: true
+    - 
+        id: h4-size
+        title: H4 font size
+        title.zh: H4字体大小
+        type: variable-number
+        default: 1.2
+        format: em
+    - 
+        id: h4-spacing-scale-start
+        title: H4 spacing start
+        title.zh: H4前间距
+        type: variable-number
+        default: 1.5
+    - 
+        id: h4-spacing-scale-end
+        title: H4 spacing end
+        title.zh: H4后间距
+        type: variable-number
+        default: 1.5
+    - 
+        id: heading5-setting
+        title: H5 title
+        title.zh: 五级标题
+        type: heading
+        level: 3
+        collapsed: true
+    - 
+        id: h5-size
+        title: H5 font size
+        title.zh: H5字体大小
+        type: variable-number
+        default: 1.2
+        format: em
+    - 
+        id: h5-spacing-scale-start
+        title: H5 spacing start
+        title.zh: H5前间距
+        type: variable-number
+        default: 1.5
+    - 
+        id: h5-spacing-scale-end
+        title: H5 spacing end
+        title.zh: H5后间距
+        type: variable-number
+        default: 1.5
+    - 
+        id: heading6-setting
+        title: H6 title
+        title.zh: 六级标题
+        type: heading
+        level: 3
+        collapsed: true
+    - 
+        id: h6-size
+        title: H6 font size
+        title.zh: H6字体大小
+        type: variable-number
+        default: 1.2
+        format: em
+    - 
+        id: h6-spacing-scale-start
+        title: H6 spacing start
+        title.zh: H6前间距
+        type: variable-number
+        default: 1.5
+    - 
+        id: h6-spacing-scale-end
+        title: H6 spacing end
+        title.zh: H6后间距
+        type: variable-number
+        default: 1.5
+*/

@@ -1,0 +1,23 @@
+{
+  "name": "zendian",
+  "version": "1.0.0",
+  "description": "A comprehensive Obsidian UI beautification plugin.",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "npm run build:css && npm run build:js",
+    "build:js": "node esbuild.config.mjs production",
+    "build:css": "node scripts/build-css.mjs",
+    "dev": "node esbuild.config.mjs"
+  },
+  "keywords": ["obsidian", "theme", "ui", "beautification"],
+  "author": "Junkey",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "chroma-js": "^2.4.0"
+  }
+}

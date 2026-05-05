@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\OriginalFile\\\\彩虹文件夹列表\" -Recurse)",
+      "Bash(Select-Object FullName, Length, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)",
+      "WebSearch",
+      "Bash(npm install *)",
+      "Bash(node scripts/extract-css.mjs)",
+      "Bash(node scripts/build-css.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(node esbuild.config.mjs production)",
+      "Bash(rmdir css/md-elements)",
+      "Bash(rm scripts/extract-css.mjs)",
+      "Bash(cp \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\manifest.json\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\\" && cp \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\dist\\\\main.js\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\\")",
+      "Bash(cp \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\dist\\\\styles.css\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\\")"
+    ]
+  }
+}
