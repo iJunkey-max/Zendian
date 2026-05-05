@@ -941,8 +941,14 @@ body:not(.is-mobile).theme-dark:not(.card-layout-open-dark).mod-root-split-backg
 /* ====== Layout ===== */
 /* default Layout*/
 body {
-    --card-shadow-light: 0 0 0 1px var(--background-modifier-border-muted), 0 0 6px var(--background-modifier-border-muted);
-    --card-shadow-dark: 0 -1px 0 0 var(--background-modifier-border), 0 0 0 1px var(--background-modifier-border);
+    --card-shadow-light:
+        0 0 0 1px var(--background-modifier-border),
+        0 1px 3px rgba(0,0,0,0.04),
+        0 4px 12px rgba(0,0,0,0.03);
+    --card-shadow-dark:
+        0 0 0 1px var(--background-modifier-border),
+        0 2px 8px rgba(0,0,0,0.25),
+        0 0 1px rgba(0,0,0,0.3);
     --card-border-radius-light: 8px;
     --card-border-radius-dark: 8px;
     --card-shadow-border-radius-light: calc(var(--card-border-radius-light) - 1px);
@@ -3425,6 +3431,7 @@ body {
 /* ====== highlight ====== */
 body {
     --line-normal-opacity: 0.5;
+    --line-active-bg: hsla(var(--accent-h), calc(var(--accent-s) * 0.6), var(--accent-l), 0.08);
 }
 
 .border-focus-mode .cm-lineWrapping>.cm-line.cm-active {

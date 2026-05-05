@@ -127,8 +127,8 @@ body.theme-dark:not(.theme-dark-apple) {
   --text-color: #f5f5f7;
   --text-color-secondary: #a1a1a6;
   --border-color: #2c2c2e;
-  --primary-color: #0a84ff;
-  --secondary-color: #5e5ce6;
+  --primary-color: var(--color-accent, #0a84ff);
+  --secondary-color: var(--color-accent-2, #5e5ce6);
   --accent-color: #30d158;
   --glow-color: rgba(10, 132, 255, 0.5);
   --hover-background-color: #0a84ff;
@@ -162,8 +162,8 @@ body.theme-dark:not(.theme-dark-apple) {
 
 body.theme-light.theme-light-apple,
 body.theme-light:not(.theme-light-apple) {
-  --primary-color: #0071e3;
-  --secondary-color: #0066cc;
+  --primary-color: var(--color-accent, #0071e3);
+  --secondary-color: var(--color-accent-2, #0066cc);
   --bg-color: #f5f5f7;
   --light-deep: #0a84ff;
   --light-light: #cfe7ff;
@@ -196,13 +196,10 @@ body.theme-light:not(.theme-light-apple) {
 body.theme-light {
   --glow-shadow-text: 0 0 5px var(--glow-color);
   --glow-shadow-box: 0 0 5px var(--glow-color);
-  --background-primary: color-mix(in srgb, var(--bg-color), #fff 2%);
-  ;
-  --background-primary-alt: color-mix(in srgb, var(--bg-color), #000 3%);
-  --background-secondary: color-mix(in srgb, var(--bg-color), #fff 5%);
-  --background-secondary-alt: color-mix(in srgb, var(--bg-color), #000 8%);
-  --text-normal: var(--text-color);
-  --text-muted: var(--text-color-secondary);
+  --background-primary: var(--color-base-00);
+  --background-primary-alt: var(--color-base-10);
+  --background-secondary: hsl(var(--accent-h), calc(var(--accent-s) / 6), calc(100% - (100% - var(--accent-l)) / 16));
+  --background-secondary-alt: var(--color-base-05);
   --mermaid-text-color: var(--text-color);
   --text-accent: var(--primary-color);
   --text-accent-hover: var(--link-hover-color);
@@ -210,8 +207,6 @@ body.theme-light {
   --text-selection: #dce3e9b6;
   --background-modifier-hover: rgba(0, 0, 0, 0.05);
   --background-modifier-active-hover: rgba(0, 0, 0, 0.1);
-  --background-modifier-border: var(--border-color);
-  --background-modifier-border-hover: var(--secondary-color);
   --background-modifier-error: #d32f2f;
   --background-modifier-success: #388e3c;
   --code-background: var(--code-block-bg);
@@ -237,12 +232,10 @@ body.theme-light {
 body.theme-dark {
   --glow-shadow-text: 0 0 8px var(--glow-color);
   --glow-shadow-box: 0 0 8px var(--glow-color);
-  --background-primary: var(--bg-color);
-  --background-primary-alt: var(--bg-color);
+  --background-primary: hsl(var(--accent-h), calc(var(--accent-s) / 5), calc(1.25 * var(--accent-l) / 4.5));
+  --background-primary-alt: hsl(var(--accent-h), calc(var(--accent-s) / 5), calc(1.25 * var(--accent-l) / 3.9));
   --background-secondary: color-mix(in srgb, var(--bg-color), #000 15%);
   --background-secondary-alt: color-mix(in srgb, var(--bg-color), #000 25%);
-  --text-normal: var(--text-color);
-  --text-muted: var(--text-color-secondary);
   --text-faint: var(--border-color);
   --mermaid-text-color: #000;
   --text-accent: var(--primary-color);
@@ -251,8 +244,6 @@ body.theme-dark {
   --text-selection: var(--select-text-bg-color);
   --background-modifier-hover: rgba(255, 255, 255, 0.05);
   --background-modifier-active-hover: rgba(255, 255, 255, 0.1);
-  --background-modifier-border: var(--border-color);
-  --background-modifier-border-hover: var(--secondary-color);
   --background-modifier-error: #ff5555;
   --background-modifier-success: #50fa7b;
   --code-background: var(--code-block-bg);

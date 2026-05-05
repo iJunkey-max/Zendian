@@ -13,8 +13,6 @@ export interface CSSSetting {
   descriptionZh?: string;
   type: string;
   default?: any;
-  defaultLight?: string;
-  defaultDark?: string;
   options?: { label: string; value: string }[];
   format?: string;
   opacity?: boolean;
@@ -25,7 +23,8 @@ export interface CSSSetting {
   collapsed?: boolean;
   allowEmpty?: boolean;
   markdown?: boolean;
-  colors?: { light: string; dark: string };
+  levels?: string;
+  classAliases?: string;
 }
 
 export interface CSSSettingsGroup {
@@ -61,9 +60,7 @@ function parseYAML(content: string): CSSSettingsGroup | null {
   const settings: CSSSetting[] = [];
   let currentSetting: Partial<CSSSetting> | null = null;
   let currentOptions: { label: string; value: string }[] | null = null;
-  let currentColors: { light: string; dark: string } | null = null;
   let inOptions = false;
-  let inColors = false;
   let lastOption: Partial<{ label: string; value: string }> | null = null;
 
   for (const rawLine of lines) {
@@ -81,17 +78,12 @@ function parseYAML(content: string): CSSSettingsGroup | null {
         if (currentOptions && currentOptions.length > 0) {
           currentSetting.options = currentOptions;
         }
-        if (currentColors) {
-          currentSetting.colors = currentColors;
-        }
         settings.push(currentSetting as CSSSetting);
       }
       currentSetting = {};
       currentOptions = null;
-      currentColors = null;
       lastOption = null;
       inOptions = false;
-      inColors = false;
 
       // Check if "- id: xxx" on the same line
       const inlineId = trimmed.match(/^-\s+id:\s*(.+)/);
@@ -134,17 +126,9 @@ function parseYAML(content: string): CSSSettingsGroup | null {
       continue;
     }
 
-    // Inside colors object
-    if (inColors && indent >= 10) {
-      if (key === "light" && currentColors) currentColors.light = value;
-      else if (key === "dark" && currentColors) currentColors.dark = value;
-      continue;
-    }
-
     // Setting-level keys
     if (indent < 10) {
       inOptions = false;
-      inColors = false;
     }
 
     switch (key) {
@@ -170,12 +154,6 @@ function parseYAML(content: string): CSSSettingsGroup | null {
         break;
       case "default":
         currentSetting.default = parseDefault(value);
-        break;
-      case "default-light":
-        currentSetting.defaultLight = value;
-        break;
-      case "default-dark":
-        currentSetting.defaultDark = value;
         break;
       case "format":
         currentSetting.format = value;
@@ -204,17 +182,16 @@ function parseYAML(content: string): CSSSettingsGroup | null {
       case "markdown":
         currentSetting.markdown = value === "true";
         break;
+      case "levels":
+        currentSetting.levels = value;
+        break;
+      case "classAliases":
+        currentSetting.classAliases = value;
+        break;
       case "options":
         inOptions = true;
         currentOptions = currentOptions || [];
         lastOption = null;
-        break;
-      case "light":
-        inColors = true;
-        currentColors = currentColors || { light: value, dark: "" };
-        break;
-      case "dark":
-        if (currentColors) currentColors.dark = value;
         break;
     }
   }
@@ -223,9 +200,6 @@ function parseYAML(content: string): CSSSettingsGroup | null {
   if (currentSetting && currentSetting.id && currentSetting.type) {
     if (currentOptions && currentOptions.length > 0) {
       currentSetting.options = currentOptions;
-    }
-    if (currentColors) {
-      currentSetting.colors = currentColors;
     }
     settings.push(currentSetting as CSSSetting);
   }
@@ -399,13 +373,20 @@ export class StyleSettingsManager {
     if (!setting) return;
 
     switch (setting.type) {
-      case "class-toggle":
-        if (value) {
-          document.body.classList.add(settingId);
-        } else {
-          document.body.classList.remove(settingId);
+      case "class-toggle": {
+        const classes = [settingId];
+        if (setting.classAliases) {
+          classes.push(...setting.classAliases.split(",").map(s => s.trim()));
+        }
+        for (const cls of classes) {
+          if (value) {
+            document.body.classList.add(cls);
+          } else {
+            document.body.classList.remove(cls);
+          }
         }
         break;
+      }
 
       case "class-select":
         if (value && typeof value === "string") {
@@ -436,22 +417,6 @@ export class StyleSettingsManager {
         document.body.style.setProperty(`--${settingId}`, String(value));
         break;
 
-      case "variable-color":
-        document.body.style.setProperty(`--${settingId}`, String(value));
-        break;
-
-      case "variable-themed-color":
-        if (typeof value === "object" && value !== null) {
-          if (value.light) {
-            document.body.style.setProperty(`--${settingId}-light`, value.light);
-          }
-          if (value.dark) {
-            document.body.style.setProperty(`--${settingId}-dark`, value.dark);
-          }
-        } else {
-          document.body.style.setProperty(`--${settingId}`, String(value));
-        }
-        break;
     }
   }
 

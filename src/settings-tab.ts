@@ -116,12 +116,36 @@ export class ZENdianSettingTab extends PluginSettingTab {
   private renderGroupContent(containerEl: HTMLElement, group: CSSSettingsGroup) {
     let currentSection: HTMLElement | null = null;
 
+    // Collect IDs that belong to a heading-levels-grid
+    const gridChildIds = new Set<string>();
+    for (const s of group.settings) {
+      if (s.type === "heading-levels-grid" && s.levels) {
+        const prefixes = s.levels.split(",").map(l => l.trim().toLowerCase());
+        for (const prefix of prefixes) {
+          for (const candidate of group.settings) {
+            if (candidate.id.startsWith(`${prefix}-`)
+                && candidate.id !== `${prefix}-alignment`
+                && candidate.id !== `${prefix}-size`) {
+              gridChildIds.add(candidate.id);
+            }
+          }
+        }
+      }
+    }
+
     for (const setting of group.settings) {
       if (setting.type === "heading") {
         const headingInfo = this.createCollapsibleHeading(containerEl, setting);
         currentSection = headingInfo.content;
         continue;
       }
+      if (setting.type === "heading-levels-grid") {
+        const headingInfo = this.createCollapsibleHeading(containerEl, setting);
+        this.renderHeadingLevelsGrid(headingInfo.content, group, setting);
+        currentSection = null;
+        continue;
+      }
+      if (gridChildIds.has(setting.id)) continue;
 
       const target = currentSection || containerEl;
       this.renderSetting(target, group, setting);
@@ -157,6 +181,119 @@ export class ZENdianSettingTab extends PluginSettingTab {
     return { heading, content };
   }
 
+  private renderHeadingLevelsGrid(
+    containerEl: HTMLElement,
+    group: CSSSettingsGroup,
+    gridSetting: CSSSetting
+  ) {
+    const levels = (gridSetting.levels || "").split(",").map(s => s.trim()).filter(Boolean);
+    if (levels.length === 0) return;
+    const levelPrefixes = levels.map(l => l.toLowerCase());
+
+    // Infer column definitions from H1 settings
+    const columnDefs: Array<{
+      suffix: string;
+      title: string;
+      titleZh: string;
+      type: string;
+      options?: { label: string; value: string }[];
+    }> = [];
+
+    for (const s of group.settings) {
+      if (s.id.startsWith("h1-") && s.id !== "h1-alignment" && s.id !== "h1-size") {
+        const suffix = s.id.substring(3);
+        columnDefs.push({
+          suffix,
+          title: s.title || "",
+          titleZh: s.titleZh || "",
+          type: s.type,
+          options: s.options,
+        });
+      }
+    }
+
+    const table = containerEl.createEl("table", { cls: "zendian-heading-levels-table" });
+
+    // Header
+    const thead = table.createEl("thead");
+    const headerRow = thead.createEl("tr");
+    headerRow.createEl("th", { cls: "zendian-hl-level-col" });
+    for (const col of columnDefs) {
+      headerRow.createEl("th", { text: col.titleZh || col.title, cls: "zendian-hl-col" });
+    }
+
+    // Rows
+    const tbody = table.createEl("tbody");
+    for (let i = 0; i < levels.length; i++) {
+      const prefix = levelPrefixes[i];
+      const row = tbody.createEl("tr");
+      row.createEl("td", { text: levels[i], cls: "zendian-hl-level-col zendian-hl-level-label" });
+
+      for (const col of columnDefs) {
+        const settingId = `${prefix}-${col.suffix}`;
+        const childSetting = group.settings.find(s => s.id === settingId);
+        const cell = row.createEl("td", { cls: "zendian-hl-cell" });
+        if (childSetting) {
+          this.renderGridCell(cell, group, childSetting, col);
+        }
+      }
+    }
+  }
+
+  private renderGridCell(
+    containerEl: HTMLElement,
+    group: CSSSettingsGroup,
+    setting: CSSSetting,
+    col: { type: string; options?: { label: string; value: string }[] }
+  ) {
+    const fullKey = `${group.id}@@${setting.id}`;
+    const currentValue = this.manager.getSetting(fullKey) ?? setting.default;
+
+    switch (col.type) {
+      case "class-toggle": {
+        const toggle = containerEl.createEl("input", { type: "checkbox", cls: "zendian-hl-toggle" });
+        toggle.checked = !!currentValue;
+        toggle.addEventListener("change", async () => {
+          await this.manager.updateSetting(group.id, setting.id, toggle.checked);
+        });
+        break;
+      }
+      case "variable-text": {
+        const input = containerEl.createEl("input", { type: "text", cls: "zendian-hl-input" });
+        input.value = String(currentValue || "");
+        input.addEventListener("change", async () => {
+          await this.manager.updateSetting(group.id, setting.id, input.value);
+        });
+        break;
+      }
+      case "variable-number": {
+        const input = containerEl.createEl("input", { type: "number", cls: "zendian-hl-input" });
+        input.value = String(currentValue || "");
+        if (setting.min !== undefined) input.min = String(setting.min);
+        if (setting.max !== undefined) input.max = String(setting.max);
+        if (setting.step !== undefined) input.step = String(setting.step);
+        input.addEventListener("change", async () => {
+          const num = Number(input.value);
+          if (!isNaN(num)) {
+            await this.manager.updateSetting(group.id, setting.id, num);
+          }
+        });
+        break;
+      }
+      case "class-select": {
+        const select = containerEl.createEl("select", { cls: "zendian-hl-select" });
+        for (const opt of col.options || []) {
+          const option = select.createEl("option", { text: opt.label, value: opt.value });
+          if (opt.value === String(currentValue)) option.selected = true;
+        }
+        select.addEventListener("change", async () => {
+          await this.manager.updateSetting(group.id, setting.id, select.value);
+        });
+        break;
+      }
+    }
+  }
+
   private renderSetting(
     containerEl: HTMLElement,
     group: CSSSettingsGroup,
@@ -164,6 +301,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
   ) {
     switch (setting.type) {
       case "heading":
+      case "heading-levels-grid":
         break;
       case "info-text":
         this.renderInfoText(containerEl, group, setting);
@@ -175,16 +313,11 @@ export class ZENdianSettingTab extends PluginSettingTab {
         this.renderSelect(containerEl, group, setting);
         break;
       case "variable-number":
+      case "variable-number-slider":
         this.renderNumber(containerEl, group, setting);
         break;
       case "variable-text":
         this.renderText(containerEl, group, setting);
-        break;
-      case "variable-color":
-        this.renderColor(containerEl, group, setting);
-        break;
-      case "variable-themed-color":
-        this.renderThemedColor(containerEl, group, setting);
         break;
     }
   }
@@ -307,62 +440,4 @@ export class ZENdianSettingTab extends PluginSettingTab {
       );
   }
 
-  private renderColor(
-    containerEl: HTMLElement,
-    group: CSSSettingsGroup,
-    setting: CSSSetting
-  ) {
-    const fullKey = `${group.id}@@${setting.id}`;
-    const currentValue =
-      this.manager.getSetting(fullKey) ?? setting.default ?? "#000000";
-
-    new Setting(containerEl)
-      .setName(setting.titleZh || setting.title || setting.id)
-      .setDesc(setting.descriptionZh || setting.description || "")
-      .addColorPicker((picker) =>
-        picker.setValue(String(currentValue)).onChange(async (value) => {
-          await this.manager.updateSetting(group.id, setting.id, value);
-        })
-      );
-  }
-
-  private renderThemedColor(
-    containerEl: HTMLElement,
-    group: CSSSettingsGroup,
-    setting: CSSSetting
-  ) {
-    const fullKey = `${group.id}@@${setting.id}`;
-    const saved = this.manager.getSetting(fullKey);
-    const currentValue =
-      saved && typeof saved === "object"
-        ? saved
-        : {
-            light: setting.defaultLight || "#000000",
-            dark: setting.defaultDark || "#000000",
-          };
-
-    new Setting(containerEl)
-      .setName(setting.titleZh || setting.title || setting.id)
-      .setDesc(setting.descriptionZh || setting.description || "")
-      .addColorPicker((picker) =>
-        picker
-          .setValue(String(currentValue.light))
-          .onChange(async (value) => {
-            await this.manager.updateSetting(group.id, setting.id, {
-              light: value,
-              dark: currentValue.dark,
-            });
-          })
-      )
-      .addColorPicker((picker) =>
-        picker
-          .setValue(String(currentValue.dark))
-          .onChange(async (value) => {
-            await this.manager.updateSetting(group.id, setting.id, {
-              light: currentValue.light,
-              dark: value,
-            });
-          })
-      );
-  }
 }

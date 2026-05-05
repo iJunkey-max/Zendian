@@ -28,7 +28,17 @@
       "Bash(grep -oP '\"[^\"]{3,80}\"' main.js)",
       "Bash(grep -oP '\"[^\"]{3,120}\"' main.js)",
       "Bash(grep -oP '\"[^\"]{3,150}\"' main.js)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(git checkout *)",
+      "Bash(Remove-Item *)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\")",
+      "Bash(cp main.js styles.css manifest.json \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian/\")",
+      "Bash(cp dist/main.js dist/styles.css dist/manifest.json \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian/\"2)",
+      "Bash(cp dist/main.js dist/styles.css \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian/\")",
+      "Bash(cp manifest.json \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian/\")",
+      "Bash(cp C:/Users/Junkey/MyCode/Zendian/dist/main.js C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/main.js)",
+      "Bash(cp C:/Users/Junkey/MyCode/Zendian/dist/styles.css C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/styles.css)",
+      "Bash(cp C:/Users/Junkey/MyCode/Zendian/manifest.json C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/manifest.json)"
     ]
   }
 }
