@@ -1,280 +1,44 @@
 /* @settings
-name: ZENdian Info
-id: zendian-info
+name: ZENdian
+name.zh: ZENdian
+id: zendian
 settings:
     -
+        id: zendian-info
+        title: Theme Info
+        title.zh: 主题信息
+        type: info-text
+        description: "ZENdian — An elegant Obsidian theme combining Border Theme by Akifyss, Phycat overlay enhancements, and Style Settings by mgmeyers."
+        description.zh: "ZENdian — 融合 Border 主题（Akifyss）、Phycat 增强覆盖层与 Style Settings（mgmeyers）的优雅 Obsidian 主题。"
+        markdown: true
+    -
+        id: zendian-author
+        title: Author
+        title.zh: 作者
+        type: info-text
+        description: "Junkey"
+        description.zh: "Junkey"
+    -
         id: zendian-version
-        title: ZENdian Version
+        title: Version
+        title.zh: 版本
         type: info-text
-        description: "ZENdian v1.0.0 — Based on Border Theme by Akifyss, Phycat overlay, and Style Settings by mgmeyers."
-*/
-
-/* @settings
-name: 📏 Phycat spacing setting
-name.zh: 📏 Phycat 文章间距设置
-id: phycat-spacing
-settings:
-    - 
-        id: file-line-width
-        title: File line width
-        title.zh: 阅读区宽度
-        description.zh: 单位px
-        type: variable-number
-        default: 900
-        format: px
-    - 
-        id: letter-spacing
-        title: Letter spacing
-        title.zh: 字间距
-        type: variable-number
-        default: 1
-        format: px
-    - 
-        id: line-height-customize
-        title: Line height
-        title.zh: 段落行高
-        type: variable-number
-        default: 2.2
-    - 
-        id: code-line-height
-        title: code Line height
-        title.zh: 代码行高
-        type: variable-number
-        default: 1.6
-    - 
-        id: blockquote-line-height
-        title: blockquote Line height
-        title.zh: 引用块行高
-        type: variable-number
-        default: 1.6
-    - 
-        id: table-line-height
-        title: Table Line height
-        title.zh: 表格行高
-        type: variable-number
-        default: 1.8
-    - 
-        id: p-spacing
-        title: Paragraph spacing (Reading mode)
-        title.zh:  段落间距（阅读模式）
-        type: variable-text
-        default: 1em
-*/
-
-/* @settings
-name: 📑 Phycat heading setting
-name.ZH: 📑 Phycat 标题设置
-id: phycat-headings
-settings:
-    - 
-        id: heading1-setting
-        title: H1 title
-        title.zh: 一级标题
-        type: heading
-        level: 3
-        collapsed: true
-    -  
-        id: h1-alignment
-        title: H1 Alignment
-        title.zh: H1 对齐方式
-        description: Choose whether H1 titles are centered or left-aligned.
-        description.zh: 选择 H1 标题是居中显示还是居左显示。
-        type: class-select
-        allowEmpty: false
-        default: h1-align-center
-        options:
-          - label: ↔️ Center (Default)
-            value: h1-align-center
-          - label: ⬅️ Left
-            value: h1-align-left
-    - 
-        id: h1-size
-        title: H1 font size
-        title.zh: H1字体大小
-        type: variable-number
-        default: 1.618
-        format: em
-    - 
-        id: heading2-setting
-        title: H2 title
-        title.zh: 二级标题
-        type: heading
-        level: 3
-        collapsed: true
-    - 
-        id: h2-style-select
-        title: Select Style
-        title.zh: 亮色模式风格
-        description: Choose between the original capsule style or the new twin pillars style.
-        description.zh: 选择原有的胶囊背景风格或新的双子塔风格。
-        type: class-select
-        allowEmpty: false
-        default: h2-style-twin
-        options:
-            - 
-                label: 🏛️ Twin Pillars (New)
-                value: h2-style-twin
-            - 
-                label: 💊 Capsule (Original)
-                value: h2-style-capsule
-    - 
-        id: h2-style-dark-select
-        title: Select Style
-        title.zh: 暗色模式选择风格
-        description: Choose between the original glass capsule style or the new neon twin pillars style.
-        description.zh: 选择原有的玻璃胶囊风格或新的霓虹双子塔风格。
-        type: class-select
-        allowEmpty: false
-        default: h2-style-dark-twin
-        options:
-            - 
-                label: 🏙️ Neon Twin (New)
-                value: h2-style-dark-twin
-            - 
-                label: 🔮 Glass Capsule (Original)
-                value: h2-style-dark-capsule
-    - 
-        id: h2-size
-        title: H2 font size
-        title.zh: H2字体大小
-        type: variable-number
-        default: 1.462
-        format: em
-    - 
-        id: h2-spacing-scale-start
-        title: H2 spacing start
-        title.zh: H2前间距
-        type: variable-number
-        default: 1.318
-    - 
-        id: h2-spacing-scale-end
-        title: H2 spacing end
-        title.zh: H2后间距
-        type: variable-number
-        default: 1.318
-    - 
-        id: heading3-setting
-        title: H3 title
-        title.zh: 三级标题
-        type: heading
-        level: 3
-        collapsed: true
-    - 
-        id: h3-size
-        title: H3 font size
-        title.zh: H3字体大小
-        type: variable-number
-        default: 1.318
-        format: em
-    - 
-        id: h3-spacing-scale-start
-        title: H3 spacing start
-        title.zh: H3前间距
-        type: variable-number
-        default: 1.5
-    - 
-        id: h3-spacing-scale-end
-        title: H3 spacing end
-        title.zh: H3后间距
-        type: variable-number
-        default: 1.5
-    - 
-        id: heading4-setting
-        title: H4 title
-        title.zh: 四级标题
-        type: heading
-        level: 3
-        collapsed: true
-    - 
-        id: h4-size
-        title: H4 font size
-        title.zh: H4字体大小
-        type: variable-number
-        default: 1.2
-        format: em
-    - 
-        id: h4-spacing-scale-start
-        title: H4 spacing start
-        title.zh: H4前间距
-        type: variable-number
-        default: 1.5
-    - 
-        id: h4-spacing-scale-end
-        title: H4 spacing end
-        title.zh: H4后间距
-        type: variable-number
-        default: 1.5
-    - 
-        id: heading5-setting
-        title: H5 title
-        title.zh: 五级标题
-        type: heading
-        level: 3
-        collapsed: true
-    - 
-        id: h5-size
-        title: H5 font size
-        title.zh: H5字体大小
-        type: variable-number
-        default: 1.2
-        format: em
-    - 
-        id: h5-spacing-scale-start
-        title: H5 spacing start
-        title.zh: H5前间距
-        type: variable-number
-        default: 1.5
-    - 
-        id: h5-spacing-scale-end
-        title: H5 spacing end
-        title.zh: H5后间距
-        type: variable-number
-        default: 1.5
-    - 
-        id: heading6-setting
-        title: H6 title
-        title.zh: 六级标题
-        type: heading
-        level: 3
-        collapsed: true
-    - 
-        id: h6-size
-        title: H6 font size
-        title.zh: H6字体大小
-        type: variable-number
-        default: 1.2
-        format: em
-    - 
-        id: h6-spacing-scale-start
-        title: H6 spacing start
-        title.zh: H6前间距
-        type: variable-number
-        default: 1.5
-    - 
-        id: h6-spacing-scale-end
-        title: H6 spacing end
-        title.zh: H6后间距
-        type: variable-number
-        default: 1.5
-*/
-
-/* @settings
-
-name: Theme Info
-id: Info
-settings:
-    - 
-        id: Extras-info
-        description: "🎨 Appearance presets: [get presets here](https://github.com/Akifyss/obsidian-border/blob/main/presets.md), click on “Import” in the top right corner and restart obsidian. <br> <br> 📭 If you have problems, please submit [issues](https://github.com/Akifyss/obsidian-border/issues) or [discuss](https://github.com/Akifyss/obsidian-border/discussions) on Github<br> <br> 🔼 View recent updates: [Github Commit History](https://github.com/Akifyss/obsidian-border/commits/main)"
-        description.zh: "🎨 外观预设：[在此获取预设](https://github.com/Akifyss/obsidian-border/blob/main/presets.md)，点击右上角“Import”导入预设，重启obsidian来生效. <br> <br> 📭 如果遇到问题，可以在Github上 [提交issues](https://github.com/Akifyss/obsidian-border/issues) 或[讨论](https://github.com/Akifyss/obsidian-border/discussions)<br> <br> 🔼 查看最近更新：[Github Commit History](https://github.com/Akifyss/obsidian-border/commits/main)"
+        description: "v1.0.0"
+        description.zh: "v1.0.0"
+    -
+        id: zendian-changelog
+        title: Changelog
+        title.zh: 版本记录
         type: info-text
+        description: "**v1.0.0** — Initial release<br>- Merged Border theme, Phycat overlay, and Style Settings<br>- Apple-style settings panel with sidebar navigation<br>- Full Chinese localization<br>- Rainbow folder support<br>- Theme accent color sync with Obsidian<br>- Default card layout with grid background"
+        description.zh: "**v1.0.0** — 首发版本<br>- 整合 Border 主题、Phycat 覆盖层与 Style Settings<br>- 苹果风格设置面板，侧边栏导航<br>- 全面中文本地化<br>- 彩虹文件夹支持<br>- 主题色与 Obsidian 同步<br>- 默认卡片布局与网格背景"
         markdown: true
 */
-
 
 /* @settings
 
 name: Components
+name.zh: 组件
 id: Components
 settings:
     - 
@@ -350,11 +114,13 @@ settings:
         title: Remove custom icon
         title.zh: 移除 自定义图标
         type: class-toggle
+        default: false
     - 
         id: colorful-folder
         title: Enable colorful folder icon
         title.zh: 启用 多彩文件夹图标
         type: class-toggle
+        default: true
     - 
         id: outline-panel
         title: Outline Panel
@@ -367,6 +133,7 @@ settings:
         title: Enable enhanced outline style
         title.zh: 启用 增强的大纲样式
         description: from https://github.com/subframe7536/obsidian-theme-maple, author:@subframe7536
+        description.zh: 来自 obsidian-theme-maple，作者:@subframe7536
         type: class-toggle
     - 
         id: New-tab
@@ -421,6 +188,7 @@ settings:
     - 
 		id: graph-text
 		title: graph-text color
+		title.zh: 关系图 文字颜色
 		type: variable-themed-color
 		opacity: true
 		format: hex
@@ -429,6 +197,7 @@ settings:
     - 
 		id: graph-line
 		title: graph-line color
+		title.zh: 关系图 连线颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -437,6 +206,7 @@ settings:
     - 
 		id: graph-node
 		title: graph-node color
+		title.zh: 关系图 节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -445,6 +215,7 @@ settings:
     - 
 		id: graph-node-unresolved
 		title: graph-node-unresolved color
+		title.zh: 关系图 未解析节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -453,6 +224,7 @@ settings:
     - 
 		id: graph-node-focused
 		title: graph-node-focused color
+		title.zh: 关系图 聚焦节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -461,6 +233,7 @@ settings:
     - 
 		id: graph-node-tag
 		title: graph-node-tag color
+		title.zh: 关系图 标签节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -469,6 +242,7 @@ settings:
     - 
 		id: graph-node-attachment
 		title: graph-node-attachment color
+		title.zh: 关系图 附件节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -578,7 +352,8 @@ settings:
 
 /* @settings
 
-name: Appearance (light mode)
+name: Appearance
+name.zh: 外观
 id: Appearance-light
 settings:
     - 
@@ -592,6 +367,7 @@ settings:
         title: Enable card layout(light mode)
         title.zh: 启用 卡片式布局（亮色模式）
         type: class-toggle
+        default: true
     - 
         id: theme-light-style-select
         title: Base style (light mode)
@@ -692,6 +468,7 @@ settings:
 	- 
 		id: color-red-rgb
 		title: Red
+		title.zh: 红色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#dd2c38'
@@ -699,6 +476,7 @@ settings:
 	- 
 		id: color-orange-rgb
 		title: Orange
+		title.zh: 橙色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#de7417'
@@ -706,6 +484,7 @@ settings:
 	- 
 		id: color-yellow-rgb
 		title: Yellow
+		title.zh: 黄色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#c09c0c'
@@ -713,6 +492,7 @@ settings:
 	- 
 		id: color-green-rgb
 		title: Green
+		title.zh: 绿色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#1da51d'
@@ -720,6 +500,7 @@ settings:
 	- 
 		id: color-cyan-rgb
 		title: Cyan
+		title.zh: 青色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#16a6ab'
@@ -727,6 +508,7 @@ settings:
 	- 
 		id: color-blue-rgb
 		title: Blue
+		title.zh: 蓝色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#1775d9'
@@ -734,6 +516,7 @@ settings:
 	- 
 		id: color-purple-rgb
 		title: Purple
+		title.zh: 紫色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#8f47e1'
@@ -741,6 +524,7 @@ settings:
 	- 
 		id: color-pink-rgb
 		title: Pink
+		title.zh: 粉色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#dd1399'
@@ -1532,7 +1316,8 @@ settings:
 
 /* @settings
 
-name: Appearance (dark mode)
+name: Appearance
+name.zh: 外观
 id: Appearance-dark
 settings:
     - 
@@ -1546,6 +1331,7 @@ settings:
         title: Enable card layout(dark mode)
         title.zh: 启用 卡片式布局（暗色模式）
         type: class-toggle
+        default: true
     - 
         id: theme-dark-style-select
         title: Base style (dark mode)
@@ -1648,6 +1434,7 @@ settings:
 	- 
 		id: color-red-rgb
 		title: Red
+		title.zh: 红色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#dd2c38'
@@ -1655,6 +1442,7 @@ settings:
 	- 
 		id: color-orange-rgb
 		title: Orange
+		title.zh: 橙色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#de7417'
@@ -1662,6 +1450,7 @@ settings:
 	- 
 		id: color-yellow-rgb
 		title: Yellow
+		title.zh: 黄色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#c09c0c'
@@ -1669,6 +1458,7 @@ settings:
 	- 
 		id: color-green-rgb
 		title: Green
+		title.zh: 绿色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#1da51d'
@@ -1676,6 +1466,7 @@ settings:
 	- 
 		id: color-cyan-rgb
 		title: Cyan
+		title.zh: 青色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#16a6ab'
@@ -1683,6 +1474,7 @@ settings:
 	- 
 		id: color-blue-rgb
 		title: Blue
+		title.zh: 蓝色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#1775d9'
@@ -1690,6 +1482,7 @@ settings:
 	- 
 		id: color-purple-rgb
 		title: Purple
+		title.zh: 紫色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#8f47e1'
@@ -1697,6 +1490,7 @@ settings:
 	- 
 		id: color-pink-rgb
 		title: Pink
+		title.zh: 粉色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#dd1399'
@@ -2490,6 +2284,7 @@ settings:
 /* @settings
 
 name: Editor
+name.zh: 编辑器
 id: Editor
 settings:
     - 
@@ -2577,6 +2372,7 @@ settings:
         title: Enable grid background pattern
         title.zh: 启用 网格背景图案
         type: class-toggle
+        default: true
     - 
 		id: grid-background-pattern-color
 		title: Customize grid background pattern color
@@ -2693,15 +2489,7 @@ settings:
         title.zh: H1 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h1-size
-		title: H1 font size
-        title.zh: H1 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.5em
-	- 
+	-
         id: h1-weight
         title: H1 font weight
         title.zh: H1 字重
@@ -2756,15 +2544,7 @@ settings:
         title.zh: H2 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h2-size
-		title: H2 font size
-        title.zh: H2 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.425em
-	- 
+	-
         id: h2-weight
         title: H2 font weight
         title.zh: H2 字重
@@ -2819,15 +2599,7 @@ settings:
         title.zh: H3 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h3-size
-		title: H3 font size
-        title.zh: H3 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.35em
-	- 
+	-
         id: h3-weight
         title: H3 font weight
         title.zh: H3 字重
@@ -2882,15 +2654,7 @@ settings:
         title.zh: H4 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h4-size
-		title: H4 font size
-        title.zh: H4 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.275em
-	- 
+	-
         id: h4-weight
         title: H4 font weight
         title.zh: H4 字重
@@ -2945,15 +2709,7 @@ settings:
         title.zh: H5 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h5-size
-		title: H5 font size
-        title.zh: H5 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.2em
-	- 
+	-
         id: h5-weight
         title: H5 font weight
         title.zh: H5 字重
@@ -3008,15 +2764,7 @@ settings:
         title.zh: H6 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h6-size
-		title: H6 font size
-        title.zh: H6 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.125em
-	- 
+	-
         id: h6-weight
         title: H6 font weight
         title.zh: H6 字重
@@ -3065,25 +2813,7 @@ settings:
 		title.zh: 段落两端对齐
 		type: class-toggle
 		default: false
-	- 
-        id: line-height-customize
-        title: Paragraph line height
-        title.zh: 段落行高
-        type: variable-number
-        default: 1.5
-	- 
-		id: file-line-width
-		title: Paragraph line width （Need to turn on “Readable line length”）
-        title.zh:  段落行宽（需开启“缩减栏宽”）
-		type: variable-text
-		default: 700px
-    - 
-		id: p-spacing
-		title: Paragraph spacing (Reading mode)
-        title.zh:  段落间距（阅读模式）
-		type: variable-text
-		default: 1em
-    - 
+    -
 		id: p-spacing-br
 		title: Paragraph spacing also takes effect after a line break (Reading mode)
 		title.zh: 段间距也对换行后的内容生效（阅读模式）
@@ -3247,23 +2977,7 @@ settings:
 		type: heading
 		level: 4
 		collapsed: true
-	- 
-		id: link-external-color
-		title: External link color
-        title.zh: 外部链接颜色
-		type: variable-themed-color
-		format: hex
-		default-light: '#'
-		default-dark: '#'
-	- 
-		id: link-external-color-hover
-		title: External link color (hover)
-        title.zh: 外部链接颜色（鼠标悬停时）
-		type: variable-themed-color
-		format: hex
-		default-light: '#'
-		default-dark: '#'
-    - 
+    -
 		id: link-external-decoration
 		title: External link decoration
         title.zh: 外部链接装饰
@@ -3458,6 +3172,7 @@ settings:
         title: Disable Image zoom
         title.zh: 关闭图像缩放
         description: from https://github.com/kepano/obsidian-minimal, author:@kepano
+        description.zh: 来自 obsidian-minimal，作者:@kepano
         type: class-toggle
     - 
         id: Code-heading
@@ -3811,6 +3526,7 @@ settings:
         title: Disable Alternative Checkboxes
         title.zh: 禁用备用复选框
         description: Disable this if you are using your own implementation via a CSS Snippet.
+        description.zh: 如果你使用 CSS 片段实现了自己的复选框样式，请禁用此项。
         type: class-toggle
     -
         id: checkbox-radius
@@ -3865,6 +3581,171 @@ settings:
 		format: hex
 		default-light: '#'
 		default-dark: '#'
+    -
+        id: phycat-spacing-heading
+        title: Phycat Spacing
+        title.zh: Phycat 文章间距
+        type: heading
+        level: 3
+        collapsed: true
+    -
+        id: file-line-width
+        title: File line width
+        title.zh: 阅读区宽度
+        description.zh: 单位px
+        type: variable-number
+        default: 900
+        format: px
+    -
+        id: letter-spacing
+        title: Letter spacing
+        title.zh: 字间距
+        type: variable-number
+        default: 1
+        format: px
+    -
+        id: line-height-customize
+        title: Line height
+        title.zh: 段落行高
+        type: variable-number
+        default: 2.2
+    -
+        id: code-line-height
+        title: code Line height
+        title.zh: 代码行高
+        type: variable-number
+        default: 1.6
+    -
+        id: blockquote-line-height
+        title: blockquote Line height
+        title.zh: 引用块行高
+        type: variable-number
+        default: 1.6
+    -
+        id: table-line-height
+        title: Table Line height
+        title.zh: 表格行高
+        type: variable-number
+        default: 1.8
+    -
+        id: p-spacing
+        title: Paragraph spacing (Reading mode)
+        title.zh: 段落间距（阅读模式）
+        type: variable-text
+        default: 1em
+    -
+        id: phycat-headings-heading
+        title: Phycat Headings
+        title.zh: Phycat 标题设置
+        type: heading
+        level: 3
+        collapsed: true
+    -
+        id: h1-alignment
+        title: H1 Alignment
+        title.zh: H1 对齐方式
+        description: Choose whether H1 titles are centered or left-aligned.
+        description.zh: 选择 H1 标题是居中显示还是居左显示。
+        type: class-select
+        allowEmpty: false
+        default: h1-align-center
+        options:
+          - label: Center (Default)
+            value: h1-align-center
+          - label: Left
+            value: h1-align-left
+    -
+        id: h2-style-select
+        title: H2 Style (Light)
+        title.zh: H2 亮色模式风格
+        description: Choose between capsule or twin pillars style.
+        description.zh: 选择胶囊背景风格或双子塔风格。
+        type: class-select
+        allowEmpty: false
+        default: h2-style-twin
+        options:
+            -
+                label: Twin Pillars
+                value: h2-style-twin
+            -
+                label: Capsule
+                value: h2-style-capsule
+    -
+        id: h2-style-dark-select
+        title: H2 Style (Dark)
+        title.zh: H2 暗色模式风格
+        description: Choose between glass capsule or neon twin pillars style.
+        description.zh: 选择玻璃胶囊风格或霓虹双子塔风格。
+        type: class-select
+        allowEmpty: false
+        default: h2-style-dark-twin
+        options:
+            -
+                label: Neon Twin
+                value: h2-style-dark-twin
+            -
+                label: Glass Capsule
+                value: h2-style-dark-capsule
+    -
+        id: h2-spacing-scale-start
+        title: H2 spacing start
+        title.zh: H2前间距
+        type: variable-number
+        default: 1.318
+    -
+        id: h2-spacing-scale-end
+        title: H2 spacing end
+        title.zh: H2后间距
+        type: variable-number
+        default: 1.318
+    -
+        id: h3-spacing-scale-start
+        title: H3 spacing start
+        title.zh: H3前间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h3-spacing-scale-end
+        title: H3 spacing end
+        title.zh: H3后间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h4-spacing-scale-start
+        title: H4 spacing start
+        title.zh: H4前间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h4-spacing-scale-end
+        title: H4 spacing end
+        title.zh: H4后间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h5-spacing-scale-start
+        title: H5 spacing start
+        title.zh: H5前间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h5-spacing-scale-end
+        title: H5 spacing end
+        title.zh: H5后间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h6-spacing-scale-start
+        title: H6 spacing start
+        title.zh: H6前间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h6-spacing-scale-end
+        title: H6 spacing end
+        title.zh: H6后间距
+        type: variable-number
+        default: 1.5
 
 
 */
@@ -3872,6 +3753,7 @@ settings:
 /* @settings
 
 name: Mobile
+name.zh: 移动端
 id: Mobile
 settings:
     - 
@@ -3890,11 +3772,13 @@ settings:
 /* @settings
 
 name: Plugin
+name.zh: 插件兼容
 id: Plugin
 settings:
     - 
         id: DB Folder
         title: DB Folder
+        title.zh: DB Folder
         type: heading
         collapsed: true
         level: 3
@@ -3920,6 +3804,7 @@ settings:
     - 
         id: Projects
         title: Projects
+        title.zh: Projects
         type: heading
         collapsed: true
         level: 3
@@ -3940,6 +3825,7 @@ settings:
     - 
         id: Surfing
         title: Surfing
+        title.zh: Surfing
         type: heading
         collapsed: true
         level: 3
@@ -3951,6 +3837,7 @@ settings:
     - 
         id: Checklist
         title: Checklist
+        title.zh: Checklist
         type: heading
         collapsed: true
         level: 3
@@ -9168,8 +9055,6 @@ body.theme-light {
   --text-accent: var(--primary-color);
   --text-accent-hover: var(--link-hover-color);
   --list-marker-color: var(--primary-color);
-  --interactive-accent: var(--primary-color);
-  --interactive-accent-hover: var(--link-hover-color);
   --text-selection: #dce3e9b6;
   --background-modifier-hover: rgba(0, 0, 0, 0.05);
   --background-modifier-active-hover: rgba(0, 0, 0, 0.1);
@@ -9211,8 +9096,6 @@ body.theme-dark {
   --text-accent: var(--primary-color);
   --text-accent-hover: var(--link-hover-color);
   --list-marker-color: var(--primary-color);
-  --interactive-accent: var(--primary-color);
-  --interactive-accent-hover: var(--link-hover-color);
   --text-selection: var(--select-text-bg-color);
   --background-modifier-hover: rgba(255, 255, 255, 0.05);
   --background-modifier-active-hover: rgba(255, 255, 255, 0.1);
@@ -12518,3 +12401,226 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 /*! Pickr 1.8.4 MIT | https://github.com/Simonwep/pickr */
 .pickr{position:relative;overflow:visible;transform:translateY(0)}.pickr *{box-sizing:border-box;outline:none;border:none;-webkit-appearance:none}.pickr .pcr-button{position:relative;height:2em;width:2em;padding:0.5em;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Helvetica Neue",Arial,sans-serif;border-radius:.15em;background:url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" stroke="%2342445A" stroke-width="5px" stroke-linecap="round"><path d="M45,45L5,5"></path><path d="M45,5L5,45"></path></svg>') no-repeat center;background-size:0;transition:all 0.3s}.pickr .pcr-button::before{position:absolute;content:'';top:0;left:0;width:100%;height:100%;background:url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><path fill="white" d="M1,0H2V1H1V0ZM0,1H1V2H0V1Z"/><path fill="gray" d="M0,0H1V1H0V0ZM1,1H2V2H1V1Z"/></svg>');background-size:.5em;border-radius:.15em;z-index:-1}.pickr .pcr-button::before{z-index:initial}.pickr .pcr-button::after{position:absolute;content:'';top:0;left:0;height:100%;width:100%;transition:background 0.3s;background:var(--pcr-color);border-radius:.15em}.pickr .pcr-button.clear{background-size:70%}.pickr .pcr-button.clear::before{opacity:0}.pickr .pcr-button.clear:focus{box-shadow:0 0 0 1px rgba(255,255,255,0.85),0 0 0 3px var(--pcr-color)}.pickr .pcr-button.disabled{cursor:not-allowed}.pickr *,.pcr-app *{box-sizing:border-box;outline:none;border:none;-webkit-appearance:none}.pickr input:focus,.pickr input.pcr-active,.pickr button:focus,.pickr button.pcr-active,.pcr-app input:focus,.pcr-app input.pcr-active,.pcr-app button:focus,.pcr-app button.pcr-active{box-shadow:0 0 0 1px rgba(255,255,255,0.85),0 0 0 3px var(--pcr-color)}.pickr .pcr-palette,.pickr .pcr-slider,.pcr-app .pcr-palette,.pcr-app .pcr-slider{transition:box-shadow 0.3s}.pickr .pcr-palette:focus,.pickr .pcr-slider:focus,.pcr-app .pcr-palette:focus,.pcr-app .pcr-slider:focus{box-shadow:0 0 0 1px rgba(255,255,255,0.85),0 0 0 3px rgba(0,0,0,0.25)}.pcr-app{position:fixed;display:flex;flex-direction:column;z-index:10000;border-radius:0.1em;background:#fff;opacity:0;visibility:hidden;transition:opacity 0.3s, visibility 0s 0.3s;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Helvetica Neue",Arial,sans-serif;box-shadow:0 0.15em 1.5em 0 rgba(0,0,0,0.1),0 0 1em 0 rgba(0,0,0,0.03);left:0;top:0}.pcr-app.visible{transition:opacity 0.3s;visibility:visible;opacity:1}.pcr-app .pcr-swatches{display:flex;flex-wrap:wrap;margin-top:0.75em}.pcr-app .pcr-swatches.pcr-last{margin:0}@supports (display: grid){.pcr-app .pcr-swatches{display:grid;align-items:center;grid-template-columns:repeat(auto-fit, 1.75em)}}.pcr-app .pcr-swatches>button{font-size:1em;position:relative;width:calc(1.75em - 5px);height:calc(1.75em - 5px);border-radius:0.15em;cursor:pointer;margin:2.5px;flex-shrink:0;justify-self:center;transition:all 0.15s;overflow:hidden;background:transparent;z-index:1}.pcr-app .pcr-swatches>button::before{position:absolute;content:'';top:0;left:0;width:100%;height:100%;background:url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><path fill="white" d="M1,0H2V1H1V0ZM0,1H1V2H0V1Z"/><path fill="gray" d="M0,0H1V1H0V0ZM1,1H2V2H1V1Z"/></svg>');background-size:6px;border-radius:.15em;z-index:-1}.pcr-app .pcr-swatches>button::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:var(--pcr-color);border:1px solid rgba(0,0,0,0.05);border-radius:0.15em;box-sizing:border-box}.pcr-app .pcr-swatches>button:hover{filter:brightness(1.05)}.pcr-app .pcr-swatches>button:not(.pcr-active){box-shadow:none}.pcr-app .pcr-interaction{display:flex;flex-wrap:wrap;align-items:center;margin:0 -0.2em 0 -0.2em}.pcr-app .pcr-interaction>*{margin:0 0.2em}.pcr-app .pcr-interaction input{letter-spacing:0.07em;font-size:0.75em;text-align:center;cursor:pointer;color:#75797e;background:#f1f3f4;border-radius:.15em;transition:all 0.15s;padding:0.45em 0.5em;margin-top:0.75em}.pcr-app .pcr-interaction input:hover{filter:brightness(0.975)}.pcr-app .pcr-interaction input:focus{box-shadow:0 0 0 1px rgba(255,255,255,0.85),0 0 0 3px rgba(66,133,244,0.75)}.pcr-app .pcr-interaction .pcr-result{color:#75797e;text-align:left;flex:1 1 8em;min-width:8em;transition:all 0.2s;border-radius:.15em;background:#f1f3f4;cursor:text}.pcr-app .pcr-interaction .pcr-result::-moz-selection{background:#4285f4;color:#fff}.pcr-app .pcr-interaction .pcr-result::selection{background:#4285f4;color:#fff}.pcr-app .pcr-interaction .pcr-type.active{color:#fff;background:#4285f4}.pcr-app .pcr-interaction .pcr-save,.pcr-app .pcr-interaction .pcr-cancel,.pcr-app .pcr-interaction .pcr-clear{color:#fff;width:auto}.pcr-app .pcr-interaction .pcr-save,.pcr-app .pcr-interaction .pcr-cancel,.pcr-app .pcr-interaction .pcr-clear{color:#fff}.pcr-app .pcr-interaction .pcr-save:hover,.pcr-app .pcr-interaction .pcr-cancel:hover,.pcr-app .pcr-interaction .pcr-clear:hover{filter:brightness(0.925)}.pcr-app .pcr-interaction .pcr-save{background:#4285f4}.pcr-app .pcr-interaction .pcr-clear,.pcr-app .pcr-interaction .pcr-cancel{background:#f44250}.pcr-app .pcr-interaction .pcr-clear:focus,.pcr-app .pcr-interaction .pcr-cancel:focus{box-shadow:0 0 0 1px rgba(255,255,255,0.85),0 0 0 3px rgba(244,66,80,0.75)}.pcr-app .pcr-selection .pcr-picker{position:absolute;height:18px;width:18px;border:2px solid #fff;border-radius:100%;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.pcr-app .pcr-selection .pcr-color-palette,.pcr-app .pcr-selection .pcr-color-chooser,.pcr-app .pcr-selection .pcr-color-opacity{position:relative;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;display:flex;flex-direction:column;cursor:grab;cursor:-webkit-grab}.pcr-app .pcr-selection .pcr-color-palette:active,.pcr-app .pcr-selection .pcr-color-chooser:active,.pcr-app .pcr-selection .pcr-color-opacity:active{cursor:grabbing;cursor:-webkit-grabbing}.pcr-app[data-theme='nano']{width:14.25em;max-width:95vw}.pcr-app[data-theme='nano'] .pcr-swatches{margin-top:.6em;padding:0 .6em}.pcr-app[data-theme='nano'] .pcr-interaction{padding:0 .6em .6em .6em}.pcr-app[data-theme='nano'] .pcr-selection{display:grid;grid-gap:.6em;grid-template-columns:1fr 4fr;grid-template-rows:5fr auto auto;align-items:center;height:10.5em;width:100%;align-self:flex-start}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-preview{grid-area:2 / 1 / 4 / 1;height:100%;width:100%;display:flex;flex-direction:row;justify-content:center;margin-left:.6em}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-preview .pcr-last-color{display:none}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-preview .pcr-current-color{position:relative;background:var(--pcr-color);width:2em;height:2em;border-radius:50em;overflow:hidden}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-preview .pcr-current-color::before{position:absolute;content:'';top:0;left:0;width:100%;height:100%;background:url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><path fill="white" d="M1,0H2V1H1V0ZM0,1H1V2H0V1Z"/><path fill="gray" d="M0,0H1V1H0V0ZM1,1H2V2H1V1Z"/></svg>');background-size:.5em;border-radius:.15em;z-index:-1}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-palette{grid-area:1 / 1 / 2 / 3;width:100%;height:100%;z-index:1}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-palette .pcr-palette{border-radius:.15em;width:100%;height:100%}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-palette .pcr-palette::before{position:absolute;content:'';top:0;left:0;width:100%;height:100%;background:url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><path fill="white" d="M1,0H2V1H1V0ZM0,1H1V2H0V1Z"/><path fill="gray" d="M0,0H1V1H0V0ZM1,1H2V2H1V1Z"/></svg>');background-size:.5em;border-radius:.15em;z-index:-1}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-chooser{grid-area:2 / 2 / 2 / 2}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-opacity{grid-area:3 / 2 / 3 / 2}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-chooser,.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-opacity{height:0.5em;margin:0 .6em}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-chooser .pcr-picker,.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-opacity .pcr-picker{top:50%;transform:translateY(-50%)}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-chooser .pcr-slider,.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-opacity .pcr-slider{flex-grow:1;border-radius:50em}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-chooser .pcr-slider{background:linear-gradient(to right, red, #ff0, lime, cyan, blue, #f0f, red)}.pcr-app[data-theme='nano'] .pcr-selection .pcr-color-opacity .pcr-slider{background:linear-gradient(to right, transparent, black),url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><path fill="white" d="M1,0H2V1H1V0ZM0,1H1V2H0V1Z"/><path fill="gray" d="M0,0H1V1H0V0ZM1,1H2V2H1V1Z"/></svg>');background-size:100%, 0.25em}
 
+/* ZENdian Settings Panel — Apple-style card design */
+
+.zendian-settings-wrapper {
+    display: flex;
+    gap: 20px;
+    min-height: 400px;
+    padding: 4px 0;
+}
+
+/* Sidebar navigation */
+
+.zendian-nav {
+    flex: 0 0 190px;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding: 6px;
+    background: var(--background-secondary);
+    border-radius: 10px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.zendian-nav::-webkit-scrollbar {
+    width: 4px;
+}
+
+.zendian-nav::-webkit-scrollbar-thumb {
+    background: var(--background-modifier-border);
+    border-radius: 4px;
+}
+
+.zendian-nav-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.01em;
+}
+
+.zendian-nav-item:hover {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
+}
+
+.zendian-nav-item.active {
+    color: var(--text-on-accent);
+    background: var(--interactive-accent);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Content area */
+
+.zendian-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.zendian-group-section {
+    padding-bottom: 8px;
+    animation: zendian-fade-in 0.2s ease;
+}
+
+@keyframes zendian-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Collapsible headings — card style */
+
+.zendian-heading-wrapper {
+    margin-bottom: 12px;
+    background: var(--background-secondary);
+    border-radius: 10px;
+    border: 1px solid var(--background-modifier-border);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.zendian-heading-wrapper:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.zendian-heading {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-normal);
+    transition: background 0.15s ease;
+}
+
+.zendian-heading:hover {
+    background: var(--background-modifier-hover);
+}
+
+.zendian-collapse-indicator {
+    font-size: 9px;
+    color: var(--text-faint);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+}
+
+.zendian-heading-wrapper.collapsed .zendian-collapse-indicator {
+    transform: rotate(0deg);
+}
+
+.zendian-heading-wrapper:not(.collapsed) .zendian-collapse-indicator {
+    transform: rotate(90deg);
+}
+
+.zendian-heading-wrapper.collapsed .zendian-heading-content {
+    display: none;
+}
+
+.zendian-heading-content {
+    padding: 4px 16px 12px;
+}
+
+/* Settings within cards */
+
+.zendian-heading-content .setting-item {
+    border-top: 1px solid var(--background-modifier-border);
+    padding: 8px 0;
+}
+
+.zendian-heading-content .setting-item:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+/* Mode header (亮色/暗色 模式分隔) */
+
+.zendian-mode-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 16px 0 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.zendian-mode-header:first-child {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 4px;
+}
+
+/* Info text */
+
+.zendian-info-text {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
+}
+
+.zendian-info-text a {
+    color: var(--text-accent);
+    text-decoration: none;
+}
+
+.zendian-info-text a:hover {
+    color: var(--text-accent-hover);
+    text-decoration: underline;
+}
+
+/* Responsive — mobile */
+
+@media (max-width: 600px) {
+    .zendian-settings-wrapper {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .zendian-nav {
+        flex: none;
+        position: static;
+        max-height: none;
+        padding: 4px;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 4px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .zendian-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .zendian-nav-item {
+        font-size: 12px;
+        padding: 6px 12px;
+        flex-shrink: 0;
+    }
+
+    .zendian-heading {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .zendian-heading-content {
+        padding: 4px 12px 10px;
+    }
+}

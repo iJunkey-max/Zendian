@@ -13,7 +13,22 @@
       "Bash(rmdir css/md-elements)",
       "Bash(rm scripts/extract-css.mjs)",
       "Bash(cp \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\manifest.json\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\\" && cp \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\dist\\\\main.js\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\\")",
-      "Bash(cp \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\dist\\\\styles.css\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\\")"
+      "Bash(cp \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\dist\\\\styles.css\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\\")",
+      "Bash(npm run *)",
+      "Bash(Copy-Item \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\dist\\\\main.js\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\main.js\" -Force)",
+      "Bash(Copy-Item \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\dist\\\\styles.css\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\styles.css\" -Force)",
+      "Bash(Copy-Item \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\manifest.json\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\manifest.json\" -Force)",
+      "Bash(Copy-Item \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\versions.json\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\versions.json\" -Force)",
+      "Bash(powershell -Command \"\\(Select-String -Path 'css\\\\settings-blocks\\\\border-settings.css' -Pattern '@settings'\\).Count\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const css=fs.readFileSync\\('dist/styles.css','utf8'\\); const re=/\\\\/\\\\*[\\\\s!]*@settings\\\\s*\\\\n\\([\\\\s\\\\S]*?\\)\\\\*\\\\//g; let m; while\\(m=re.exec\\(css\\)\\){ const block=m[1]; const name=\\(block.match\\(/name:\\\\s*\\(.+\\)/\\)||[]\\)[1]||'?'; const id=\\(block.match\\(/\\\\bid:\\\\s*\\(.+\\)/\\)||[]\\)[1]||'?'; const count=\\(block.match\\(/\\(?m\\)^\\\\s*-\\\\s*$|^\\\\s*-\\\\s+id:/g\\)||[]\\).length; console.log\\(name.trim\\(\\)+' \\(id: '+id.trim\\(\\)+'\\) -> '+count+' settings'\\); }\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const css=fs.readFileSync\\('dist/styles.css','utf8'\\); const re=/\\\\/\\\\*[\\\\s!]*@settings\\\\s*\\\\n\\([\\\\s\\\\S]*?\\)\\\\*\\\\//g; let m; while\\(m=re.exec\\(css\\)\\){ const block=m[1]; const name=\\(block.match\\(/name:\\\\s*\\(.+\\)/\\)||[]\\)[1]||'?'; const id=\\(block.match\\(/\\\\bid:\\\\s*\\(.+\\)/\\)||[]\\)[1]||'?'; const count=\\(block.match\\(/^\\\\s*-\\\\s*$/gm\\)||[]\\).length + \\(block.match\\(/^\\\\s*-\\\\s+id:/gm\\)||[]\\).length; console.log\\(name.trim\\(\\)+' \\(id: '+id.trim\\(\\)+'\\) -> '+count+' settings'\\); }\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const css=fs.readFileSync\\('dist/styles.css','utf8'\\); const re=/\\\\/\\\\*[\\\\s!]*@settings\\\\s*\\\\n\\([\\\\s\\\\S]*?\\)\\\\*\\\\//g; let m; while\\(m=re.exec\\(css\\)\\){ const block=m[1]; const name=\\(block.match\\(/name:\\\\s*\\(.+\\)/\\)||[]\\)[1]||'?'; const id=\\(block.match\\(/\\\\bid:\\\\s*\\(.+\\)/\\)||[]\\)[1]||'?'; const count=\\(block.match\\(/^\\\\s+id:\\\\s+/gm\\)||[]\\).length; console.log\\(name.trim\\(\\)+' \\(id: '+id.trim\\(\\)+'\\) -> '+count+' settings'\\); }\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const css=fs.readFileSync\\('dist/styles.css','utf8'\\); const re=/\\\\/\\\\*[\\\\s!]*@settings\\\\s*\\\\n\\([\\\\s\\\\S]*?\\)\\\\*\\\\//g; let m; let total=0; while\\(m=re.exec\\(css\\)\\){ const block=m[1]; const name=\\(block.match\\(/name:\\\\s*\\(.+\\)/\\)||[]\\)[1]||'?'; const id=\\(block.match\\(/\\\\bid:\\\\s*\\(.+\\)/\\)||[]\\)[1]||'?'; const count=\\(block.match\\(/^        id:\\\\s+/gm\\)||[]\\).length; total+=count; console.log\\(name.trim\\(\\)+' \\(id: '+id.trim\\(\\)+'\\) -> '+count+' settings'\\); } console.log\\('TOTAL: '+total+' settings across 10 groups'\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const js=fs.readFileSync\\('OriginalFile/彩虹文件夹列表/main.js','utf8'\\); const lines=js.split\\('\\\\n'\\); console.log\\('Total lines:', lines.length\\); const idx=lines.findIndex\\(l=>l.includes\\('style-settings-heading'\\)\\); if\\(idx>=0\\) console.log\\('Found at line',idx+1\\); else console.log\\('Not found'\\);\")",
+      "Bash(grep -oP '\"[^\"]{3,80}\"' main.js)",
+      "Bash(grep -oP '\"[^\"]{3,120}\"' main.js)",
+      "Bash(grep -oP '\"[^\"]{3,150}\"' main.js)",
+      "Bash(node *)"
     ]
   }
 }

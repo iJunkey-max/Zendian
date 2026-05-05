@@ -1,20 +1,7 @@
 /* @settings
 
-name: Theme Info
-id: Info
-settings:
-    - 
-        id: Extras-info
-        description: "🎨 Appearance presets: [get presets here](https://github.com/Akifyss/obsidian-border/blob/main/presets.md), click on “Import” in the top right corner and restart obsidian. <br> <br> 📭 If you have problems, please submit [issues](https://github.com/Akifyss/obsidian-border/issues) or [discuss](https://github.com/Akifyss/obsidian-border/discussions) on Github<br> <br> 🔼 View recent updates: [Github Commit History](https://github.com/Akifyss/obsidian-border/commits/main)"
-        description.zh: "🎨 外观预设：[在此获取预设](https://github.com/Akifyss/obsidian-border/blob/main/presets.md)，点击右上角“Import”导入预设，重启obsidian来生效. <br> <br> 📭 如果遇到问题，可以在Github上 [提交issues](https://github.com/Akifyss/obsidian-border/issues) 或[讨论](https://github.com/Akifyss/obsidian-border/discussions)<br> <br> 🔼 查看最近更新：[Github Commit History](https://github.com/Akifyss/obsidian-border/commits/main)"
-        type: info-text
-        markdown: true
-*/
-
-
-/* @settings
-
 name: Components
+name.zh: 组件
 id: Components
 settings:
     - 
@@ -90,11 +77,13 @@ settings:
         title: Remove custom icon
         title.zh: 移除 自定义图标
         type: class-toggle
+        default: false
     - 
         id: colorful-folder
         title: Enable colorful folder icon
         title.zh: 启用 多彩文件夹图标
         type: class-toggle
+        default: true
     - 
         id: outline-panel
         title: Outline Panel
@@ -107,6 +96,7 @@ settings:
         title: Enable enhanced outline style
         title.zh: 启用 增强的大纲样式
         description: from https://github.com/subframe7536/obsidian-theme-maple, author:@subframe7536
+        description.zh: 来自 obsidian-theme-maple，作者:@subframe7536
         type: class-toggle
     - 
         id: New-tab
@@ -161,6 +151,7 @@ settings:
     - 
 		id: graph-text
 		title: graph-text color
+		title.zh: 关系图 文字颜色
 		type: variable-themed-color
 		opacity: true
 		format: hex
@@ -169,6 +160,7 @@ settings:
     - 
 		id: graph-line
 		title: graph-line color
+		title.zh: 关系图 连线颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -177,6 +169,7 @@ settings:
     - 
 		id: graph-node
 		title: graph-node color
+		title.zh: 关系图 节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -185,6 +178,7 @@ settings:
     - 
 		id: graph-node-unresolved
 		title: graph-node-unresolved color
+		title.zh: 关系图 未解析节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -193,6 +187,7 @@ settings:
     - 
 		id: graph-node-focused
 		title: graph-node-focused color
+		title.zh: 关系图 聚焦节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -201,6 +196,7 @@ settings:
     - 
 		id: graph-node-tag
 		title: graph-node-tag color
+		title.zh: 关系图 标签节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -209,6 +205,7 @@ settings:
     - 
 		id: graph-node-attachment
 		title: graph-node-attachment color
+		title.zh: 关系图 附件节点颜色
 		type: variable-themed-color
 		opacity: true
         format: hex
@@ -318,7 +315,8 @@ settings:
 
 /* @settings
 
-name: Appearance (light mode)
+name: Appearance
+name.zh: 外观
 id: Appearance-light
 settings:
     - 
@@ -332,6 +330,7 @@ settings:
         title: Enable card layout(light mode)
         title.zh: 启用 卡片式布局（亮色模式）
         type: class-toggle
+        default: true
     - 
         id: theme-light-style-select
         title: Base style (light mode)
@@ -432,6 +431,7 @@ settings:
 	- 
 		id: color-red-rgb
 		title: Red
+		title.zh: 红色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#dd2c38'
@@ -439,6 +439,7 @@ settings:
 	- 
 		id: color-orange-rgb
 		title: Orange
+		title.zh: 橙色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#de7417'
@@ -446,6 +447,7 @@ settings:
 	- 
 		id: color-yellow-rgb
 		title: Yellow
+		title.zh: 黄色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#c09c0c'
@@ -453,6 +455,7 @@ settings:
 	- 
 		id: color-green-rgb
 		title: Green
+		title.zh: 绿色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#1da51d'
@@ -460,6 +463,7 @@ settings:
 	- 
 		id: color-cyan-rgb
 		title: Cyan
+		title.zh: 青色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#16a6ab'
@@ -467,6 +471,7 @@ settings:
 	- 
 		id: color-blue-rgb
 		title: Blue
+		title.zh: 蓝色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#1775d9'
@@ -474,6 +479,7 @@ settings:
 	- 
 		id: color-purple-rgb
 		title: Purple
+		title.zh: 紫色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#8f47e1'
@@ -481,6 +487,7 @@ settings:
 	- 
 		id: color-pink-rgb
 		title: Pink
+		title.zh: 粉色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#dd1399'
@@ -1272,7 +1279,8 @@ settings:
 
 /* @settings
 
-name: Appearance (dark mode)
+name: Appearance
+name.zh: 外观
 id: Appearance-dark
 settings:
     - 
@@ -1286,6 +1294,7 @@ settings:
         title: Enable card layout(dark mode)
         title.zh: 启用 卡片式布局（暗色模式）
         type: class-toggle
+        default: true
     - 
         id: theme-dark-style-select
         title: Base style (dark mode)
@@ -1388,6 +1397,7 @@ settings:
 	- 
 		id: color-red-rgb
 		title: Red
+		title.zh: 红色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#dd2c38'
@@ -1395,6 +1405,7 @@ settings:
 	- 
 		id: color-orange-rgb
 		title: Orange
+		title.zh: 橙色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#de7417'
@@ -1402,6 +1413,7 @@ settings:
 	- 
 		id: color-yellow-rgb
 		title: Yellow
+		title.zh: 黄色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#c09c0c'
@@ -1409,6 +1421,7 @@ settings:
 	- 
 		id: color-green-rgb
 		title: Green
+		title.zh: 绿色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#1da51d'
@@ -1416,6 +1429,7 @@ settings:
 	- 
 		id: color-cyan-rgb
 		title: Cyan
+		title.zh: 青色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#16a6ab'
@@ -1423,6 +1437,7 @@ settings:
 	- 
 		id: color-blue-rgb
 		title: Blue
+		title.zh: 蓝色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#1775d9'
@@ -1430,6 +1445,7 @@ settings:
 	- 
 		id: color-purple-rgb
 		title: Purple
+		title.zh: 紫色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#8f47e1'
@@ -1437,6 +1453,7 @@ settings:
 	- 
 		id: color-pink-rgb
 		title: Pink
+		title.zh: 粉色
 		type: variable-themed-color
         format: 'rgb-values'
 		default-light: '#dd1399'
@@ -2230,6 +2247,7 @@ settings:
 /* @settings
 
 name: Editor
+name.zh: 编辑器
 id: Editor
 settings:
     - 
@@ -2317,6 +2335,7 @@ settings:
         title: Enable grid background pattern
         title.zh: 启用 网格背景图案
         type: class-toggle
+        default: true
     - 
 		id: grid-background-pattern-color
 		title: Customize grid background pattern color
@@ -2433,15 +2452,7 @@ settings:
         title.zh: H1 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h1-size
-		title: H1 font size
-        title.zh: H1 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.5em
-	- 
+	-
         id: h1-weight
         title: H1 font weight
         title.zh: H1 字重
@@ -2496,15 +2507,7 @@ settings:
         title.zh: H2 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h2-size
-		title: H2 font size
-        title.zh: H2 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.425em
-	- 
+	-
         id: h2-weight
         title: H2 font weight
         title.zh: H2 字重
@@ -2559,15 +2562,7 @@ settings:
         title.zh: H3 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h3-size
-		title: H3 font size
-        title.zh: H3 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.35em
-	- 
+	-
         id: h3-weight
         title: H3 font weight
         title.zh: H3 字重
@@ -2622,15 +2617,7 @@ settings:
         title.zh: H4 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h4-size
-		title: H4 font size
-        title.zh: H4 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.275em
-	- 
+	-
         id: h4-weight
         title: H4 font weight
         title.zh: H4 字重
@@ -2685,15 +2672,7 @@ settings:
         title.zh: H5 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h5-size
-		title: H5 font size
-        title.zh: H5 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.2em
-	- 
+	-
         id: h5-weight
         title: H5 font weight
         title.zh: H5 字重
@@ -2748,15 +2727,7 @@ settings:
         title.zh: H6 字体
 		type: variable-text
 		default: ''
-	- 
-		id: h6-size
-		title: H6 font size
-        title.zh: H6 字体大小
-        description: Accepts any CSS font-size value
-        description.zh: 接受任何 CSS font-size 值
-		type: variable-text
-		default: 1.125em
-	- 
+	-
         id: h6-weight
         title: H6 font weight
         title.zh: H6 字重
@@ -2805,25 +2776,7 @@ settings:
 		title.zh: 段落两端对齐
 		type: class-toggle
 		default: false
-	- 
-        id: line-height-customize
-        title: Paragraph line height
-        title.zh: 段落行高
-        type: variable-number
-        default: 1.5
-	- 
-		id: file-line-width
-		title: Paragraph line width （Need to turn on “Readable line length”）
-        title.zh:  段落行宽（需开启“缩减栏宽”）
-		type: variable-text
-		default: 700px
-    - 
-		id: p-spacing
-		title: Paragraph spacing (Reading mode)
-        title.zh:  段落间距（阅读模式）
-		type: variable-text
-		default: 1em
-    - 
+    -
 		id: p-spacing-br
 		title: Paragraph spacing also takes effect after a line break (Reading mode)
 		title.zh: 段间距也对换行后的内容生效（阅读模式）
@@ -2987,23 +2940,7 @@ settings:
 		type: heading
 		level: 4
 		collapsed: true
-	- 
-		id: link-external-color
-		title: External link color
-        title.zh: 外部链接颜色
-		type: variable-themed-color
-		format: hex
-		default-light: '#'
-		default-dark: '#'
-	- 
-		id: link-external-color-hover
-		title: External link color (hover)
-        title.zh: 外部链接颜色（鼠标悬停时）
-		type: variable-themed-color
-		format: hex
-		default-light: '#'
-		default-dark: '#'
-    - 
+    -
 		id: link-external-decoration
 		title: External link decoration
         title.zh: 外部链接装饰
@@ -3198,6 +3135,7 @@ settings:
         title: Disable Image zoom
         title.zh: 关闭图像缩放
         description: from https://github.com/kepano/obsidian-minimal, author:@kepano
+        description.zh: 来自 obsidian-minimal，作者:@kepano
         type: class-toggle
     - 
         id: Code-heading
@@ -3551,6 +3489,7 @@ settings:
         title: Disable Alternative Checkboxes
         title.zh: 禁用备用复选框
         description: Disable this if you are using your own implementation via a CSS Snippet.
+        description.zh: 如果你使用 CSS 片段实现了自己的复选框样式，请禁用此项。
         type: class-toggle
     -
         id: checkbox-radius
@@ -3605,6 +3544,171 @@ settings:
 		format: hex
 		default-light: '#'
 		default-dark: '#'
+    -
+        id: phycat-spacing-heading
+        title: Phycat Spacing
+        title.zh: Phycat 文章间距
+        type: heading
+        level: 3
+        collapsed: true
+    -
+        id: file-line-width
+        title: File line width
+        title.zh: 阅读区宽度
+        description.zh: 单位px
+        type: variable-number
+        default: 900
+        format: px
+    -
+        id: letter-spacing
+        title: Letter spacing
+        title.zh: 字间距
+        type: variable-number
+        default: 1
+        format: px
+    -
+        id: line-height-customize
+        title: Line height
+        title.zh: 段落行高
+        type: variable-number
+        default: 2.2
+    -
+        id: code-line-height
+        title: code Line height
+        title.zh: 代码行高
+        type: variable-number
+        default: 1.6
+    -
+        id: blockquote-line-height
+        title: blockquote Line height
+        title.zh: 引用块行高
+        type: variable-number
+        default: 1.6
+    -
+        id: table-line-height
+        title: Table Line height
+        title.zh: 表格行高
+        type: variable-number
+        default: 1.8
+    -
+        id: p-spacing
+        title: Paragraph spacing (Reading mode)
+        title.zh: 段落间距（阅读模式）
+        type: variable-text
+        default: 1em
+    -
+        id: phycat-headings-heading
+        title: Phycat Headings
+        title.zh: Phycat 标题设置
+        type: heading
+        level: 3
+        collapsed: true
+    -
+        id: h1-alignment
+        title: H1 Alignment
+        title.zh: H1 对齐方式
+        description: Choose whether H1 titles are centered or left-aligned.
+        description.zh: 选择 H1 标题是居中显示还是居左显示。
+        type: class-select
+        allowEmpty: false
+        default: h1-align-center
+        options:
+          - label: Center (Default)
+            value: h1-align-center
+          - label: Left
+            value: h1-align-left
+    -
+        id: h2-style-select
+        title: H2 Style (Light)
+        title.zh: H2 亮色模式风格
+        description: Choose between capsule or twin pillars style.
+        description.zh: 选择胶囊背景风格或双子塔风格。
+        type: class-select
+        allowEmpty: false
+        default: h2-style-twin
+        options:
+            -
+                label: Twin Pillars
+                value: h2-style-twin
+            -
+                label: Capsule
+                value: h2-style-capsule
+    -
+        id: h2-style-dark-select
+        title: H2 Style (Dark)
+        title.zh: H2 暗色模式风格
+        description: Choose between glass capsule or neon twin pillars style.
+        description.zh: 选择玻璃胶囊风格或霓虹双子塔风格。
+        type: class-select
+        allowEmpty: false
+        default: h2-style-dark-twin
+        options:
+            -
+                label: Neon Twin
+                value: h2-style-dark-twin
+            -
+                label: Glass Capsule
+                value: h2-style-dark-capsule
+    -
+        id: h2-spacing-scale-start
+        title: H2 spacing start
+        title.zh: H2前间距
+        type: variable-number
+        default: 1.318
+    -
+        id: h2-spacing-scale-end
+        title: H2 spacing end
+        title.zh: H2后间距
+        type: variable-number
+        default: 1.318
+    -
+        id: h3-spacing-scale-start
+        title: H3 spacing start
+        title.zh: H3前间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h3-spacing-scale-end
+        title: H3 spacing end
+        title.zh: H3后间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h4-spacing-scale-start
+        title: H4 spacing start
+        title.zh: H4前间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h4-spacing-scale-end
+        title: H4 spacing end
+        title.zh: H4后间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h5-spacing-scale-start
+        title: H5 spacing start
+        title.zh: H5前间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h5-spacing-scale-end
+        title: H5 spacing end
+        title.zh: H5后间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h6-spacing-scale-start
+        title: H6 spacing start
+        title.zh: H6前间距
+        type: variable-number
+        default: 1.5
+    -
+        id: h6-spacing-scale-end
+        title: H6 spacing end
+        title.zh: H6后间距
+        type: variable-number
+        default: 1.5
 
 
 */
@@ -3612,6 +3716,7 @@ settings:
 /* @settings
 
 name: Mobile
+name.zh: 移动端
 id: Mobile
 settings:
     - 
@@ -3630,11 +3735,13 @@ settings:
 /* @settings
 
 name: Plugin
+name.zh: 插件兼容
 id: Plugin
 settings:
     - 
         id: DB Folder
         title: DB Folder
+        title.zh: DB Folder
         type: heading
         collapsed: true
         level: 3
@@ -3660,6 +3767,7 @@ settings:
     - 
         id: Projects
         title: Projects
+        title.zh: Projects
         type: heading
         collapsed: true
         level: 3
@@ -3680,6 +3788,7 @@ settings:
     - 
         id: Surfing
         title: Surfing
+        title.zh: Surfing
         type: heading
         collapsed: true
         level: 3
@@ -3691,6 +3800,7 @@ settings:
     - 
         id: Checklist
         title: Checklist
+        title.zh: Checklist
         type: heading
         collapsed: true
         level: 3

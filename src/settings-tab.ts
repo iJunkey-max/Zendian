@@ -1,5 +1,5 @@
 /**
- * ZENdian settings tab — renders @settings groups as a visual settings UI.
+ * ZENdian settings tab — sidebar navigation with collapsible sections.
  * Adapted from obsidian-style-settings by mgmeyers (MIT License).
  */
 
@@ -7,9 +7,17 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import type ZENdianPlugin from "./main";
 import type { StyleSettingsManager, CSSSettingsGroup, CSSSetting } from "./css-processor";
 
+interface MergedGroup {
+  displayName: string;
+  groups: CSSSettingsGroup[];
+}
+
 export class ZENdianSettingTab extends PluginSettingTab {
   plugin: ZENdianPlugin;
   manager: StyleSettingsManager;
+  private activeNavKey: string | null = null;
+  private navItems: Map<string, HTMLElement> = new Map();
+  private contentSections: Map<string, HTMLElement> = new Map();
 
   constructor(app: App, plugin: ZENdianPlugin, manager: StyleSettingsManager) {
     super(app, plugin);
@@ -20,7 +28,6 @@ export class ZENdianSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "ZENdian Settings" });
 
     const groups = this.manager.getGroups();
     if (groups.length === 0) {
@@ -30,32 +37,124 @@ export class ZENdianSettingTab extends PluginSettingTab {
       return;
     }
 
-    for (const group of groups) {
-      this.renderGroup(containerEl, group);
+    // Merge groups with the same display name
+    const merged = this.mergeGroups(groups);
+
+    if (!this.activeNavKey || !merged.find((m) => m.displayName === this.activeNavKey)) {
+      this.activeNavKey = merged[0].displayName;
+    }
+
+    const wrapper = containerEl.createDiv("zendian-settings-wrapper");
+
+    // Left nav
+    const nav = wrapper.createDiv("zendian-nav");
+    for (const mg of merged) {
+      const item = nav.createDiv("zendian-nav-item");
+      item.textContent = mg.displayName;
+      item.dataset.navKey = mg.displayName;
+      if (mg.displayName === this.activeNavKey) {
+        item.classList.add("active");
+      }
+      item.addEventListener("click", () => {
+        this.switchNav(mg.displayName);
+      });
+      this.navItems.set(mg.displayName, item);
+    }
+
+    // Right content
+    const content = wrapper.createDiv("zendian-content");
+    for (const mg of merged) {
+      const section = content.createDiv("zendian-group-section");
+      section.dataset.navKey = mg.displayName;
+      if (mg.displayName !== this.activeNavKey) {
+        section.style.display = "none";
+      }
+      this.renderMergedGroup(section, mg);
+      this.contentSections.set(mg.displayName, section);
     }
   }
 
-  private renderGroup(containerEl: HTMLElement, group: CSSSettingsGroup) {
-    const section = containerEl.createDiv("zendian-settings-group");
+  private mergeGroups(groups: CSSSettingsGroup[]): MergedGroup[] {
+    const map = new Map<string, CSSSettingsGroup[]>();
+    for (const group of groups) {
+      const key = group.nameZh || group.name || group.id;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(group);
+    }
+    const result: MergedGroup[] = [];
+    for (const [displayName, groupList] of map) {
+      result.push({ displayName, groups: groupList });
+    }
+    return result;
+  }
 
-    // Group header
-    const header = section.createEl("h3", {
-      text: group.nameZh || group.name || group.id,
-    });
-    header.classList.add("zendian-group-header");
+  private switchNav(navKey: string) {
+    if (navKey === this.activeNavKey) return;
+    this.activeNavKey = navKey;
 
-    // Collapse toggle
-    let collapsed = false;
-    header.addEventListener("click", () => {
-      collapsed = !collapsed;
-      section.classList.toggle("collapsed", collapsed);
-    });
+    for (const [key, item] of this.navItems) {
+      item.classList.toggle("active", key === navKey);
+    }
+    for (const [key, section] of this.contentSections) {
+      section.style.display = key === navKey ? "" : "none";
+    }
+  }
 
-    const content = section.createDiv("zendian-group-content");
+  private renderMergedGroup(containerEl: HTMLElement, mg: MergedGroup) {
+    if (mg.groups.length === 1) {
+      this.renderGroupContent(containerEl, mg.groups[0]);
+    } else {
+      // Multiple groups merged — show mode headers
+      for (const group of mg.groups) {
+        const modeHeader = containerEl.createDiv("zendian-mode-header");
+        modeHeader.textContent = group.name || group.id;
+        this.renderGroupContent(containerEl, group);
+      }
+    }
+  }
+
+  private renderGroupContent(containerEl: HTMLElement, group: CSSSettingsGroup) {
+    let currentSection: HTMLElement | null = null;
 
     for (const setting of group.settings) {
-      this.renderSetting(content, group, setting);
+      if (setting.type === "heading") {
+        const headingInfo = this.createCollapsibleHeading(containerEl, setting);
+        currentSection = headingInfo.content;
+        continue;
+      }
+
+      const target = currentSection || containerEl;
+      this.renderSetting(target, group, setting);
     }
+  }
+
+  private createCollapsibleHeading(
+    containerEl: HTMLElement,
+    setting: CSSSetting
+  ): { heading: HTMLElement; content: HTMLElement } {
+    const wrapper = containerEl.createDiv("zendian-heading-wrapper");
+
+    const level = setting.level || 3;
+    const tag = `h${Math.min(Math.max(level, 3), 6)}` as keyof HTMLElementTagNameMap;
+    const heading = wrapper.createEl(tag, {
+      text: setting.titleZh || setting.title || "",
+    });
+    heading.classList.add("zendian-heading");
+
+    const indicator = heading.createSpan("zendian-collapse-indicator");
+    indicator.textContent = "▶";
+
+    const content = wrapper.createDiv("zendian-heading-content");
+    const startCollapsed = !!setting.collapsed;
+    if (startCollapsed) {
+      wrapper.classList.add("collapsed");
+    }
+
+    heading.addEventListener("click", () => {
+      wrapper.classList.toggle("collapsed");
+    });
+
+    return { heading, content };
   }
 
   private renderSetting(
@@ -65,10 +164,9 @@ export class ZENdianSettingTab extends PluginSettingTab {
   ) {
     switch (setting.type) {
       case "heading":
-        this.renderHeading(containerEl, setting);
         break;
       case "info-text":
-        this.renderInfoText(containerEl, setting);
+        this.renderInfoText(containerEl, group, setting);
         break;
       case "class-toggle":
         this.renderToggle(containerEl, group, setting);
@@ -91,20 +189,13 @@ export class ZENdianSettingTab extends PluginSettingTab {
     }
   }
 
-  private renderHeading(containerEl: HTMLElement, setting: CSSSetting) {
-    const level = setting.level || 3;
-    const tag = `h${Math.min(Math.max(level, 3), 6)}` as keyof HTMLElementTagNameMap;
-    const el = containerEl.createEl(tag, {
-      text: setting.titleZh || setting.title || "",
-    });
-    el.classList.add("zendian-heading");
-    if (setting.collapsed) {
-      el.classList.add("zendian-heading-collapsed");
-    }
-  }
-
-  private renderInfoText(containerEl: HTMLElement, setting: CSSSetting) {
-    const text = setting.descriptionZh || setting.description || setting.title || "";
+  private renderInfoText(
+    containerEl: HTMLElement,
+    _group: CSSSettingsGroup,
+    setting: CSSSetting
+  ) {
+    const text =
+      setting.descriptionZh || setting.description || setting.title || "";
     const el = containerEl.createDiv("zendian-info-text");
     if (setting.markdown) {
       el.innerHTML = text;
@@ -119,7 +210,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
     setting: CSSSetting
   ) {
     const fullKey = `${group.id}@@${setting.id}`;
-    const currentValue = this.manager.getSetting(fullKey) ?? setting.default ?? false;
+    const currentValue =
+      this.manager.getSetting(fullKey) ?? setting.default ?? false;
 
     new Setting(containerEl)
       .setName(setting.titleZh || setting.title || setting.id)
@@ -137,7 +229,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
     setting: CSSSetting
   ) {
     const fullKey = `${group.id}@@${setting.id}`;
-    const currentValue = this.manager.getSetting(fullKey) ?? setting.default ?? "";
+    const currentValue =
+      this.manager.getSetting(fullKey) ?? setting.default ?? "";
     const options = setting.options || [];
 
     new Setting(containerEl)
@@ -159,7 +252,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
     setting: CSSSetting
   ) {
     const fullKey = `${group.id}@@${setting.id}`;
-    const currentValue = this.manager.getSetting(fullKey) ?? setting.default ?? 0;
+    const currentValue =
+      this.manager.getSetting(fullKey) ?? setting.default ?? 0;
     const format = setting.format || "";
 
     const s = new Setting(containerEl)
@@ -200,7 +294,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
     setting: CSSSetting
   ) {
     const fullKey = `${group.id}@@${setting.id}`;
-    const currentValue = this.manager.getSetting(fullKey) ?? setting.default ?? "";
+    const currentValue =
+      this.manager.getSetting(fullKey) ?? setting.default ?? "";
 
     new Setting(containerEl)
       .setName(setting.titleZh || setting.title || setting.id)
@@ -218,7 +313,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
     setting: CSSSetting
   ) {
     const fullKey = `${group.id}@@${setting.id}`;
-    const currentValue = this.manager.getSetting(fullKey) ?? setting.default ?? "#000000";
+    const currentValue =
+      this.manager.getSetting(fullKey) ?? setting.default ?? "#000000";
 
     new Setting(containerEl)
       .setName(setting.titleZh || setting.title || setting.id)
@@ -236,15 +332,37 @@ export class ZENdianSettingTab extends PluginSettingTab {
     setting: CSSSetting
   ) {
     const fullKey = `${group.id}@@${setting.id}`;
-    const currentValue = this.manager.getSetting(fullKey) ?? setting.default ?? "#000000";
+    const saved = this.manager.getSetting(fullKey);
+    const currentValue =
+      saved && typeof saved === "object"
+        ? saved
+        : {
+            light: setting.defaultLight || "#000000",
+            dark: setting.defaultDark || "#000000",
+          };
 
     new Setting(containerEl)
       .setName(setting.titleZh || setting.title || setting.id)
       .setDesc(setting.descriptionZh || setting.description || "")
       .addColorPicker((picker) =>
-        picker.setValue(String(currentValue)).onChange(async (value) => {
-          await this.manager.updateSetting(group.id, setting.id, value);
-        })
+        picker
+          .setValue(String(currentValue.light))
+          .onChange(async (value) => {
+            await this.manager.updateSetting(group.id, setting.id, {
+              light: value,
+              dark: currentValue.dark,
+            });
+          })
+      )
+      .addColorPicker((picker) =>
+        picker
+          .setValue(String(currentValue.dark))
+          .onChange(async (value) => {
+            await this.manager.updateSetting(group.id, setting.id, {
+              light: currentValue.light,
+              dark: value,
+            });
+          })
       );
   }
 }

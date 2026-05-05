@@ -13,7 +13,6 @@ const ROOT = resolve(__dirname, "..");
 
 // CSS files in merge order (later files override earlier ones)
 const CSS_MERGE_ORDER = [
-  "css/settings-blocks/phycat-settings.css",
   "css/settings-blocks/border-settings.css",
   "css/base/border-theme.css",
   "css/overlays/phycat-overlay.css",
@@ -51,14 +50,40 @@ function build() {
   }
 
   const infoBlock = `/* @settings
-name: ZENdian Info
-id: zendian-info
+name: ZENdian
+name.zh: ZENdian
+id: zendian
 settings:
     -
-        id: zendian-version
-        title: ZENdian Version
+        id: zendian-info
+        title: Theme Info
+        title.zh: 主题信息
         type: info-text
-        description: "ZENdian v1.0.0 — Based on Border Theme by Akifyss, Phycat overlay, and Style Settings by mgmeyers."
+        description: "ZENdian — An elegant Obsidian theme combining Border Theme by Akifyss, Phycat overlay enhancements, and Style Settings by mgmeyers."
+        description.zh: "ZENdian — 融合 Border 主题（Akifyss）、Phycat 增强覆盖层与 Style Settings（mgmeyers）的优雅 Obsidian 主题。"
+        markdown: true
+    -
+        id: zendian-author
+        title: Author
+        title.zh: 作者
+        type: info-text
+        description: "Junkey"
+        description.zh: "Junkey"
+    -
+        id: zendian-version
+        title: Version
+        title.zh: 版本
+        type: info-text
+        description: "v1.0.0"
+        description.zh: "v1.0.0"
+    -
+        id: zendian-changelog
+        title: Changelog
+        title.zh: 版本记录
+        type: info-text
+        description: "**v1.0.0** — Initial release<br>- Merged Border theme, Phycat overlay, and Style Settings<br>- Apple-style settings panel with sidebar navigation<br>- Full Chinese localization<br>- Rainbow folder support<br>- Theme accent color sync with Obsidian<br>- Default card layout with grid background"
+        description.zh: "**v1.0.0** — 首发版本<br>- 整合 Border 主题、Phycat 覆盖层与 Style Settings<br>- 苹果风格设置面板，侧边栏导航<br>- 全面中文本地化<br>- 彩虹文件夹支持<br>- 主题色与 Obsidian 同步<br>- 默认卡片布局与网格背景"
+        markdown: true
 */
 `;
 

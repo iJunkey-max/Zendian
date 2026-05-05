@@ -207,8 +207,6 @@ body.theme-light {
   --text-accent: var(--primary-color);
   --text-accent-hover: var(--link-hover-color);
   --list-marker-color: var(--primary-color);
-  --interactive-accent: var(--primary-color);
-  --interactive-accent-hover: var(--link-hover-color);
   --text-selection: #dce3e9b6;
   --background-modifier-hover: rgba(0, 0, 0, 0.05);
   --background-modifier-active-hover: rgba(0, 0, 0, 0.1);
@@ -250,8 +248,6 @@ body.theme-dark {
   --text-accent: var(--primary-color);
   --text-accent-hover: var(--link-hover-color);
   --list-marker-color: var(--primary-color);
-  --interactive-accent: var(--primary-color);
-  --interactive-accent-hover: var(--link-hover-color);
   --text-selection: var(--select-text-bg-color);
   --background-modifier-hover: rgba(255, 255, 255, 0.05);
   --background-modifier-active-hover: rgba(255, 255, 255, 0.1);

@@ -13,6 +13,8 @@ export interface CSSSetting {
   descriptionZh?: string;
   type: string;
   default?: any;
+  defaultLight?: string;
+  defaultDark?: string;
   options?: { label: string; value: string }[];
   format?: string;
   opacity?: boolean;
@@ -169,6 +171,12 @@ function parseYAML(content: string): CSSSettingsGroup | null {
       case "default":
         currentSetting.default = parseDefault(value);
         break;
+      case "default-light":
+        currentSetting.defaultLight = value;
+        break;
+      case "default-dark":
+        currentSetting.defaultDark = value;
+        break;
       case "format":
         currentSetting.format = value;
         break;
@@ -255,6 +263,7 @@ export class StyleSettingsManager {
   private parser: CSSSettingsParser;
   private settings: Map<string, any> = new Map();
   private groups: CSSSettingsGroup[] = [];
+  private themeObserver: MutationObserver | null = null;
 
   constructor(plugin: Plugin, parser: CSSSettingsParser) {
     this.plugin = plugin;
@@ -266,12 +275,74 @@ export class StyleSettingsManager {
     for (const [key, value] of Object.entries(savedData)) {
       this.settings.set(key, value);
     }
+    this.syncAccentColor();
     await this.parsePluginCSS();
     this.applyAllSettings();
+    this.observeThemeChange();
   }
 
   cleanup() {
-    // No dynamic styles to clean up
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+      this.themeObserver = null;
+    }
+  }
+
+  syncAccentColor() {
+    try {
+      const el = document.createElement("span");
+      el.style.color = "var(--interactive-accent)";
+      el.style.position = "absolute";
+      el.style.visibility = "hidden";
+      document.body.appendChild(el);
+      const computed = getComputedStyle(el).color;
+      document.body.removeChild(el);
+
+      const rgbMatch = computed.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (!rgbMatch) return;
+
+      const r = parseInt(rgbMatch[1]) / 255;
+      const g = parseInt(rgbMatch[2]) / 255;
+      const b = parseInt(rgbMatch[3]) / 255;
+
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const l = (max + min) / 2;
+
+      if (max === min) {
+        document.body.style.setProperty("--accent-h", "0");
+        document.body.style.setProperty("--accent-s", "0%");
+        document.body.style.setProperty("--accent-l", `${Math.round(l * 100)}%`);
+        return;
+      }
+
+      const d = max - min;
+      const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      let h = 0;
+      if (max === r) {
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+      } else if (max === g) {
+        h = ((b - r) / d + 2) / 6;
+      } else {
+        h = ((r - g) / d + 4) / 6;
+      }
+
+      document.body.style.setProperty("--accent-h", String(Math.round(h * 360)));
+      document.body.style.setProperty("--accent-s", `${Math.round(s * 100)}%`);
+      document.body.style.setProperty("--accent-l", `${Math.round(l * 100)}%`);
+    } catch {
+      console.warn("ZENdian: Could not sync accent color");
+    }
+  }
+
+  private observeThemeChange() {
+    this.themeObserver = new MutationObserver(() => {
+      this.syncAccentColor();
+    });
+    this.themeObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
   }
 
   getGroups(): CSSSettingsGroup[] {
@@ -323,8 +394,8 @@ export class StyleSettingsManager {
     }
   }
 
-  private applySetting(_groupId: string, settingId: string, value: any) {
-    const setting = this.findSetting(settingId);
+  private applySetting(groupId: string, settingId: string, value: any) {
+    const setting = this.findSetting(settingId, groupId);
     if (!setting) return;
 
     switch (setting.type) {
@@ -339,9 +410,7 @@ export class StyleSettingsManager {
       case "class-select":
         if (value && typeof value === "string") {
           // Remove sibling class-select values from the same group
-          const group = this.groups.find((g) =>
-            g.settings.some((s) => s.id === settingId)
-          );
+          const group = this.groups.find((g) => g.id === groupId);
           if (group) {
             for (const s of group.settings) {
               if (s.type === "class-select" && s.id !== settingId && s.options) {
@@ -357,48 +426,43 @@ export class StyleSettingsManager {
         }
         break;
 
-      case "variable-number":
+      case "variable-number": {
+        const numVal = setting.format ? `${value}${setting.format}` : String(value);
+        document.body.style.setProperty(`--${settingId}`, numVal);
+        break;
+      }
+
       case "variable-text":
-        document.documentElement.style.setProperty(
-          `--${settingId}`,
-          String(value)
-        );
+        document.body.style.setProperty(`--${settingId}`, String(value));
         break;
 
       case "variable-color":
-        document.documentElement.style.setProperty(
-          `--${settingId}`,
-          String(value)
-        );
+        document.body.style.setProperty(`--${settingId}`, String(value));
         break;
 
       case "variable-themed-color":
-        // For themed colors, the setting stores { light, dark }
-        // or a single value applied to both
         if (typeof value === "object" && value !== null) {
           if (value.light) {
-            document.documentElement.style.setProperty(
-              `--${settingId}-light`,
-              value.light
-            );
+            document.body.style.setProperty(`--${settingId}-light`, value.light);
           }
           if (value.dark) {
-            document.documentElement.style.setProperty(
-              `--${settingId}-dark`,
-              value.dark
-            );
+            document.body.style.setProperty(`--${settingId}-dark`, value.dark);
           }
         } else {
-          document.documentElement.style.setProperty(
-            `--${settingId}`,
-            String(value)
-          );
+          document.body.style.setProperty(`--${settingId}`, String(value));
         }
         break;
     }
   }
 
-  private findSetting(settingId: string): CSSSetting | undefined {
+  private findSetting(settingId: string, groupId?: string): CSSSetting | undefined {
+    if (groupId) {
+      const group = this.groups.find((g) => g.id === groupId);
+      if (group) {
+        const found = group.settings.find((s) => s.id === settingId);
+        if (found) return found;
+      }
+    }
     for (const group of this.groups) {
       const found = group.settings.find((s) => s.id === settingId);
       if (found) return found;
