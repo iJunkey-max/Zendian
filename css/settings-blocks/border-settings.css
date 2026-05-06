@@ -1344,3 +1344,93 @@ settings:
         description.zh: 为 Checklist 插件的复选框添加不同颜色，区分任务状态
         type: class-toggle
 */
+
+/* @settings
+name: File Tree
+name.zh: 文件树
+id: File-tree
+settings:
+    -
+        id: rainbow-folder
+        title: Enable rainbow folder
+        title.zh: 启用彩虹文件夹
+        description.zh: 为文件树中的文件夹图标添加彩虹色循环效果
+        type: class-toggle
+        default: false
+    -
+        id: rainbow-folder-color-1
+        title: Color 1
+        title.zh: 颜色 1
+        description.zh: 第1个文件夹颜色
+        type: variable-text
+        default: var(--color-red)
+    -
+        id: rainbow-folder-color-2
+        title: Color 2
+        title.zh: 颜色 2
+        description.zh: 第2个文件夹颜色
+        type: variable-text
+        default: var(--color-orange)
+    -
+        id: rainbow-folder-color-3
+        title: Color 3
+        title.zh: 颜色 3
+        description.zh: 第3个文件夹颜色
+        type: variable-text
+        default: var(--color-yellow)
+    -
+        id: rainbow-folder-color-4
+        title: Color 4
+        title.zh: 颜色 4
+        description.zh: 第4个文件夹颜色
+        type: variable-text
+        default: var(--color-green)
+    -
+        id: rainbow-folder-color-5
+        title: Color 5
+        title.zh: 颜色 5
+        description.zh: 第5个文件夹颜色
+        type: variable-text
+        default: var(--color-cyan)
+    -
+        id: rainbow-folder-color-6
+        title: Color 6
+        title.zh: 颜色 6
+        description.zh: 第6个文件夹颜色
+        type: variable-text
+        default: var(--color-blue)
+    -
+        id: rainbow-folder-color-7
+        title: Color 7
+        title.zh: 颜色 7
+        description.zh: 第7个文件夹颜色
+        type: variable-text
+        default: var(--color-purple)
+    -
+        id: rainbow-folder-color-8
+        title: Color 8
+        title.zh: 颜色 8
+        description.zh: 第8个文件夹颜色
+        type: variable-text
+        default: var(--color-pink)
+    -
+        id: rainbow-folder-icon-size
+        title: Folder icon size
+        title.zh: 文件夹图标大小
+        description.zh: 调整文件夹图标的大小
+        type: variable-number
+        default: 16
+        format: px
+        min: 10
+        max: 24
+    -
+        id: rainbow-folder-opacity
+        title: Background opacity
+        title.zh: 背景遮罩透明度
+        description.zh: 调整文件夹标题背景遮罩的透明度，0为完全透明，1为完全不透明
+        type: variable-number
+        default: 0.12
+        min: 0
+        max: 0.5
+        step: 0.02
+*/

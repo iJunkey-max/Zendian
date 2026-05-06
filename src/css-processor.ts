@@ -238,6 +238,8 @@ export class StyleSettingsManager {
   private settings: Map<string, any> = new Map();
   private groups: CSSSettingsGroup[] = [];
   private themeObserver: MutationObserver | null = null;
+  private appliedProperties: Set<string> = new Set();
+  private appliedClasses: Set<string> = new Set();
 
   constructor(plugin: Plugin, parser: CSSSettingsParser) {
     this.plugin = plugin;
@@ -254,9 +256,37 @@ export class StyleSettingsManager {
     this.observeThemeChange();
     // 延迟同步强调色，确保 Obsidian 主题 CSS 已加载
     this.syncAccentColorWithRetry();
+
+    // DEBUG: 检查文件资源管理器 DOM 结构
+    const explorer = document.querySelector('.workspace-leaf-content[data-type="file-explorer"]');
+    if (explorer) {
+      const folderTitles = explorer.querySelectorAll('.nav-folder-title');
+      console.log("[ZENdian] folder titles found:", folderTitles.length);
+      if (folderTitles.length > 0) {
+        const first = folderTitles[0];
+        console.log("[ZENdian] first title tag:", first.tagName, "classes:", first.className);
+        console.log("[ZENdian] first title parent:", first.parentElement?.tagName, first.parentElement?.className);
+        console.log("[ZENdian] first title grandparent:", first.parentElement?.parentElement?.tagName, first.parentElement?.parentElement?.className);
+        // 尝试直接设置背景
+        (first as HTMLElement).style.background = "lime";
+        console.log("[ZENdian] forced lime on first .nav-folder-title");
+      }
+    } else {
+      console.log("[ZENdian] NO file explorer found");
+    }
   }
 
   cleanup() {
+    // 清除所有应用到 body 的 CSS 属性和类名，防止重复加载时叠加
+    for (const prop of this.appliedProperties) {
+      document.body.style.removeProperty(prop);
+    }
+    for (const cls of this.appliedClasses) {
+      document.body.classList.remove(cls);
+    }
+    this.appliedProperties.clear();
+    this.appliedClasses.clear();
+
     if (this.themeObserver) {
       this.themeObserver.disconnect();
       this.themeObserver = null;
@@ -294,6 +324,9 @@ export class StyleSettingsManager {
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
       const l = (max + min) / 2;
+
+      const accentProps = ["--accent-h", "--accent-s", "--accent-l"];
+      accentProps.forEach(p => this.appliedProperties.add(p));
 
       if (max === min) {
         document.body.style.setProperty("--accent-h", "0");
@@ -419,6 +452,7 @@ export class StyleSettingsManager {
           classes.push(...setting.classAliases.split(",").map(s => s.trim()));
         }
         for (const cls of classes) {
+          this.appliedClasses.add(cls);
           if (value) {
             document.body.classList.add(cls);
           } else {
@@ -443,19 +477,25 @@ export class StyleSettingsManager {
               }
             }
           }
+          this.appliedClasses.add(value);
           document.body.classList.add(value);
         }
         break;
 
       case "variable-number": {
+        const prop = `--${settingId}`;
         const numVal = setting.format ? `${value}${setting.format}` : String(value);
-        document.body.style.setProperty(`--${settingId}`, numVal);
+        this.appliedProperties.add(prop);
+        document.body.style.setProperty(prop, numVal);
         break;
       }
 
-      case "variable-text":
-        document.body.style.setProperty(`--${settingId}`, String(value));
+      case "variable-text": {
+        const prop = `--${settingId}`;
+        this.appliedProperties.add(prop);
+        document.body.style.setProperty(prop, String(value));
         break;
+      }
 
     }
   }

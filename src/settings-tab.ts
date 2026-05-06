@@ -68,14 +68,9 @@ const MENU_CONFIG: MenuTab[] = [
       },
       {
         id: "sidebar",
-        title: "Sidebar & File Explorer",
-        titleZh: "侧边栏与文件列表",
+        title: "Sidebar",
+        titleZh: "侧边栏",
         settings: [
-          { groupId: "Components", settingId: "CTA-BTN-enable" },
-          { groupId: "Components", settingId: "file-names-untrim" },
-          { groupId: "Components", settingId: "folder-font-bold" },
-          { groupId: "Components", settingId: "colorful-folder" },
-          { groupId: "Components", settingId: "file-icon-remove" },
           { groupId: "Components", settingId: "outline-enhanced" },
         ],
       },
@@ -105,7 +100,48 @@ const MENU_CONFIG: MenuTab[] = [
   },
 
   // ──────────────────────────────────────────────
-  // 2. 禅意与专注
+  // 2. 文件树
+  // ──────────────────────────────────────────────
+  {
+    id: "file-tree",
+    name: "文件树",
+    icon: "🌲",
+    sections: [
+      {
+        id: "file-tree-basic",
+        title: "File Explorer",
+        titleZh: "文件列表",
+        settings: [
+          { groupId: "Components", settingId: "CTA-BTN-enable" },
+          { groupId: "Components", settingId: "file-names-untrim" },
+          { groupId: "Components", settingId: "folder-font-bold" },
+          { groupId: "Components", settingId: "file-icon-remove" },
+          { groupId: "Components", settingId: "colorful-folder" },
+        ],
+      },
+      {
+        id: "file-tree-rainbow",
+        title: "Rainbow Folder",
+        titleZh: "彩虹文件夹",
+        settings: [
+          { groupId: "File-tree", settingId: "rainbow-folder" },
+          { groupId: "File-tree", settingId: "rainbow-folder-color-1" },
+          { groupId: "File-tree", settingId: "rainbow-folder-color-2" },
+          { groupId: "File-tree", settingId: "rainbow-folder-color-3" },
+          { groupId: "File-tree", settingId: "rainbow-folder-color-4" },
+          { groupId: "File-tree", settingId: "rainbow-folder-color-5" },
+          { groupId: "File-tree", settingId: "rainbow-folder-color-6" },
+          { groupId: "File-tree", settingId: "rainbow-folder-color-7" },
+          { groupId: "File-tree", settingId: "rainbow-folder-color-8" },
+          { groupId: "File-tree", settingId: "rainbow-folder-icon-size" },
+          { groupId: "File-tree", settingId: "rainbow-folder-opacity" },
+        ],
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────
+  // 3. 禅意与专注
   // ──────────────────────────────────────────────
   {
     id: "zen",
@@ -152,7 +188,7 @@ const MENU_CONFIG: MenuTab[] = [
   },
 
   // ──────────────────────────────────────────────
-  // 3. 排版与阅读
+  // 4. 排版与阅读
   // ──────────────────────────────────────────────
   {
     id: "typography",
@@ -254,7 +290,7 @@ const MENU_CONFIG: MenuTab[] = [
   },
 
   // ──────────────────────────────────────────────
-  // 4. 渲染元素
+  // 5. 渲染元素
   // ──────────────────────────────────────────────
   {
     id: "elements",
@@ -329,7 +365,7 @@ const MENU_CONFIG: MenuTab[] = [
   },
 
   // ──────────────────────────────────────────────
-  // 5. 移动端与适配
+  // 6. 移动端与适配
   // ──────────────────────────────────────────────
   {
     id: "mobile",

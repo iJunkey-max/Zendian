@@ -2792,43 +2792,108 @@ body:not(.file-icon-remove) .workspace-leaf-content[data-type="bookmarks"] svg.l
 /*colorful folder icon*/
 
 body:not(.file-icon-remove) .nav-folder:nth-child(8n+2) {
-    --colorful-folder-color: var(--color-red);
+    --colorful-folder-color: var(--rainbow-folder-color-1, var(--color-red));
 }
 
 body:not(.file-icon-remove) .nav-folder:nth-child(8n+3) {
-    --colorful-folder-color: var(--color-orange);
+    --colorful-folder-color: var(--rainbow-folder-color-2, var(--color-orange));
 }
 
 body:not(.file-icon-remove) .nav-folder:nth-child(8n+4) {
-    --colorful-folder-color: var(--color-yellow);
+    --colorful-folder-color: var(--rainbow-folder-color-3, var(--color-yellow));
 }
 
 body:not(.file-icon-remove) .nav-folder:nth-child(8n+5) {
-    --colorful-folder-color: var(--color-green);
+    --colorful-folder-color: var(--rainbow-folder-color-4, var(--color-green));
 }
 
 body:not(.file-icon-remove) .nav-folder:nth-child(8n+6) {
-    --colorful-folder-color: var(--color-cyan);
+    --colorful-folder-color: var(--rainbow-folder-color-5, var(--color-cyan));
 }
 
 body:not(.file-icon-remove) .nav-folder:nth-child(8n+7) {
-    --colorful-folder-color: var(--color-blue);
+    --colorful-folder-color: var(--rainbow-folder-color-6, var(--color-blue));
 }
 
 body:not(.file-icon-remove) .nav-folder:nth-child(8n+8) {
-    --colorful-folder-color: var(--color-purple);
+    --colorful-folder-color: var(--rainbow-folder-color-7, var(--color-purple));
 }
 
 body:not(.file-icon-remove) .nav-folder:nth-child(8n+9) {
-    --colorful-folder-color: var(--color-pink);
+    --colorful-folder-color: var(--rainbow-folder-color-8, var(--color-pink));
 }
 
-body:not(.file-icon-remove).colorful-folder .workspace-leaf-content[data-type="file-explorer"] .tree-item-icon.collapse-icon {
+body:not(.file-icon-remove):is(.colorful-folder, .rainbow-folder) .workspace-leaf-content[data-type="file-explorer"] .tree-item-icon.collapse-icon {
     background-color: var(--colorful-folder-color);
 }
 
-body:not(.file-icon-remove).colorful-folder .nav-folder.mod-root>.nav-folder-title::before {
+body:not(.file-icon-remove):is(.colorful-folder, .rainbow-folder) .nav-folder.mod-root>.nav-folder-title::before {
     background-color: currentColor;
+}
+
+body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .collapse-icon {
+    width: var(--rainbow-folder-icon-size, 16px);
+    height: var(--rainbow-folder-icon-size, 16px);
+}
+
+/*rainbow folder — depth-based background overlay*/
+
+body.rainbow-folder .nav-folder-title {
+    border-left: 3px solid transparent !important;
+    border-radius: 6px;
+}
+
+/* debug: hide ::before to test if it blocks background */
+body.rainbow-folder .nav-folder-title::before {
+    display: none !important;
+}
+
+/* Level 1 */
+body.rainbow-folder .nav-folder.mod-root > .nav-folder > .nav-folder-title {
+    border-left-color: #eb5757 !important;
+    background: lime !important;
+}
+
+/* Level 2 */
+body.rainbow-folder .nav-folder.mod-root > .nav-folder > .nav-folder > .nav-folder-title {
+    border-left-color: #f2994a !important;
+    box-shadow: inset 0 0 0 9999px rgba(242, 153, 74, 0.12) !important;
+}
+
+/* Level 3 */
+body.rainbow-folder .nav-folder.mod-root > .nav-folder > .nav-folder > .nav-folder > .nav-folder-title {
+    border-left-color: #f2c94c !important;
+    box-shadow: inset 0 0 0 9999px rgba(242, 201, 76, 0.12) !important;
+}
+
+/* Level 4 */
+body.rainbow-folder .nav-folder.mod-root > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder-title {
+    border-left-color: #27ae60 !important;
+    box-shadow: inset 0 0 0 9999px rgba(39, 174, 96, 0.12) !important;
+}
+
+/* Level 5 */
+body.rainbow-folder .nav-folder.mod-root > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder-title {
+    border-left-color: #4ecbc4 !important;
+    box-shadow: inset 0 0 0 9999px rgba(78, 203, 196, 0.12) !important;
+}
+
+/* Level 6 */
+body.rainbow-folder .nav-folder.mod-root > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder-title {
+    border-left-color: #2d95ed !important;
+    box-shadow: inset 0 0 0 9999px rgba(45, 149, 237, 0.12) !important;
+}
+
+/* Level 7 */
+body.rainbow-folder .nav-folder.mod-root > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder-title {
+    border-left-color: #9b59b6 !important;
+    box-shadow: inset 0 0 0 9999px rgba(155, 89, 182, 0.12) !important;
+}
+
+/* Level 8+ */
+body.rainbow-folder .nav-folder.mod-root > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder > .nav-folder-title {
+    border-left-color: #e84393 !important;
+    box-shadow: inset 0 0 0 9999px rgba(232, 67, 147, 0.12) !important;
 }
 
 /*====== empty state ======*/
