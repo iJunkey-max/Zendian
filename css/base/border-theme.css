@@ -2831,51 +2831,7 @@ body:not(.file-icon-remove).colorful-folder .nav-folder.mod-root>.nav-folder-tit
     background-color: currentColor;
 }
 
-/*rainbow folder — depth-based background overlay (accent-based)*/
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder-title {
-    border-left: 3px solid transparent !important;
-    border-radius: 6px !important;
-}
-
-/* Level 1 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-1) !important;
-}
-
-/* Level 2 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-2) !important;
-}
-
-/* Level 3 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-3) !important;
-}
-
-/* Level 4 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-4) !important;
-}
-
-/* Level 5 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-5) !important;
-}
-
-/* Level 6 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-6) !important;
-}
-
-/* Level 7 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-7) !important;
-}
-
-/* Level 8 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-8) !important;
-}
+/*rainbow folder — replaced by dynamic style injection in rainbow-folder.module.ts*/
 
 /*====== empty state ======*/
 

@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from "obsidian";
-import { EventBus } from "./core/event-bus";
+import { EventBus, Events } from "./core/event-bus";
 import { SettingsManager } from "./core/settings-manager";
 import { ModuleManager } from "./core/module-manager";
 
@@ -82,7 +82,15 @@ export default class ZENdianPlugin extends Plugin {
     // 3. 加载所有模块
     await this.moduleManager.loadAll();
 
-    // 4. 注册设置面板
+    // 4. 监听主题变更
+    this.registerEvent(
+      this.app.workspace.on("css-change", () => {
+        const isDark = document.body.classList.contains("theme-dark");
+        this.events.emit(Events.THEME_CHANGED, isDark);
+      })
+    );
+
+    // 5. 注册设置面板
     this.addSettingTab(
       new ZENdianSettingTab(this.app, this, this.settingsManager, this.moduleManager)
     );

@@ -2,6 +2,28 @@
 
 ZENdian 插件的所有重要变更将记录在此文件中。
 
+## [2.0.14] - 2026-05-07
+
+### 重构
+
+- 彩色文件夹模块完全重写，从纯 CSS 方案迁移至 JS + CSS 变量方案
+  - 深度计算改为自底向上遍历（计数 `.nav-folder-children` 祖先节点），解决 DOM 结构不匹配问题
+  - 颜色读取改用 `getComputedStyle(document.body)` 获取 Obsidian 原生 HSL 变量（`--accent-h/s/l`），替代临时 DOM 元素解析
+  - 遮罩浓度从线性公式改为指数衰减 `opacity * Math.pow(0.6, level)`，层级差异更明显
+  - 新增 `setInterval` 轮询机制解决插件 load() 时文件树 DOM 尚未挂载的时序问题
+  - 新增 MutationObserver 监听文件树变化（展开/折叠/拖拽），自动重新计算遮罩
+
+### 变更
+
+- 移除旧版彩虹文件夹 8 色设置项（`rainbow-folder-color-1` ~ `rainbow-folder-color-8`）
+- 移除旧版彩虹文件夹 CSS 样式（`border-theme.css` 中约 45 行）
+- 新增 active 文件高亮样式（左侧边框 + 背景色 + 字重加粗）
+
+### 修复
+
+- 修复 `css-change` 事件从未触发的问题，`main.ts` 新增 `app.workspace.on("css-change")` 监听并广播 `THEME_CHANGED`
+- 修复主题切换后遮罩颜色不跟随的问题
+
 ## [2.0.13] - 2026-05-06
 
 ### 重构

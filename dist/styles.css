@@ -1395,62 +1395,6 @@ settings:
         type: class-toggle
         default: false
     -
-        id: rainbow-folder-color-1
-        title: Color 1
-        title.zh: 颜色 1
-        description.zh: 第1个文件夹颜色
-        type: variable-text
-        default: var(--color-red)
-    -
-        id: rainbow-folder-color-2
-        title: Color 2
-        title.zh: 颜色 2
-        description.zh: 第2个文件夹颜色
-        type: variable-text
-        default: var(--color-orange)
-    -
-        id: rainbow-folder-color-3
-        title: Color 3
-        title.zh: 颜色 3
-        description.zh: 第3个文件夹颜色
-        type: variable-text
-        default: var(--color-yellow)
-    -
-        id: rainbow-folder-color-4
-        title: Color 4
-        title.zh: 颜色 4
-        description.zh: 第4个文件夹颜色
-        type: variable-text
-        default: var(--color-green)
-    -
-        id: rainbow-folder-color-5
-        title: Color 5
-        title.zh: 颜色 5
-        description.zh: 第5个文件夹颜色
-        type: variable-text
-        default: var(--color-cyan)
-    -
-        id: rainbow-folder-color-6
-        title: Color 6
-        title.zh: 颜色 6
-        description.zh: 第6个文件夹颜色
-        type: variable-text
-        default: var(--color-blue)
-    -
-        id: rainbow-folder-color-7
-        title: Color 7
-        title.zh: 颜色 7
-        description.zh: 第7个文件夹颜色
-        type: variable-text
-        default: var(--color-purple)
-    -
-        id: rainbow-folder-color-8
-        title: Color 8
-        title.zh: 颜色 8
-        description.zh: 第8个文件夹颜色
-        type: variable-text
-        default: var(--color-pink)
-    -
         id: rainbow-folder-icon-size
         title: Folder icon size
         title.zh: 文件夹图标大小
@@ -4305,51 +4249,7 @@ body:not(.file-icon-remove).colorful-folder .nav-folder.mod-root>.nav-folder-tit
     background-color: currentColor;
 }
 
-/*rainbow folder — depth-based background overlay (accent-based)*/
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder-title {
-    border-left: 3px solid transparent !important;
-    border-radius: 6px !important;
-}
-
-/* Level 1 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-1) !important;
-}
-
-/* Level 2 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-2) !important;
-}
-
-/* Level 3 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-3) !important;
-}
-
-/* Level 4 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-4) !important;
-}
-
-/* Level 5 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-5) !important;
-}
-
-/* Level 6 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-6) !important;
-}
-
-/* Level 7 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-7) !important;
-}
-
-/* Level 8 */
-body.rainbow-folder .workspace-leaf-content[data-type="file-explorer"] .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder .nav-folder-title {
-    background-color: var(--rainbow-folder-bg-8) !important;
-}
+/*rainbow folder — replaced by dynamic style injection in rainbow-folder.module.ts*/
 
 /*====== empty state ======*/
 
