@@ -44,7 +44,10 @@
       "Bash(Copy-Item *)",
       "Bash(Select-Object FullName, Length)",
       "PowerShell(Copy-Item *)",
-      "Bash(Test-Path *)"
+      "Bash(Test-Path *)",
+      "Bash(cp C:/Users/Junkey/MyCode/Zendian/dist/main.js \"C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/\")",
+      "Bash(cp C:/Users/Junkey/MyCode/Zendian/dist/styles.css \"C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/\")",
+      "Bash(cp C:/Users/Junkey/MyCode/Zendian/manifest.json \"C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/\")"
     ]
   }
 }
