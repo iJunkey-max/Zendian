@@ -2,6 +2,18 @@
 
 Obsidian UI 美化插件 — 整合 Border 主题、Phycat Apple 风格覆盖层与 Style Settings，提供统一的设置面板和精致的视觉体验。
 
+## 功能特性
+
+- **自动隐藏** — Tab 栏、侧边栏、状态栏等 UI 元素按需隐藏
+- **专注模式** — 降低非当前行透明度，聚焦编辑
+- **卡片式布局** — 圆角卡片提升视觉层次感
+- **Phycat 排版系统** — 标题、段落、行高、字间距精细控制
+- **H1-H6 标题自定义** — 字体、字重、颜色、分隔线，Tab 切换设置
+- **代码块/引用块/标注/表格** — 全面样式定制
+- **焦点指示器** — 鼠标悬停行高亮，列表层级颜色区分
+- **第三方插件兼容** — DB Folder、Projects、Surfing
+- **移动端适配** — 平板卡片布局、手机端全屏抽屉
+
 ## 快速开始
 
 ### 安装到开发环境
@@ -51,7 +63,7 @@ zendian/
 │   │   ├── border-settings.css    # @settings 定义（组件、外观、编辑器等）
 │   │   └── phycat-settings.css    # Phycat 专属 @settings（间距、标题尺寸）
 │   └── ui/
-│       └── style-settings-ui.css  # 设置面板样式（侧边栏导航、可折叠卡片）
+│       └── style-settings-ui.css  # 设置面板样式（横排选项卡、卡片布局）
 ├── scripts/
 │   └── build-css.mjs              # CSS 合并脚本 — 拼接文件，去重 @settings
 ├── dist/
@@ -121,7 +133,13 @@ settings:
 2. `syncAccentColor()` 读取 Obsidian 的强调色，设置 `--accent-h/s/l`
 3. `applyAllSettings()` 遍历所有设置，将保存的值（或默认值）以 CSS class 或内联 CSS 变量的形式应用到 `document.body`
 4. `observeThemeChange()` 监听 `body` class 变化，主题切换时重新同步强调色和主题色
-5. `settings-tab.ts` 渲染带侧边栏导航和可折叠分组的设置面板
+5. `settings-tab.ts` 渲染带顶部横排选项卡导航的设置面板，分为 6 个选项卡：
+   - **ZENdian** — 插件信息、版本、功能亮点、使用说明
+   - **视图与工作区** — 卡片布局、侧边栏、标签页、动效
+   - **禅意与专注** — 自动隐藏、专注模式、焦点指示器
+   - **排版与阅读** — 段落间距、标题系统、文本细节、链接样式
+   - **渲染元素** — 代码块、引用块、列表、表格、标注、内嵌、图片
+   - **移动端与适配** — 移动端设置、第三方插件兼容
 
 ## 常见开发任务
 

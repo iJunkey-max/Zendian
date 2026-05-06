@@ -32,9 +32,20 @@ interface MenuTab {
   name: string;
   icon: string;
   sections: MenuSection[];
+  isAbout?: boolean;
 }
 
 const MENU_CONFIG: MenuTab[] = [
+  // ──────────────────────────────────────────────
+  // 0. ZENdian 核心信息
+  // ──────────────────────────────────────────────
+  {
+    id: "zendian-about",
+    name: "ZENdian",
+    icon: "✦",
+    sections: [],
+    isAbout: true,
+  },
   // ──────────────────────────────────────────────
   // 1. 视图与工作区
   // ──────────────────────────────────────────────
@@ -359,7 +370,7 @@ const HEADING_LEVELS = ["h1", "h2", "h3", "h4", "h5", "h6"];
 export class ZENdianSettingTab extends PluginSettingTab {
   plugin: ZENdianPlugin;
   manager: StyleSettingsManager;
-  private activeTabId: string = "workspace";
+  private activeTabId: string = "zendian-about";
   private activeHeadingLevel: string = "h1";
   private navItems: Map<string, HTMLElement> = new Map();
   private tabContents: Map<string, HTMLElement> = new Map();
@@ -397,6 +408,34 @@ export class ZENdianSettingTab extends PluginSettingTab {
       this.navItems.set(tab.id, item);
     }
 
+    // Wheel scroll on tab bar
+    nav.addEventListener("wheel", (e) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        nav.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+
+    // Drag scroll on tab bar
+    let isDragging = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    nav.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      startX = e.pageX - nav.offsetLeft;
+      scrollLeft = nav.scrollLeft;
+      nav.style.cursor = "grabbing";
+    });
+    nav.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const x = e.pageX - nav.offsetLeft;
+      nav.scrollLeft = scrollLeft - (x - startX);
+    });
+    const stopDrag = () => { isDragging = false; nav.style.cursor = ""; };
+    nav.addEventListener("mouseup", stopDrag);
+    nav.addEventListener("mouseleave", stopDrag);
+
     // Content
     const content = wrapper.createDiv("zendian-content");
     for (const tab of MENU_CONFIG) {
@@ -405,7 +444,11 @@ export class ZENdianSettingTab extends PluginSettingTab {
       if (tab.id !== this.activeTabId) {
         section.style.display = "none";
       }
-      this.renderTabContent(section, tab);
+      if (tab.isAbout) {
+        this.renderAboutPage(section);
+      } else {
+        this.renderTabContent(section, tab);
+      }
       this.tabContents.set(tab.id, section);
     }
   }
@@ -419,6 +462,58 @@ export class ZENdianSettingTab extends PluginSettingTab {
     }
     for (const [id, section] of this.tabContents) {
       section.style.display = id === tabId ? "" : "none";
+    }
+  }
+
+  private renderAboutPage(containerEl: HTMLElement) {
+    const about = containerEl.createDiv("zendian-about");
+
+    // Header
+    const header = about.createDiv("zendian-about-header");
+    header.createEl("div", { text: "✦", cls: "zendian-about-logo" });
+    header.createEl("h1", { text: "ZENdian", cls: "zendian-about-title" });
+    header.createEl("span", { text: `v${this.plugin.manifest.version}`, cls: "zendian-about-version" });
+
+    // Description
+    const desc = about.createDiv("zendian-about-desc");
+    desc.createEl("p", {
+      text: "一款综合性的 Obsidian UI 美化插件，集成 Border 主题、Phycat 苹果风格配色、增强 Markdown 渲染和 Style Settings 自定义面板。",
+    });
+
+    // Features
+    const features = about.createDiv("zendian-about-features");
+    features.createEl("h3", { text: "功能亮点" });
+    const list = features.createEl("ul");
+    const items = [
+      "自动隐藏 Tab 栏、侧边栏、状态栏等 UI 元素",
+      "专注模式 — 降低非当前行透明度，聚焦编辑",
+      "卡片式布局 — 圆角卡片提升视觉层次",
+      "Phycat 标题与段落间距系统 — 精细排版控制",
+      "H1-H6 标题自定义 — 字体、字重、颜色、分隔线",
+      "代码块、引用块、标注、表格的全面样式定制",
+      "第三方插件兼容 — DB Folder、Projects、Surfing",
+    ];
+    for (const item of items) {
+      list.createEl("li", { text: item });
+    }
+
+    // Author
+    const author = about.createDiv("zendian-about-author");
+    author.createEl("span", { text: "作者：" });
+    author.createEl("a", { text: "Junkey", href: "https://github.com/Junkey" });
+
+    // Usage
+    const usage = about.createDiv("zendian-about-usage");
+    usage.createEl("h3", { text: "使用说明" });
+    const usageList = usage.createEl("ul");
+    const usageItems = [
+      "通过上方选项卡切换不同设置分类",
+      "所有设置即时生效，无需重启 Obsidian",
+      "支持鼠标滚轮和拖拽滚动选项卡栏",
+      "设置数据自动保存在 Obsidian 配置中",
+    ];
+    for (const item of usageItems) {
+      usageList.createEl("li", { text: item });
     }
   }
 
