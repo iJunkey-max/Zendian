@@ -118,7 +118,13 @@
 /* Heading level tabs (H1-H6 switcher) */
 
 .zendian-heading-tabs {
+    display: flex;
+    gap: 4px;
     margin-top: 8px;
+    padding: 4px;
+    background: var(--background-primary);
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
 }
 
 .zendian-heading-tab-buttons {
@@ -168,6 +174,172 @@
 .zendian-heading-tab-content .setting-item:first-child {
     border-top: none;
     padding-top: 0;
+}
+
+/* Heading top row (inline title + global controls) */
+
+.zendian-heading-top-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.zendian-heading-group {
+    flex: 1;
+    min-width: 0;
+}
+
+.zendian-heading-group-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.zendian-heading-group .setting-item {
+    border-top: 1px solid var(--background-modifier-border);
+    padding: 6px 0;
+}
+
+.zendian-heading-group .setting-item:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+/* Heading settings area */
+
+.zendian-heading-settings {
+    padding: 4px 0;
+}
+
+.zendian-heading-settings .setting-item {
+    border-top: 1px solid var(--background-modifier-border);
+    padding: 8px 0;
+}
+
+.zendian-heading-settings .setting-item:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+/* H1-H6 grid table */
+
+.zendian-heading-grid {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.zendian-heading-grid th {
+    padding: 8px 4px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-normal);
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.zendian-heading-grid th:first-child {
+    width: 60px;
+    text-align: left;
+    padding-left: 12px;
+}
+
+.zendian-heading-grid td {
+    padding: 6px 4px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.zendian-heading-grid tr:last-child td {
+    border-bottom: none;
+}
+
+.zendian-heading-grid tr:hover td {
+    background: var(--background-modifier-hover);
+}
+
+.zendian-hg-label {
+    text-align: left !important;
+    padding-left: 12px !important;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.zendian-hg-cell {
+    min-width: 60px;
+}
+
+.zendian-hg-toggle {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--interactive-accent);
+}
+
+.zendian-hg-slider {
+    width: 56px;
+    height: 4px;
+    cursor: pointer;
+    accent-color: var(--interactive-accent);
+    vertical-align: middle;
+}
+
+.zendian-hg-val {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.zendian-hg-select {
+    width: 56px;
+    padding: 2px 1px;
+    font-size: 11px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    cursor: pointer;
+}
+
+.zendian-hg-select-dark {
+    margin-top: 4px;
+    display: block;
+}
+
+@media (max-width: 600px) {
+    .zendian-heading-grid {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .zendian-heading-grid th,
+    .zendian-heading-grid td {
+        min-width: 50px;
+    }
+
+    .zendian-hg-slider {
+        width: 44px;
+    }
+
+    .zendian-hg-select {
+        width: 48px;
+    }
 }
 
 /* Heading levels grid table */

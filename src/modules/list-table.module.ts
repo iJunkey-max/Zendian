@@ -16,7 +16,6 @@ const TABLE_WIDTH_CLASSES = [
 const CSS_VARS = [
   "--list-indent",
   "--list-spacing",
-  "--checkbox-radius",
   "--table-width",
   "--table-header-background-light",
   "--table-header-background-dark",
@@ -46,7 +45,6 @@ export class ListTableModule implements IFeatureModule {
   private apply(s: PluginSettings["listTable"]): void {
     setCSSVar(document.body, "--list-indent", s.listIndent);
     setCSSVar(document.body, "--list-spacing", s.listSpacing);
-    setCSSVar(document.body, "--checkbox-radius", s.checkboxRadius);
     setCSSVar(document.body, "--table-header-background-light", s.tableHeaderBgLight);
     setCSSVar(document.body, "--table-header-background-dark", s.tableHeaderBgDark);
 

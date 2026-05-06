@@ -16,13 +16,7 @@ const STYLE_CLASSES = [
 ];
 
 const CSS_VARS = [
-  "--callout-border-width",
   "--callout-border-opacity",
-  "--callout-padding",
-  "--callout-title-padding",
-  "--callout-title-size",
-  "--callout-content-padding",
-  "--callout-content-radius",
 ];
 
 export class CalloutModule implements IFeatureModule {
@@ -49,13 +43,6 @@ export class CalloutModule implements IFeatureModule {
   private apply(s: PluginSettings["callout"]): void {
     for (const cls of STYLE_CLASSES) this.classes.remove(cls);
     this.classes.add(`callout-style-${s.style}`);
-
-    setCSSVar(document.body, "--callout-border-width", s.borderWidth);
     setCSSVar(document.body, "--callout-border-opacity", String(s.borderOpacity));
-    setCSSVar(document.body, "--callout-padding", s.padding);
-    setCSSVar(document.body, "--callout-title-padding", s.titlePadding);
-    setCSSVar(document.body, "--callout-title-size", s.titleSize);
-    setCSSVar(document.body, "--callout-content-padding", s.contentPadding);
-    setCSSVar(document.body, "--callout-content-radius", s.contentRadius);
   }
 }

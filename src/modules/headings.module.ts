@@ -22,12 +22,15 @@ const COLOR_CLASSES: Record<Level, string[]> = {
   h6: ["h6-color-default", "h6-color-designated"],
 };
 
-/** H1 对齐 */
-const H1_ALIGN_CLASSES = ["h1-align-center", "h1-align-left"];
-
-/** H2 风格 */
-const H2_LIGHT_CLASSES = ["h2-style-twin", "h2-style-capsule"];
-const H2_DARK_CLASSES = ["h2-style-dark-twin", "h2-style-dark-capsule"];
+/** 每个级别的对齐 class */
+const ALIGN_CLASSES: Record<Level, string[]> = {
+  h1: ["h1-align-left", "h1-align-center", "h1-align-right"],
+  h2: ["h2-align-left", "h2-align-center", "h2-align-right"],
+  h3: ["h3-align-left", "h3-align-center", "h3-align-right"],
+  h4: ["h4-align-left", "h4-align-center", "h4-align-right"],
+  h5: ["h5-align-left", "h5-align-center", "h5-align-right"],
+  h6: ["h6-align-left", "h6-align-center", "h6-align-right"],
+};
 
 export class HeadingsModule implements IFeatureModule {
   readonly id = "headings";
@@ -41,19 +44,15 @@ export class HeadingsModule implements IFeatureModule {
 
   unload(): void {
     this.classes.cleanup();
-    // 清理所有 CSS 变量
     for (const lv of LEVELS) {
-      removeCSSVar(document.body, `--${lv}-font`);
       removeCSSVar(document.body, `--${lv}-weight`);
       removeCSSVar(document.body, `--${lv}-text-transform`);
       removeCSSVar(document.body, `--${lv}-spacing-scale-start`);
       removeCSSVar(document.body, `--${lv}-spacing-scale-end`);
       removeCSSVar(document.body, `--${lv}-size`);
     }
-    removeCSSVar(document.body, "--inline-title-font");
     removeCSSVar(document.body, "--inline-title-size");
     removeCSSVar(document.body, "--inline-title-weight");
-    removeCSSVar(document.body, "--inline-title-text-transform");
   }
 
   onSettingsChanged(changedKeys: string[], settings: PluginSettings): void {
@@ -69,36 +68,26 @@ export class HeadingsModule implements IFeatureModule {
 
     // inlineTitle
     this.classes.toggle("inline-title-divider-remove", s.inlineTitle.dividerRemove);
-    setCSSVar(document.body, "--inline-title-font", s.inlineTitle.font);
     setCSSVar(document.body, "--inline-title-size", s.inlineTitle.size);
     setCSSVar(document.body, "--inline-title-weight", String(s.inlineTitle.weight));
-    setCSSVar(document.body, "--inline-title-text-transform", s.inlineTitle.textTransform);
 
     // H1-H6 通用设置
     for (const lv of LEVELS) {
       const h = s[lv] as any;
       this.classes.toggle(`${lv}-divider-on`, h.divider);
-      setCSSVar(document.body, `--${lv}-font`, h.font);
       setCSSVar(document.body, `--${lv}-weight`, String(h.weight));
-      setCSSVar(document.body, `--${lv}-text-transform`, h.textTransform);
+      setCSSVar(document.body, `--${lv}-text-transform`, h.textTransform || "");
       setCSSVar(document.body, `--${lv}-spacing-scale-start`, String(h.spacingStart));
       setCSSVar(document.body, `--${lv}-spacing-scale-end`, String(h.spacingEnd));
       setCSSVar(document.body, `--${lv}-size`, String(h.size));
+
+      // alignment: class-select
+      for (const cls of ALIGN_CLASSES[lv]) this.classes.remove(cls);
+      this.classes.add(`${lv}-align-${h.alignment || "left"}`);
 
       // color-select: class-select
       for (const cls of COLOR_CLASSES[lv]) this.classes.remove(cls);
       this.classes.add(`${lv}-color-${h.colorScheme === "accent" ? "designated" : "default"}`);
     }
-
-    // H1 特有：alignment
-    for (const cls of H1_ALIGN_CLASSES) this.classes.remove(cls);
-    this.classes.add(`h1-align-${s.h1.alignment}`);
-
-    // H2 特有：light/dark 风格
-    for (const cls of H2_LIGHT_CLASSES) this.classes.remove(cls);
-    this.classes.add(`h2-style-${s.h2.lightStyle}`);
-
-    for (const cls of H2_DARK_CLASSES) this.classes.remove(cls);
-    this.classes.add(`h2-style-dark-${s.h2.darkStyle}`);
   }
 }

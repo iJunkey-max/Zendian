@@ -2,6 +2,50 @@
 
 ZENdian 插件的所有重要变更将记录在此文件中。
 
+## [2.0.13] - 2026-05-06
+
+### 重构
+
+- 全面重构为「核心框架 + 功能模块」架构
+  - 核心层：EventBus（事件总线）、SettingsManager（设置管理）、ModuleManager（模块生命周期管理）
+  - 22 个功能模块独立封装，各自管理 CSS class 和 CSS 变量的加载与卸载
+  - 设置数据从扁平 key-value（`"groupId@@settingId"`）迁移至结构化 PluginSettings 对象
+  - 旧代码隔离至 `src/legacy/`，新架构从零搭建骨架
+- 设置面板重写：基于结构化设置对象的 Tab 式 UI，支持 toggle/select/number/number-slider 渲染
+- 提取公共 DOM 工具函数（ClassTracker、setCSSVar、removeCSSVar）至 `src/utils/dom.ts`
+
+### 新增
+
+- 标题系统（H1-H6）新增 Tab 切换组件，点击 Tab 动态绑定对应级别的设置
+- 所有标题级别（H1-H6）新增「对齐方式」选项（居左/居中/居右）
+- 标题设置新增「文本转换」选项（无/大写/小写/首字母大写）
+- 标题设置新增「字号」滑条（0.8 ~ 2.5）
+- 文件夹层级遮罩功能：基于主题色，按文件夹层级递增遮罩深度，替代原有彩虹文件夹
+
+### 变更
+
+- 设置面板全面精简：移除所有颜色相关设置（颜色由主题色决定）
+- 移除标题的字体设置，统一跟随 Obsidian 编辑器字体
+- 移除标题的分隔线、字重、文本转换选项，简化为对齐 + 字号 + 前后间距
+- 移除 H2 的亮色/暗色风格选项
+- 链接装饰设置从 6 项精简为 3 项，text 输入改为 select 下拉
+- 列表缩进、网格背景尺寸、嵌入最大高度等 text 输入改为 select 下拉
+- 阅读区宽度、字号、间距等 text 输入改为 slider 滑条
+- 移除段落间距、段间距对换行生效、外部链接滤镜、复选框圆角等低频设置
+- 移除"不修剪文件名"、"指示代码块行号"等低频设置
+- 移除标注模块的 padding/titlePadding/titleSize/contentPadding/contentRadius
+- 移除嵌入模块的 padding/borderRadius/fontStyle
+- 移除文件夹图标大小设置
+
+### 修复
+
+- 修复彩虹文件夹 CSS 选择器不匹配当前 Obsidian DOM 结构的问题
+  - 根目录无 `.mod-root` 类名，改用 `.workspace-leaf-content[data-type="file-explorer"]` 作为起点
+  - 选择器从直接子代（`>`）改为后代匹配（空格），通过 `.nav-folder` 嵌套次数区分层级
+- 修复文件夹遮罩颜色被主题覆盖的问题，所有属性添加 `!important`
+- 修复 H1-H6 Tab 栏纵向排布的问题，添加 `display: flex`
+- 修复 `rainbow-folder` class 错误影响文件图标颜色的问题，图标改色仅属于 `colorful-folder`
+
 ## [2.0.5] - 2026-05-06
 
 ### 新增

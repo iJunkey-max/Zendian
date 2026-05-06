@@ -1,17 +1,32 @@
 /**
- * 彩虹文件夹模块
- * 8 色循环 + 图标大小 + 背景透明度
+ * 文件夹层级遮罩模块
+ * 基于主题色，按层级递增遮罩深度
  */
 
 import type { IFeatureModule, ModuleContext } from "../types/module.types";
 import type { PluginSettings } from "../types/settings.types";
 import { ClassTracker, setCSSVar, removeCSSVar } from "../utils/dom";
 
-const COLOR_COUNT = 8;
+const LEVEL_COUNT = 8;
+
+/** 读取主题色并转为 rgba */
+function getAccentRGBA(opacity: number): string {
+  const temp = document.createElement("div");
+  temp.style.color = "var(--interactive-accent)";
+  temp.style.display = "none";
+  document.body.appendChild(temp);
+  const computed = getComputedStyle(temp).color;
+  document.body.removeChild(temp);
+  const match = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (match) {
+    return `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${opacity})`;
+  }
+  return `rgba(100, 100, 200, ${opacity})`;
+}
 
 export class RainbowFolderModule implements IFeatureModule {
   readonly id = "rainbow-folder";
-  readonly name = "彩虹文件夹";
+  readonly name = "文件夹层级遮罩";
 
   private classes = new ClassTracker(document.body);
 
@@ -21,11 +36,9 @@ export class RainbowFolderModule implements IFeatureModule {
 
   unload(): void {
     this.classes.cleanup();
-    for (let i = 1; i <= COLOR_COUNT; i++) {
-      removeCSSVar(document.body, `--rainbow-folder-color-${i}`);
+    for (let i = 1; i <= LEVEL_COUNT; i++) {
+      removeCSSVar(document.body, `--rainbow-folder-bg-${i}`);
     }
-    removeCSSVar(document.body, "--rainbow-folder-icon-size");
-    removeCSSVar(document.body, "--rainbow-folder-opacity");
   }
 
   onSettingsChanged(changedKeys: string[], settings: PluginSettings): void {
@@ -37,11 +50,9 @@ export class RainbowFolderModule implements IFeatureModule {
   private apply(s: PluginSettings["rainbowFolder"]): void {
     this.classes.toggle("rainbow-folder", s.enabled);
 
-    for (let i = 0; i < COLOR_COUNT; i++) {
-      setCSSVar(document.body, `--rainbow-folder-color-${i + 1}`, s.colors[i]);
+    for (let i = 1; i <= LEVEL_COUNT; i++) {
+      const levelOpacity = (i / LEVEL_COUNT) * s.opacity;
+      setCSSVar(document.body, `--rainbow-folder-bg-${i}`, getAccentRGBA(levelOpacity));
     }
-
-    setCSSVar(document.body, "--rainbow-folder-icon-size", `${s.iconSize}px`);
-    setCSSVar(document.body, "--rainbow-folder-opacity", String(s.opacity));
   }
 }

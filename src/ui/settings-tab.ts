@@ -1,6 +1,6 @@
 /**
  * ZENdian 设置面板
- * 基于结构化 PluginSettings 的完整设置 UI
+ * 精简版：无字体设置、无颜色设置，text 输入改为 select/slider
  */
 
 import { App, PluginSettingTab, Setting } from "obsidian";
@@ -15,31 +15,23 @@ import type { PluginSettings } from "../types/settings.types";
 
 interface SettingDef {
   id: string;
-  title: string;
   titleZh: string;
-  type: "toggle" | "select" | "number" | "text" | "number-slider";
-  /** 从 PluginSettings 读取值 */
+  type: "toggle" | "select" | "number" | "number-slider";
   get: (s: PluginSettings) => any;
-  /** 写入值到 PluginSettings */
   set: (s: PluginSettings, val: any) => Partial<PluginSettings[keyof PluginSettings]>;
-  /** select 的选项 */
   options?: { label: string; value: string }[];
-  /** number-slider 的范围 */
   min?: number;
   max?: number;
   step?: number;
-  /** number 的单位后缀 */
   format?: string;
-  /** 条件禁用 */
-  dependsOn?: { check: (s: PluginSettings) => boolean };
-  default?: any;
 }
 
 interface SectionDef {
   id: string;
   title: string;
   titleZh: string;
-  settings: SettingDef[];
+  settings?: SettingDef[];
+  headingTabs?: boolean;
 }
 
 interface TabDef {
@@ -51,57 +43,23 @@ interface TabDef {
 }
 
 // ============================================================
-// 辅助函数：快速定义设置项
+// 辅助函数
 // ============================================================
 
-function toggle(
-  id: string,
-  titleZh: string,
-  get: (s: PluginSettings) => boolean,
-  set: (s: PluginSettings, v: boolean) => any
-): SettingDef {
-  return { id, title: id, titleZh, type: "toggle", get, set: (s, v) => set(s, v) };
+function toggle(id: string, titleZh: string, get: (s: PluginSettings) => boolean, set: (s: PluginSettings, v: boolean) => any): SettingDef {
+  return { id, titleZh, type: "toggle", get, set: (s, v) => set(s, v) };
 }
 
-function select(
-  id: string,
-  titleZh: string,
-  options: { label: string; value: string }[],
-  get: (s: PluginSettings) => string,
-  set: (s: PluginSettings, v: string) => any
-): SettingDef {
-  return { id, title: id, titleZh, type: "select", get, set: (s, v) => set(s, v), options };
+function select(id: string, titleZh: string, options: { label: string; value: string }[], get: (s: PluginSettings) => string, set: (s: PluginSettings, v: string) => any): SettingDef {
+  return { id, titleZh, type: "select", get, set: (s, v) => set(s, v), options };
 }
 
-function num(
-  id: string,
-  titleZh: string,
-  get: (s: PluginSettings) => number,
-  set: (s: PluginSettings, v: number) => any,
-  opts?: { min?: number; max?: number; step?: number; format?: string }
-): SettingDef {
-  return { id, title: id, titleZh, type: "number", get, set: (s, v) => set(s, v), ...opts };
+function num(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, opts?: { min?: number; max?: number; step?: number; format?: string }): SettingDef {
+  return { id, titleZh, type: "number", get, set: (s, v) => set(s, v), ...opts };
 }
 
-function slider(
-  id: string,
-  titleZh: string,
-  get: (s: PluginSettings) => number,
-  set: (s: PluginSettings, v: number) => any,
-  min: number,
-  max: number,
-  step: number
-): SettingDef {
-  return { id, title: id, titleZh, type: "number-slider", get, set: (s, v) => set(s, v), min, max, step };
-}
-
-function text(
-  id: string,
-  titleZh: string,
-  get: (s: PluginSettings) => string,
-  set: (s: PluginSettings, v: string) => any
-): SettingDef {
-  return { id, title: id, titleZh, type: "text", get, set: (s, v) => set(s, v) };
+function slider(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, min: number, max: number, step: number): SettingDef {
+  return { id, titleZh, type: "number-slider", get, set: (s, v) => set(s, v), min, max, step };
 }
 
 // ============================================================
@@ -109,9 +67,6 @@ function text(
 // ============================================================
 
 const MENU_CONFIG: TabDef[] = [
-  // ──────────────────────────────────────────────
-  // 0. 关于
-  // ──────────────────────────────────────────────
   {
     id: "zendian-about",
     name: "ZENdian",
@@ -119,61 +74,42 @@ const MENU_CONFIG: TabDef[] = [
     sections: [],
     isAbout: true,
   },
-
-  // ──────────────────────────────────────────────
-  // 1. 视图与工作区
-  // ──────────────────────────────────────────────
   {
     id: "workspace",
     name: "视图与工作区",
     icon: "🖥️",
     sections: [
       {
-        id: "card-layout",
-        title: "Card & Layout",
-        titleZh: "卡片与布局",
+        id: "card-layout", title: "Card & Layout", titleZh: "卡片与布局",
         settings: [
           toggle("card-layout-open", "启用卡片布局", (s) => s.cardLayout.enabled, (s, v) => ({ cardLayout: { ...s.cardLayout, enabled: v } })),
           toggle("immersive-canvas", "沉浸式白板", (s) => s.canvas.immersive, (s, v) => ({ canvas: { ...s.canvas, immersive: v } })),
-          text("canvas-card-border-width", "Canvas 卡片边框", (s) => s.cardLayout.canvasBorder, (s, v) => ({ cardLayout: { ...s.cardLayout, canvasBorder: v } })),
           select("canvas-card-menu", "Canvas 卡片菜单位置", [
-            { label: "居中", value: "center" },
-            { label: "左侧", value: "left" },
-            { label: "右侧", value: "right" },
+            { label: "居中", value: "center" }, { label: "左侧", value: "left" }, { label: "右侧", value: "right" },
           ], (s) => s.cardLayout.canvasMenu, (s, v) => ({ cardLayout: { ...s.cardLayout, canvasMenu: v as any } })),
           toggle("media-embed-card-border-off", "移除媒体卡片边框", (s) => s.cardLayout.mediaEmbedBorderOff, (s, v) => ({ cardLayout: { ...s.cardLayout, mediaEmbedBorderOff: v } })),
         ],
       },
       {
-        id: "sidebar",
-        title: "Sidebar",
-        titleZh: "侧边栏",
+        id: "sidebar", title: "Sidebar", titleZh: "侧边栏",
         settings: [
           toggle("outline-enhanced", "增强大纲样式", (s) => s.outline.enhanced, (s, v) => ({ outline: { ...s.outline, enhanced: v } })),
         ],
       },
       {
-        id: "tabs",
-        title: "Tabs",
-        titleZh: "新标签页",
+        id: "tabs", title: "Tabs", titleZh: "新标签页",
         settings: [
           select("new-tab-btn-select", "新标签页按钮", [
-            { label: "文字按钮（Obsidian 默认）", value: "text-btn-restore" },
-            { label: "默认", value: "default" },
+            { label: "文字按钮（Obsidian 默认）", value: "text-btn-restore" }, { label: "默认", value: "default" },
           ], (s) => s.newTab.buttonStyle, (s, v) => ({ newTab: { ...s.newTab, buttonStyle: v as any } })),
           select("new-tab-image-select", "新标签页图像", [
-            { label: "无", value: "none" },
-            { label: "Obsidian Logo", value: "default" },
-            { label: "旧版默认", value: "old" },
-            { label: "自定义", value: "customize" },
+            { label: "无", value: "none" }, { label: "Obsidian Logo", value: "default" },
+            { label: "旧版默认", value: "old" }, { label: "自定义", value: "customize" },
           ], (s) => s.newTab.imageStyle, (s, v) => ({ newTab: { ...s.newTab, imageStyle: v as any } })),
-          text("new-tab-image", "自定义图像 URL", (s) => s.newTab.imageUrl, (s, v) => ({ newTab: { ...s.newTab, imageUrl: v } })),
         ],
       },
       {
-        id: "ui-details",
-        title: "UI Details & Animation",
-        titleZh: "界面细节与动效",
+        id: "ui-details", title: "UI Details", titleZh: "界面细节",
         settings: [
           toggle("scrollbar-hide", "隐藏滚动条", (s) => s.scrollbar.hide, (s, v) => ({ scrollbar: { ...s.scrollbar, hide: v } })),
           toggle("restored-scrollbars", "还原滚动条样式", (s) => s.scrollbar.restored, (s, v) => ({ scrollbar: { ...s.scrollbar, restored: v } })),
@@ -184,59 +120,36 @@ const MENU_CONFIG: TabDef[] = [
       },
     ],
   },
-
-  // ──────────────────────────────────────────────
-  // 2. 文件树
-  // ──────────────────────────────────────────────
   {
     id: "file-tree",
     name: "文件树",
     icon: "🌲",
     sections: [
       {
-        id: "file-tree-basic",
-        title: "File Explorer",
-        titleZh: "文件列表",
+        id: "file-tree-basic", title: "File Explorer", titleZh: "文件列表",
         settings: [
           toggle("CTA-BTN-enable", "更大的新建笔记按钮", (s) => s.fileTree.ctaBtnEnable, (s, v) => ({ fileTree: { ...s.fileTree, ctaBtnEnable: v } })),
-          toggle("file-names-untrim", "不修剪文件名", (s) => s.fileTree.fileNamesUntrim, (s, v) => ({ fileTree: { ...s.fileTree, fileNamesUntrim: v } })),
           toggle("folder-font-bold", "加粗文件夹字体", (s) => s.fileTree.folderFontBold, (s, v) => ({ fileTree: { ...s.fileTree, folderFontBold: v } })),
           toggle("file-icon-remove", "移除自定义图标", (s) => s.fileTree.fileIconRemove, (s, v) => ({ fileTree: { ...s.fileTree, fileIconRemove: v } })),
           toggle("colorful-folder", "多彩文件夹图标", (s) => s.fileTree.colorfulFolder, (s, v) => ({ fileTree: { ...s.fileTree, colorfulFolder: v } })),
         ],
       },
       {
-        id: "file-tree-rainbow",
-        title: "Rainbow Folder",
-        titleZh: "彩虹文件夹",
+        id: "file-tree-rainbow", title: "Folder Overlay", titleZh: "文件夹层级遮罩",
         settings: [
-          toggle("rainbow-folder", "启用彩虹文件夹", (s) => s.rainbowFolder.enabled, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, enabled: v } })),
-          ...Array.from({ length: 8 }, (_, i) =>
-            text(`rainbow-folder-color-${i + 1}`, `颜色 ${i + 1}`, (s) => s.rainbowFolder.colors[i], (s, v) => {
-              const colors = [...s.rainbowFolder.colors];
-              colors[i] = v;
-              return { rainbowFolder: { ...s.rainbowFolder, colors } };
-            })
-          ),
-          num("rainbow-folder-icon-size", "图标大小", (s) => s.rainbowFolder.iconSize, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, iconSize: v } }), { min: 10, max: 24, format: "px" }),
-          slider("rainbow-folder-opacity", "背景透明度", (s) => s.rainbowFolder.opacity, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, opacity: v } }), 0, 1, 0.01),
+          toggle("rainbow-folder", "启用层级遮罩", (s) => s.rainbowFolder.enabled, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, enabled: v } })),
+          slider("rainbow-folder-opacity", "遮罩深度", (s) => s.rainbowFolder.opacity, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, opacity: v } }), 0.05, 0.8, 0.05),
         ],
       },
     ],
   },
-
-  // ──────────────────────────────────────────────
-  // 3. 禅意与专注
-  // ──────────────────────────────────────────────
   {
     id: "zen",
     name: "禅意与专注",
     icon: "🧘",
     sections: [
       {
-        id: "auto-hide",
-        title: "Auto Hide",
-        titleZh: "自动隐藏",
+        id: "auto-hide", title: "Auto Hide", titleZh: "自动隐藏",
         settings: [
           toggle("tab-autohide", "隐藏标签栏", (s) => s.autoHide.tab, (s, v) => ({ autoHide: { ...s.autoHide, tab: v } })),
           toggle("tab-title-bar-autohide", "隐藏标题栏", (s) => s.autoHide.tabBar, (s, v) => ({ autoHide: { ...s.autoHide, tabBar: v } })),
@@ -247,213 +160,112 @@ const MENU_CONFIG: TabDef[] = [
         ],
       },
       {
-        id: "focus-mode",
-        title: "Focus Mode",
-        titleZh: "专注模式",
+        id: "focus-mode", title: "Focus Mode", titleZh: "专注模式",
         settings: [
           toggle("border-focus-mode", "启用专注模式", (s) => s.editorEnhance.focusMode, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusMode: v } })),
           slider("line-normal-opacity", "普通行透明度", (s) => s.editorEnhance.focusModeOpacity, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeOpacity: v } }), 0.05, 1, 0.05),
         ],
       },
       {
-        id: "hover-indicator",
-        title: "Hover Indicator",
-        titleZh: "焦点指示",
+        id: "hover-indicator", title: "Hover Indicator", titleZh: "焦点指示",
         settings: [
           toggle("line-hover-indicator", "启用焦点指示器", (s) => s.editorEnhance.hoverIndicator, (s, v) => ({ editorEnhance: { ...s.editorEnhance, hoverIndicator: v } })),
           toggle("focus-indicator-list-level", "指示列表层级", (s) => s.editorEnhance.hoverIndicatorListLevel, (s, v) => ({ editorEnhance: { ...s.editorEnhance, hoverIndicatorListLevel: v } })),
-          toggle("focus-indicator-codeblock-line-number", "指示代码块行号", (s) => s.editorEnhance.hoverIndicatorCodeblockLineNumber, (s, v) => ({ editorEnhance: { ...s.editorEnhance, hoverIndicatorCodeblockLineNumber: v } })),
         ],
       },
     ],
   },
-
-  // ──────────────────────────────────────────────
-  // 4. 排版与阅读
-  // ──────────────────────────────────────────────
   {
     id: "typography",
     name: "排版与阅读",
     icon: "📝",
     sections: [
       {
-        id: "page-paragraph",
-        title: "Page & Paragraph",
-        titleZh: "页面与段落",
+        id: "page-paragraph", title: "Page & Paragraph", titleZh: "页面与段落",
         settings: [
-          num("file-line-width", "阅读区宽度", (s) => s.typography.fileLineWidth, (s, v) => ({ typography: { ...s.typography, fileLineWidth: v } }), { min: 400, max: 1600, format: "px" }),
+          slider("file-line-width", "阅读区宽度", (s) => s.typography.fileLineWidth, (s, v) => ({ typography: { ...s.typography, fileLineWidth: v } }), 400, 1600, 50),
           toggle("editor-grid-background-pattren", "网格背景图案", (s) => s.editorEnhance.gridBackground, (s, v) => ({ editorEnhance: { ...s.editorEnhance, gridBackground: v } })),
-          text("grid-background-pattern-size", "网格背景尺寸", (s) => s.editorEnhance.gridBackgroundSize, (s, v) => ({ editorEnhance: { ...s.editorEnhance, gridBackgroundSize: v } })),
+          select("grid-background-pattern-size", "网格背景尺寸", [
+            { label: "小", value: "24px" }, { label: "中", value: "36px" }, { label: "大", value: "48px" },
+          ], (s) => s.editorEnhance.gridBackgroundSize, (s, v) => ({ editorEnhance: { ...s.editorEnhance, gridBackgroundSize: v } })),
           toggle("text-align-justify", "段落两端对齐", (s) => s.typography.textAlignJustify, (s, v) => ({ typography: { ...s.typography, textAlignJustify: v } })),
-          text("p-spacing", "段落间距", (s) => s.typography.paragraphSpacing, (s, v) => ({ typography: { ...s.typography, paragraphSpacing: v } })),
-          toggle("p-spacing-br", "段间距对换行生效", (s) => s.typography.paragraphSpacingBr, (s, v) => ({ typography: { ...s.typography, paragraphSpacingBr: v } })),
           slider("letter-spacing", "字间距", (s) => s.typography.letterSpacing, (s, v) => ({ typography: { ...s.typography, letterSpacing: v } }), 0, 5, 0.5),
           slider("line-height-customize", "段落行高", (s) => s.typography.lineHeight, (s, v) => ({ typography: { ...s.typography, lineHeight: v } }), 1, 3, 0.1),
         ],
       },
       {
-        id: "heading-system",
-        title: "Heading System",
-        titleZh: "标题系统",
-        settings: [
-          // Inline title
-          toggle("inline-title-divider-remove", "移除页内标题分隔线", (s) => s.headings.inlineTitle.dividerRemove, (s, v) => ({ headings: { ...s.headings, inlineTitle: { ...s.headings.inlineTitle, dividerRemove: v } } })),
-          text("inline-title-font", "页内标题字体", (s) => s.headings.inlineTitle.font, (s, v) => ({ headings: { ...s.headings, inlineTitle: { ...s.headings.inlineTitle, font: v } } })),
-          text("inline-title-size", "页内标题大小", (s) => s.headings.inlineTitle.size, (s, v) => ({ headings: { ...s.headings, inlineTitle: { ...s.headings.inlineTitle, size: v } } })),
-          num("inline-title-weight", "页内标题字重", (s) => s.headings.inlineTitle.weight, (s, v) => ({ headings: { ...s.headings, inlineTitle: { ...s.headings.inlineTitle, weight: v } } })),
-          text("inline-title-text-transform", "页内标题 text-transform", (s) => s.headings.inlineTitle.textTransform, (s, v) => ({ headings: { ...s.headings, inlineTitle: { ...s.headings.inlineTitle, textTransform: v } } })),
-          // Global
-          toggle("heading-indicator-off", "移除标题指示器", (s) => s.headings.indicatorOff, (s, v) => ({ headings: { ...s.headings, indicatorOff: v } })),
-          toggle("collapse-icon-restore", "还原标题折叠图标", (s) => s.headings.collapseIconRestore, (s, v) => ({ headings: { ...s.headings, collapseIconRestore: v } })),
-          // H1
-          select("h1-alignment", "H1 对齐方式", [
-            { label: "居中", value: "center" },
-            { label: "居左", value: "left" },
-          ], (s) => s.headings.h1.alignment, (s, v) => ({ headings: { ...s.headings, h1: { ...s.headings.h1, alignment: v as any } } })),
-          toggle("h1-divider-on", "H1 分隔线", (s) => s.headings.h1.divider, (s, v) => ({ headings: { ...s.headings, h1: { ...s.headings.h1, divider: v } } })),
-          text("h1-font", "H1 字体", (s) => s.headings.h1.font, (s, v) => ({ headings: { ...s.headings, h1: { ...s.headings.h1, font: v } } })),
-          num("h1-weight", "H1 字重", (s) => s.headings.h1.weight, (s, v) => ({ headings: { ...s.headings, h1: { ...s.headings.h1, weight: v } } })),
-          text("h1-text-transform", "H1 text-transform", (s) => s.headings.h1.textTransform, (s, v) => ({ headings: { ...s.headings, h1: { ...s.headings.h1, textTransform: v } } })),
-          select("h1-color-select", "H1 颜色", [
-            { label: "默认", value: "default" },
-            { label: "强调色", value: "accent" },
-          ], (s) => s.headings.h1.colorScheme, (s, v) => ({ headings: { ...s.headings, h1: { ...s.headings.h1, colorScheme: v as any } } })),
-          // H2
-          select("h2-style-select", "H2 亮色风格", [
-            { label: "双子塔", value: "twin" },
-            { label: "胶囊", value: "capsule" },
-          ], (s) => s.headings.h2.lightStyle, (s, v) => ({ headings: { ...s.headings, h2: { ...s.headings.h2, lightStyle: v as any } } })),
-          select("h2-style-dark-select", "H2 暗色风格", [
-            { label: "霓虹双子塔", value: "neon-twin" },
-            { label: "玻璃胶囊", value: "glass-capsule" },
-          ], (s) => s.headings.h2.darkStyle, (s, v) => ({ headings: { ...s.headings, h2: { ...s.headings.h2, darkStyle: v as any } } })),
-          toggle("h2-divider-on", "H2 分隔线", (s) => s.headings.h2.divider, (s, v) => ({ headings: { ...s.headings, h2: { ...s.headings.h2, divider: v } } })),
-          text("h2-font", "H2 字体", (s) => s.headings.h2.font, (s, v) => ({ headings: { ...s.headings, h2: { ...s.headings.h2, font: v } } })),
-          num("h2-weight", "H2 字重", (s) => s.headings.h2.weight, (s, v) => ({ headings: { ...s.headings, h2: { ...s.headings.h2, weight: v } } })),
-          text("h2-text-transform", "H2 text-transform", (s) => s.headings.h2.textTransform, (s, v) => ({ headings: { ...s.headings, h2: { ...s.headings.h2, textTransform: v } } })),
-          select("h2-color-select", "H2 颜色", [
-            { label: "默认", value: "default" },
-            { label: "强调色", value: "accent" },
-          ], (s) => s.headings.h2.colorScheme, (s, v) => ({ headings: { ...s.headings, h2: { ...s.headings.h2, colorScheme: v as any } } })),
-          slider("h2-spacing-scale-start", "H2 前间距", (s) => s.headings.h2.spacingStart, (s, v) => ({ headings: { ...s.headings, h2: { ...s.headings.h2, spacingStart: v } } }), 0.5, 3, 0.1),
-          slider("h2-spacing-scale-end", "H2 后间距", (s) => s.headings.h2.spacingEnd, (s, v) => ({ headings: { ...s.headings, h2: { ...s.headings.h2, spacingEnd: v } } }), 0.5, 3, 0.1),
-          // H3-H6
-          ...(["h3", "h4", "h5", "h6"] as const).flatMap((lv) => {
-            const h = (s: PluginSettings) => s.headings[lv];
-            const S = (s: PluginSettings, partial: any) => ({ headings: { ...s.headings, [lv]: { ...s.headings[lv], ...partial } } });
-            return [
-              toggle(`${lv}-divider-on`, `${lv.toUpperCase()} 分隔线`, (s) => h(s).divider, (s, v) => S(s, { divider: v })),
-              text(`${lv}-font`, `${lv.toUpperCase()} 字体`, (s) => h(s).font, (s, v) => S(s, { font: v })),
-              num(`${lv}-weight`, `${lv.toUpperCase()} 字重`, (s) => h(s).weight, (s, v) => S(s, { weight: v })),
-              text(`${lv}-text-transform`, `${lv.toUpperCase()} text-transform`, (s) => h(s).textTransform, (s, v) => S(s, { textTransform: v })),
-              select(`${lv}-color-select`, `${lv.toUpperCase()} 颜色`, [
-                { label: "默认", value: "default" },
-                { label: "强调色", value: "accent" },
-              ], (s) => h(s).colorScheme, (s, v) => S(s, { colorScheme: v })),
-              slider(`${lv}-spacing-scale-start`, `${lv.toUpperCase()} 前间距`, (s) => h(s).spacingStart, (s, v) => S(s, { spacingStart: v }), 0.5, 3, 0.1),
-              slider(`${lv}-spacing-scale-end`, `${lv.toUpperCase()} 后间距`, (s) => h(s).spacingEnd, (s, v) => S(s, { spacingEnd: v }), 0.5, 3, 0.1),
-            ];
-          }),
-        ],
+        id: "heading-system", title: "Heading System", titleZh: "标题系统",
+        headingTabs: true,
       },
       {
-        id: "text-details",
-        title: "Text Details",
-        titleZh: "文本细节",
+        id: "text-details", title: "Text Details", titleZh: "文本细节",
         settings: [
-          text("link-decoration", "链接装饰", (s) => s.link.decoration, (s, v) => ({ link: { ...s.link, decoration: v } })),
-          text("link-decoration-hover", "链接装饰（悬停）", (s) => s.link.decorationHover, (s, v) => ({ link: { ...s.link, decorationHover: v } })),
-          text("link-decoration-thickness", "链接装饰粗细", (s) => s.link.decorationThickness, (s, v) => ({ link: { ...s.link, decorationThickness: v } })),
-          text("link-external-decoration", "外部链接装饰", (s) => s.link.externalDecoration, (s, v) => ({ link: { ...s.link, externalDecoration: v } })),
-          text("link-external-decoration-hover", "外部链接装饰（悬停）", (s) => s.link.externalDecorationHover, (s, v) => ({ link: { ...s.link, externalDecorationHover: v } })),
-          text("link-external-filter", "外部链接滤镜", (s) => s.link.externalFilter, (s, v) => ({ link: { ...s.link, externalFilter: v } })),
+          select("link-decoration", "链接装饰", [
+            { label: "下划线偏移", value: "underline-offset" }, { label: "下划线", value: "underline" },
+            { label: "无装饰", value: "none" }, { label: "虚线", value: "dotted" },
+          ], (s) => s.link.decoration, (s, v) => ({ link: { ...s.link, decoration: v } })),
+          select("link-decoration-thickness", "链接装饰粗细", [
+            { label: "自动", value: "auto" }, { label: "细", value: "1px" }, { label: "粗", value: "2px" },
+          ], (s) => s.link.decorationThickness, (s, v) => ({ link: { ...s.link, decorationThickness: v } })),
+          select("link-external-decoration", "外部链接样式", [
+            { label: "下划线偏移", value: "underline-offset" }, { label: "下划线", value: "underline" },
+            { label: "无装饰", value: "none" }, { label: "虚线", value: "dotted" },
+          ], (s) => s.link.externalDecoration, (s, v) => ({ link: { ...s.link, externalDecoration: v } })),
         ],
       },
     ],
   },
-
-  // ──────────────────────────────────────────────
-  // 5. 渲染元素
-  // ──────────────────────────────────────────────
   {
     id: "elements",
     name: "渲染元素",
     icon: "🧩",
     sections: [
       {
-        id: "code-blockquote",
-        title: "Code & Blockquotes",
-        titleZh: "代码与引用",
+        id: "code-blockquote", title: "Code & Blockquotes", titleZh: "代码与引用",
         settings: [
           select("codeblock-style-select", "代码块主题", [
-            { label: "自定义", value: "customize" },
-            { label: "Dracula", value: "dracula" },
-            { label: "Solarized Light", value: "solarized-light" },
-            { label: "Solarized Dark", value: "solarized-dark" },
+            { label: "自定义", value: "customize" }, { label: "Dracula", value: "dracula" },
+            { label: "Solarized Light", value: "solarized-light" }, { label: "Solarized Dark", value: "solarized-dark" },
             { label: "One Dark", value: "one-dark" },
           ], (s) => s.codeBlock.theme, (s, v) => ({ codeBlock: { ...s.codeBlock, theme: v as any } })),
-          text("code-background-light", "代码块背景（亮色）", (s) => s.codeBlock.backgroundLight, (s, v) => ({ codeBlock: { ...s.codeBlock, backgroundLight: v } })),
-          text("code-border-light", "代码块边框（亮色）", (s) => s.codeBlock.borderLight, (s, v) => ({ codeBlock: { ...s.codeBlock, borderLight: v } })),
-          text("code-background-dark", "代码块背景（暗色）", (s) => s.codeBlock.backgroundDark, (s, v) => ({ codeBlock: { ...s.codeBlock, backgroundDark: v } })),
-          text("code-border-dark", "代码块边框（暗色）", (s) => s.codeBlock.borderDark, (s, v) => ({ codeBlock: { ...s.codeBlock, borderDark: v } })),
           slider("code-line-height", "代码行高", (s) => s.typography.codeLineHeight, (s, v) => ({ typography: { ...s.typography, codeLineHeight: v } }), 1, 3, 0.1),
-          text("blockquote-background-light", "引用块背景（亮色）", (s) => s.blockquote.backgroundLight, (s, v) => ({ blockquote: { ...s.blockquote, backgroundLight: v } })),
-          text("blockquote-background-dark", "引用块背景（暗色）", (s) => s.blockquote.backgroundDark, (s, v) => ({ blockquote: { ...s.blockquote, backgroundDark: v } })),
           slider("blockquote-line-height", "引用块行高", (s) => s.typography.blockquoteLineHeight, (s, v) => ({ typography: { ...s.typography, blockquoteLineHeight: v } }), 1, 3, 0.1),
         ],
       },
       {
-        id: "list-table",
-        title: "Lists & Tables",
-        titleZh: "列表与表格",
+        id: "list-table", title: "Lists & Tables", titleZh: "列表与表格",
         settings: [
-          text("list-indent", "列表缩进", (s) => s.listTable.listIndent, (s, v) => ({ listTable: { ...s.listTable, listIndent: v } })),
-          text("list-spacing", "列表间距", (s) => s.listTable.listSpacing, (s, v) => ({ listTable: { ...s.listTable, listSpacing: v } })),
+          select("list-indent", "列表缩进", [
+            { label: "紧凑", value: "1.5em" }, { label: "标准", value: "2.25em" }, { label: "宽松", value: "3em" },
+          ], (s) => s.listTable.listIndent, (s, v) => ({ listTable: { ...s.listTable, listIndent: v } })),
+          slider("list-spacing", "列表间距", (s) => parseFloat(s.listTable.listSpacing) || 0.075, (s, v) => ({ listTable: { ...s.listTable, listSpacing: `${v}em` } }), 0, 1, 0.025),
           toggle("ul-marker-restore", "恢复无序列表默认样式", (s) => s.listTable.ulMarkerRestore, (s, v) => ({ listTable: { ...s.listTable, ulMarkerRestore: v } })),
           toggle("disable-alternative-checkboxes", "禁用备用复选框", (s) => s.listTable.disableAlternativeCheckboxes, (s, v) => ({ listTable: { ...s.listTable, disableAlternativeCheckboxes: v } })),
-          text("checkbox-radius", "复选框圆角", (s) => s.listTable.checkboxRadius, (s, v) => ({ listTable: { ...s.listTable, checkboxRadius: v } })),
           toggle("colorful-checkbox", "多彩复选框", (s) => s.checkbox.colorful, (s, v) => ({ checkbox: { ...s.checkbox, colorful: v } })),
           select("table-width-select", "表格宽度", [
-            { label: "与行宽一致", value: "default" },
-            { label: "Obsidian 默认", value: "obsidian-default" },
-            { label: "自定义", value: "customized" },
+            { label: "与行宽一致", value: "default" }, { label: "Obsidian 默认", value: "obsidian-default" }, { label: "自定义", value: "customized" },
           ], (s) => s.listTable.tableWidthMode, (s, v) => ({ listTable: { ...s.listTable, tableWidthMode: v as any } })),
           slider("table-width", "自定义表格宽度", (s) => s.listTable.tableWidth, (s, v) => ({ listTable: { ...s.listTable, tableWidth: v } }), 10, 100, 1),
-          text("table-header-background-light", "表头背景（亮色）", (s) => s.listTable.tableHeaderBgLight, (s, v) => ({ listTable: { ...s.listTable, tableHeaderBgLight: v } })),
-          text("table-header-background-dark", "表头背景（暗色）", (s) => s.listTable.tableHeaderBgDark, (s, v) => ({ listTable: { ...s.listTable, tableHeaderBgDark: v } })),
           slider("table-line-height", "表格行高", (s) => s.typography.tableLineHeight, (s, v) => ({ typography: { ...s.typography, tableLineHeight: v } }), 1, 3, 0.1),
         ],
       },
       {
-        id: "callout-embed",
-        title: "Callouts & Embeds",
-        titleZh: "标注与内嵌",
+        id: "callout-embed", title: "Callouts & Embeds", titleZh: "标注与内嵌",
         settings: [
           select("callout-style-select", "标注风格", [
-            { label: "自定义", value: "customize" },
-            { label: "风格 1", value: "style-1" },
-            { label: "风格 2", value: "style-2" },
-            { label: "风格 3", value: "style-3" },
-            { label: "风格 4", value: "style-4" },
+            { label: "自定义", value: "customize" }, { label: "风格 1", value: "style-1" },
+            { label: "风格 2", value: "style-2" }, { label: "风格 3", value: "style-3" }, { label: "风格 4", value: "style-4" },
           ], (s) => s.callout.style, (s, v) => ({ callout: { ...s.callout, style: v as any } })),
-          text("callout-border-width", "标注边框宽度", (s) => s.callout.borderWidth, (s, v) => ({ callout: { ...s.callout, borderWidth: v } })),
           slider("callout-border-opacity", "标注边框透明度", (s) => s.callout.borderOpacity, (s, v) => ({ callout: { ...s.callout, borderOpacity: v } }), 0, 1, 0.05),
-          text("callout-padding", "标注内边距", (s) => s.callout.padding, (s, v) => ({ callout: { ...s.callout, padding: v } })),
-          text("callout-title-padding", "标注标题内边距", (s) => s.callout.titlePadding, (s, v) => ({ callout: { ...s.callout, titlePadding: v } })),
-          text("callout-title-size", "标注标题大小", (s) => s.callout.titleSize, (s, v) => ({ callout: { ...s.callout, titleSize: v } })),
-          text("callout-content-padding", "标注内容内边距", (s) => s.callout.contentPadding, (s, v) => ({ callout: { ...s.callout, contentPadding: v } })),
-          text("callout-content-radius", "标注内容圆角", (s) => s.callout.contentRadius, (s, v) => ({ callout: { ...s.callout, contentRadius: v } })),
           toggle("seamless-embeds", "无缝嵌入", (s) => s.embed.seamless, (s, v) => ({ embed: { ...s.embed, seamless: v } })),
-          text("embed-padding", "嵌入内边距", (s) => s.embed.padding, (s, v) => ({ embed: { ...s.embed, padding: v } })),
-          text("embed-border-radius", "嵌入圆角", (s) => s.embed.borderRadius, (s, v) => ({ embed: { ...s.embed, borderRadius: v } })),
-          text("embed-font-style", "嵌入字体风格", (s) => s.embed.fontStyle, (s, v) => ({ embed: { ...s.embed, fontStyle: v } })),
-          text("embed-max-height", "嵌入最大高度", (s) => s.embed.maxHeight, (s, v) => ({ embed: { ...s.embed, maxHeight: v } })),
+          select("embed-max-height", "嵌入最大高度", [
+            { label: "不限制", value: "" }, { label: "300px", value: "300px" },
+            { label: "500px", value: "500px" }, { label: "800px", value: "800px" },
+          ], (s) => s.embed.maxHeight, (s, v) => ({ embed: { ...s.embed, maxHeight: v } })),
         ],
       },
       {
-        id: "images",
-        title: "Images",
-        titleZh: "图像",
+        id: "images", title: "Images", titleZh: "图像",
         settings: [
           toggle("img-center-align", "图像居中", (s) => s.image.centerAlign, (s, v) => ({ image: { ...s.image, centerAlign: v } })),
           toggle("img-darken", "暗黑模式暗化图像", (s) => s.image.darken, (s, v) => ({ image: { ...s.image, darken: v } })),
@@ -462,39 +274,27 @@ const MENU_CONFIG: TabDef[] = [
       },
     ],
   },
-
-  // ──────────────────────────────────────────────
-  // 6. 移动端与适配
-  // ──────────────────────────────────────────────
   {
     id: "mobile",
     name: "移动端与适配",
     icon: "📱",
     sections: [
       {
-        id: "mobile-layout",
-        title: "Mobile Layout",
-        titleZh: "移动端布局",
+        id: "mobile-layout", title: "Mobile Layout", titleZh: "移动端布局",
         settings: [
           toggle("card-layout-pad-open", "平板卡片布局", (s) => s.mobile.cardLayoutPad, (s, v) => ({ mobile: { ...s.mobile, cardLayoutPad: v } })),
           toggle("drawer-phone-full-width", "手机侧边栏全屏", (s) => s.mobile.drawerPhoneFullWidth, (s, v) => ({ mobile: { ...s.mobile, drawerPhoneFullWidth: v } })),
         ],
       },
       {
-        id: "plugin-compat",
-        title: "Plugin Compatibility",
-        titleZh: "第三方插件适配",
+        id: "plugin-compat", title: "Plugin Compatibility", titleZh: "第三方插件适配",
         settings: [
           toggle("DB-table-full-width-off", "关闭 DB Folder 全宽", (s) => s.pluginCompat.dbTableFullWidthOff, (s, v) => ({ pluginCompat: { ...s.pluginCompat, dbTableFullWidthOff: v } })),
           select("DB-table-bg-color", "DB Folder 背景色", [
-            { label: "默认", value: "default" },
-            { label: "适配背景", value: "adapt" },
-            { label: "统一背景", value: "unify" },
+            { label: "默认", value: "default" }, { label: "适配背景", value: "adapt" }, { label: "统一背景", value: "unify" },
           ], (s) => s.pluginCompat.dbTableBgColor, (s, v) => ({ pluginCompat: { ...s.pluginCompat, dbTableBgColor: v as any } })),
           select("Projects-bg-color", "Projects 背景色", [
-            { label: "默认", value: "default" },
-            { label: "适配背景", value: "adapt" },
-            { label: "统一背景", value: "unify" },
+            { label: "默认", value: "default" }, { label: "适配背景", value: "adapt" }, { label: "统一背景", value: "unify" },
           ], (s) => s.pluginCompat.projectsBgColor, (s, v) => ({ pluginCompat: { ...s.pluginCompat, projectsBgColor: v as any } })),
           toggle("Surfing-bookmark-bar-hide", "Surfing 隐藏书签栏", (s) => s.pluginCompat.surfingBookmarkBarHide, (s, v) => ({ pluginCompat: { ...s.pluginCompat, surfingBookmarkBarHide: v } })),
         ],
@@ -504,7 +304,138 @@ const MENU_CONFIG: TabDef[] = [
 ];
 
 // ============================================================
-// 设置面板
+// H1-H6 Tab 组件
+// ============================================================
+
+type HeadingLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+const HEADING_LEVELS: HeadingLevel[] = ["h1", "h2", "h3", "h4", "h5", "h6"];
+
+const WEIGHT_OPTIONS = [
+  { label: "300 细", value: "300" }, { label: "400 常规", value: "400" }, { label: "500 中", value: "500" },
+  { label: "600 半粗", value: "600" }, { label: "700 粗", value: "700" }, { label: "900 特粗", value: "900" },
+];
+
+function renderHeadingTabs(
+  containerEl: HTMLElement,
+  settingsManager: SettingsManager,
+): void {
+  // ---- 顶部：inline title + 全局 ----
+  const topRow = containerEl.createDiv("zendian-heading-top-row");
+
+  const inlineGroup = topRow.createDiv("zendian-heading-group");
+  inlineGroup.createEl("span", { text: "页内标题", cls: "zendian-heading-group-label" });
+  new Setting(inlineGroup).setName("移除分隔线").addToggle((t) => {
+    const s = settingsManager.getSettings();
+    t.setValue(s.headings.inlineTitle.dividerRemove);
+    t.onChange(async (v) => { await settingsManager.updateMultiple({ headings: { ...s.headings, inlineTitle: { ...s.headings.inlineTitle, dividerRemove: v } } }); });
+  });
+  new Setting(inlineGroup).setName("字号").addSlider((sl) => {
+    const s = settingsManager.getSettings();
+    sl.setLimits(0.8, 3, 0.1);
+    sl.setValue(parseFloat(s.headings.inlineTitle.size) || 1.5);
+    sl.setDynamicTooltip();
+    sl.onChange(async (v) => { await settingsManager.updateMultiple({ headings: { ...s.headings, inlineTitle: { ...s.headings.inlineTitle, size: `${v}em` } } }); });
+  });
+  new Setting(inlineGroup).setName("字重").addDropdown((d) => {
+    const s = settingsManager.getSettings();
+    for (const o of WEIGHT_OPTIONS) d.addOption(o.value, o.label);
+    d.setValue(String(s.headings.inlineTitle.weight));
+    d.onChange(async (v) => { await settingsManager.updateMultiple({ headings: { ...s.headings, inlineTitle: { ...s.headings.inlineTitle, weight: Number(v) } } }); });
+  });
+
+  const globalGroup = topRow.createDiv("zendian-heading-group");
+  globalGroup.createEl("span", { text: "全局", cls: "zendian-heading-group-label" });
+  new Setting(globalGroup).setName("移除指示器").addToggle((t) => {
+    const s = settingsManager.getSettings();
+    t.setValue(s.headings.indicatorOff);
+    t.onChange(async (v) => { await settingsManager.updateMultiple({ headings: { ...s.headings, indicatorOff: v } }); });
+  });
+  new Setting(globalGroup).setName("还原折叠图标").addToggle((t) => {
+    const s = settingsManager.getSettings();
+    t.setValue(s.headings.collapseIconRestore);
+    t.onChange(async (v) => { await settingsManager.updateMultiple({ headings: { ...s.headings, collapseIconRestore: v } }); });
+  });
+
+  // ---- Tab 栏 ----
+  const tabBar = containerEl.createDiv("zendian-heading-tabs");
+  const tabBtns = new Map<HeadingLevel, HTMLElement>();
+  let active: HeadingLevel = "h1";
+
+  for (const lv of HEADING_LEVELS) {
+    const btn = tabBar.createDiv("zendian-heading-tab-btn");
+    btn.textContent = lv.toUpperCase();
+    btn.dataset.level = lv;
+    if (lv === active) btn.classList.add("active");
+    tabBtns.set(lv, btn);
+  }
+
+  // ---- 设置区 ----
+  const area = containerEl.createDiv("zendian-heading-settings");
+
+  function renderLevel(lv: HeadingLevel): void {
+    area.empty();
+    const s = settingsManager.getSettings();
+    const h = s.headings[lv] as any;
+
+    // 通用设置
+    new Setting(area).setName("对齐方式").addDropdown((d) => {
+      d.addOption("left", "居左");
+      d.addOption("center", "居中");
+      d.addOption("right", "居右");
+      d.setValue(h.alignment || "left");
+      d.onChange(async (v) => {
+        const cur = settingsManager.getSettings();
+        await settingsManager.updateMultiple({ headings: { ...cur.headings, [lv]: { ...cur.headings[lv], alignment: v } } });
+      });
+    });
+
+    new Setting(area).setName("字号").addSlider((sl) => {
+      sl.setLimits(0.8, 2.5, 0.01);
+      sl.setValue(h.size);
+      sl.setDynamicTooltip();
+      sl.onChange(async (v) => {
+        const cur = settingsManager.getSettings();
+        await settingsManager.updateMultiple({ headings: { ...cur.headings, [lv]: { ...cur.headings[lv], size: v } } });
+      });
+    });
+
+    new Setting(area).setName("前间距").addSlider((sl) => {
+      sl.setLimits(0.5, 3, 0.1);
+      sl.setValue(h.spacingStart);
+      sl.setDynamicTooltip();
+      sl.onChange(async (v) => {
+        const cur = settingsManager.getSettings();
+        await settingsManager.updateMultiple({ headings: { ...cur.headings, [lv]: { ...cur.headings[lv], spacingStart: v } } });
+      });
+    });
+
+    new Setting(area).setName("后间距").addSlider((sl) => {
+      sl.setLimits(0.5, 3, 0.1);
+      sl.setValue(h.spacingEnd);
+      sl.setDynamicTooltip();
+      sl.onChange(async (v) => {
+        const cur = settingsManager.getSettings();
+        await settingsManager.updateMultiple({ headings: { ...cur.headings, [lv]: { ...cur.headings[lv], spacingEnd: v } } });
+      });
+    });
+  }
+
+  // Tab 切换事件
+  tabBar.addEventListener("click", (e) => {
+    const target = (e.target as HTMLElement).closest(".zendian-heading-tab-btn") as HTMLElement | null;
+    if (!target) return;
+    const lv = target.dataset.level as HeadingLevel;
+    if (lv === active) return;
+    active = lv;
+    for (const [k, btn] of tabBtns) btn.classList.toggle("active", k === lv);
+    renderLevel(lv);
+  });
+
+  renderLevel(active);
+}
+
+// ============================================================
+// 设置面板主类
 // ============================================================
 
 export class ZENdianSettingTab extends PluginSettingTab {
@@ -514,12 +445,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
   private navItems = new Map<string, HTMLElement>();
   private tabContents = new Map<string, HTMLElement>();
 
-  constructor(
-    app: App,
-    plugin: ZENdianPlugin,
-    settingsManager: SettingsManager,
-    moduleManager: ModuleManager
-  ) {
+  constructor(app: App, plugin: ZENdianPlugin, settingsManager: SettingsManager, moduleManager: ModuleManager) {
     super(app, plugin);
     this.settingsManager = settingsManager;
     this.moduleManager = moduleManager;
@@ -542,7 +468,6 @@ export class ZENdianSettingTab extends PluginSettingTab {
       this.navItems.set(tab.id, item);
     }
 
-    // 滚轮横向滚动
     nav.addEventListener("wheel", (e) => {
       if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
         e.preventDefault();
@@ -569,27 +494,18 @@ export class ZENdianSettingTab extends PluginSettingTab {
   private switchTab(tabId: string): void {
     if (tabId === this.activeTabId) return;
     this.activeTabId = tabId;
-    for (const [id, item] of this.navItems) {
-      item.classList.toggle("active", id === tabId);
-    }
-    for (const [id, section] of this.tabContents) {
-      section.style.display = id === tabId ? "" : "none";
-    }
+    for (const [id, item] of this.navItems) item.classList.toggle("active", id === tabId);
+    for (const [id, section] of this.tabContents) section.style.display = id === tabId ? "" : "none";
   }
 
   private renderAboutPage(containerEl: HTMLElement): void {
     const about = containerEl.createDiv("zendian-about");
-
     const header = about.createDiv("zendian-about-header");
     header.createEl("div", { text: "✦", cls: "zendian-about-logo" });
     header.createEl("h1", { text: "ZENdian", cls: "zendian-about-title" });
-    header.createEl("span", {
-      text: `v${(this.plugin as any).manifest?.version ?? "unknown"}`,
-      cls: "zendian-about-version",
-    });
+    header.createEl("span", { text: `v${(this.plugin as any).manifest?.version ?? "unknown"}`, cls: "zendian-about-version" });
 
-    const desc = about.createDiv("zendian-about-desc");
-    desc.createEl("p", {
+    about.createDiv("zendian-about-desc").createEl("p", {
       text: "一款综合性的 Obsidian UI 美化插件，集成 Border 主题、Phycat 苹果风格配色、增强 Markdown 渲染和 Style Settings 自定义面板。",
     });
 
@@ -600,8 +516,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
       "自动隐藏 Tab 栏、侧边栏、状态栏等 UI 元素",
       "专注模式 — 降低非当前行透明度，聚焦编辑",
       "卡片式布局 — 圆角卡片提升视觉层次",
-      "Phycat 标题与段落间距系统 — 精细排版控制",
-      "H1-H6 标题自定义 — 字体、字重、颜色、分隔线",
+      "H1-H6 标题自定义 — 字重、分隔线、间距、字号",
       "代码块、引用块、标注、表格的全面样式定制",
       "第三方插件兼容 — DB Folder、Projects、Surfing",
     ]) {
@@ -616,8 +531,12 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
       const sectionContent = containerEl.createDiv("zendian-section-content");
 
-      for (const def of section.settings) {
-        this.renderSetting(sectionContent, def);
+      if (section.headingTabs) {
+        renderHeadingTabs(sectionContent, this.settingsManager);
+      } else {
+        for (const def of section.settings ?? []) {
+          this.renderSetting(sectionContent, def);
+        }
       }
     }
   }
@@ -627,77 +546,38 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
     switch (def.type) {
       case "toggle":
-        new Setting(containerEl)
-          .setName(def.titleZh)
-          .addToggle((toggle) => {
-            toggle.setValue(def.get(settings));
-            toggle.onChange(async (val) => {
-              await this.settingsManager.updateMultiple(def.set(settings, val));
-            });
-          });
+        new Setting(containerEl).setName(def.titleZh).addToggle((toggle) => {
+          toggle.setValue(def.get(settings));
+          toggle.onChange(async (val) => { await this.settingsManager.updateMultiple(def.set(settings, val)); });
+        });
         break;
 
       case "select":
-        new Setting(containerEl)
-          .setName(def.titleZh)
-          .addDropdown((dropdown) => {
-            for (const opt of def.options ?? []) {
-              dropdown.addOption(opt.value, opt.label);
-            }
-            dropdown.setValue(def.get(settings));
-            dropdown.onChange(async (val) => {
-              await this.settingsManager.updateMultiple(def.set(settings, val));
-            });
-          });
+        new Setting(containerEl).setName(def.titleZh).addDropdown((dropdown) => {
+          for (const opt of def.options ?? []) dropdown.addOption(opt.value, opt.label);
+          dropdown.setValue(def.get(settings));
+          dropdown.onChange(async (val) => { await this.settingsManager.updateMultiple(def.set(settings, val)); });
+        });
         break;
 
       case "number":
-        new Setting(containerEl)
-          .setName(def.titleZh)
-          .addText((text) => {
-            text.inputEl.type = "number";
-            if (def.min !== undefined) text.inputEl.min = String(def.min);
-            if (def.max !== undefined) text.inputEl.max = String(def.max);
-            if (def.step !== undefined) text.inputEl.step = String(def.step);
-            text.setValue(String(def.get(settings)));
-            text.setPlaceholder(def.format ?? "");
-            text.onChange(async (val) => {
-              const num = parseFloat(val);
-              if (!isNaN(num)) {
-                await this.settingsManager.updateMultiple(def.set(settings, num));
-              }
-            });
-          });
+        new Setting(containerEl).setName(def.titleZh).addText((text) => {
+          text.inputEl.type = "number";
+          if (def.min !== undefined) text.inputEl.min = String(def.min);
+          if (def.max !== undefined) text.inputEl.max = String(def.max);
+          if (def.step !== undefined) text.inputEl.step = String(def.step);
+          text.setValue(String(def.get(settings)));
+          text.onChange(async (val) => { const n = parseFloat(val); if (!isNaN(n)) await this.settingsManager.updateMultiple(def.set(settings, n)); });
+        });
         break;
 
       case "number-slider":
-        new Setting(containerEl)
-          .setName(def.titleZh)
-          .addSlider((slider) => {
-            slider.setLimits(def.min ?? 0, def.max ?? 1, def.step ?? 0.01);
-            slider.setValue(def.get(settings));
-            slider.setDynamicTooltip();
-            slider.onChange(async (val) => {
-              await this.settingsManager.updateMultiple(def.set(settings, val));
-            });
-          })
-          .addExtraButton((btn) => {
-            btn.setIcon("reset").setTooltip("重置").onClick(async () => {
-              await this.settingsManager.updateMultiple(def.set(settings, def.get(settings)));
-              this.display();
-            });
-          });
-        break;
-
-      case "text":
-        new Setting(containerEl)
-          .setName(def.titleZh)
-          .addText((text) => {
-            text.setValue(def.get(settings));
-            text.onChange(async (val) => {
-              await this.settingsManager.updateMultiple(def.set(settings, val));
-            });
-          });
+        new Setting(containerEl).setName(def.titleZh).addSlider((slider) => {
+          slider.setLimits(def.min ?? 0, def.max ?? 1, def.step ?? 0.01);
+          slider.setValue(def.get(settings));
+          slider.setDynamicTooltip();
+          slider.onChange(async (val) => { await this.settingsManager.updateMultiple(def.set(settings, val)); });
+        });
         break;
     }
   }

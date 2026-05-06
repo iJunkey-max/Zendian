@@ -13,7 +13,6 @@ const CSS_VARS = [
   "--link-decoration-thickness",
   "--link-external-decoration",
   "--link-external-decoration-hover",
-  "--link-external-filter",
 ];
 
 export class LinkModule implements IFeatureModule {
@@ -40,6 +39,5 @@ export class LinkModule implements IFeatureModule {
     setCSSVar(document.body, "--link-decoration-thickness", s.decorationThickness);
     setCSSVar(document.body, "--link-external-decoration", s.externalDecoration);
     setCSSVar(document.body, "--link-external-decoration-hover", s.externalDecorationHover);
-    setCSSVar(document.body, "--link-external-filter", s.externalFilter);
   }
 }
