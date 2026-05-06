@@ -11,41 +11,47 @@ settings:
         type: variable-number
         default: 900
         format: px
-    - 
+    -
         id: letter-spacing
         title: Letter spacing
         title.zh: 字间距
+        description.zh: 调整字符之间的间距，0为默认，正值增大间距
         type: variable-number
         default: 1
         format: px
-    - 
+    -
         id: line-height-customize
         title: Line height
         title.zh: 段落行高
+        description.zh: 调整段落文本的行高，值越大行距越宽松
         type: variable-number
         default: 2.2
-    - 
+    -
         id: code-line-height
         title: code Line height
         title.zh: 代码行高
+        description.zh: 调整代码块中文本的行高
         type: variable-number
         default: 1.6
-    - 
+    -
         id: blockquote-line-height
         title: blockquote Line height
         title.zh: 引用块行高
+        description.zh: 调整引用块中文本的行高
         type: variable-number
         default: 1.6
-    - 
+    -
         id: table-line-height
         title: Table Line height
         title.zh: 表格行高
+        description.zh: 调整表格单元格中文本的行高
         type: variable-number
         default: 1.8
-    - 
+    -
         id: p-spacing
         title: Paragraph spacing (Reading mode)
         title.zh:  段落间距（阅读模式）
+        description.zh: 设置阅读模式下段落之间的间距，如 1em、16px
         type: variable-text
         default: 1em
 */
@@ -76,10 +82,11 @@ settings:
             value: h1-align-center
           - label: ⬅️ Left
             value: h1-align-left
-    - 
+    -
         id: h1-size
         title: H1 font size
         title.zh: H1字体大小
+        description.zh: 设置一级标题的字体大小
         type: variable-number
         default: 1.618
         format: em
@@ -122,23 +129,26 @@ settings:
             - 
                 label: 🔮 Glass Capsule (Original)
                 value: h2-style-dark-capsule
-    - 
+    -
         id: h2-size
         title: H2 font size
         title.zh: H2字体大小
+        description.zh: 设置二级标题的字体大小
         type: variable-number
         default: 1.462
         format: em
-    - 
+    -
         id: h2-spacing-scale-start
         title: H2 spacing start
         title.zh: H2前间距
+        description.zh: 调整二级标题上方的间距倍数
         type: variable-number
         default: 1.318
-    - 
+    -
         id: h2-spacing-scale-end
         title: H2 spacing end
         title.zh: H2后间距
+        description.zh: 调整二级标题下方的间距倍数
         type: variable-number
         default: 1.318
     - 
@@ -148,23 +158,26 @@ settings:
         type: heading
         level: 3
         collapsed: true
-    - 
+    -
         id: h3-size
         title: H3 font size
         title.zh: H3字体大小
+        description.zh: 设置三级标题的字体大小
         type: variable-number
         default: 1.318
         format: em
-    - 
+    -
         id: h3-spacing-scale-start
         title: H3 spacing start
         title.zh: H3前间距
+        description.zh: 调整三级标题上方的间距倍数
         type: variable-number
         default: 1.5
-    - 
+    -
         id: h3-spacing-scale-end
         title: H3 spacing end
         title.zh: H3后间距
+        description.zh: 调整三级标题下方的间距倍数
         type: variable-number
         default: 1.5
     - 
@@ -174,23 +187,26 @@ settings:
         type: heading
         level: 3
         collapsed: true
-    - 
+    -
         id: h4-size
         title: H4 font size
         title.zh: H4字体大小
+        description.zh: 设置四级标题的字体大小
         type: variable-number
         default: 1.2
         format: em
-    - 
+    -
         id: h4-spacing-scale-start
         title: H4 spacing start
         title.zh: H4前间距
+        description.zh: 调整四级标题上方的间距倍数
         type: variable-number
         default: 1.5
-    - 
+    -
         id: h4-spacing-scale-end
         title: H4 spacing end
         title.zh: H4后间距
+        description.zh: 调整四级标题下方的间距倍数
         type: variable-number
         default: 1.5
     - 
@@ -200,23 +216,26 @@ settings:
         type: heading
         level: 3
         collapsed: true
-    - 
+    -
         id: h5-size
         title: H5 font size
         title.zh: H5字体大小
+        description.zh: 设置五级标题的字体大小
         type: variable-number
         default: 1.2
         format: em
-    - 
+    -
         id: h5-spacing-scale-start
         title: H5 spacing start
         title.zh: H5前间距
+        description.zh: 调整五级标题上方的间距倍数
         type: variable-number
         default: 1.5
-    - 
+    -
         id: h5-spacing-scale-end
         title: H5 spacing end
         title.zh: H5后间距
+        description.zh: 调整五级标题下方的间距倍数
         type: variable-number
         default: 1.5
     - 
@@ -226,23 +245,26 @@ settings:
         type: heading
         level: 3
         collapsed: true
-    - 
+    -
         id: h6-size
         title: H6 font size
         title.zh: H6字体大小
+        description.zh: 设置六级标题的字体大小
         type: variable-number
         default: 1.2
         format: em
-    - 
+    -
         id: h6-spacing-scale-start
         title: H6 spacing start
         title.zh: H6前间距
+        description.zh: 调整六级标题上方的间距倍数
         type: variable-number
         default: 1.5
-    - 
+    -
         id: h6-spacing-scale-end
         title: H6 spacing end
         title.zh: H6后间距
+        description.zh: 调整六级标题下方的间距倍数
         type: variable-number
         default: 1.5
 */

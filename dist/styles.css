@@ -54,30 +54,35 @@ settings:
         description: Mac users can adjust the position of the traffic light using the 'Electron Window Tweaker' plugin
         description.zh: Mac 用户可以使用 “Electron Window Tweaker” 插件来调整左上角红绿灯的位置
         type: class-toggle
-    - 
+    -
         id: status-bar-autohide
         title: Auto hide bottom status bar
         title.zh: 自动隐藏 底部状态栏
+        description.zh: 隐藏窗口底部的状态栏，鼠标移到底部时自动显示
         type: class-toggle
-    - 
+    -
         id: Ribbon-autohide
         title: Auto hide left ribbon menu
         title.zh: 自动隐藏 左侧功能区菜单
+        description.zh: 隐藏左侧的图标工具栏，鼠标移到左侧时自动显示
         type: class-toggle
-    - 
+    -
         id: nav-header-autohide
         title: Auto hide header icons in sidepane
         title.zh: 自动隐藏 侧边面板中的头部按钮
+        description.zh: 隐藏侧边面板顶部的操作按钮，鼠标悬停时显示
         type: class-toggle
-    - 
+    -
         id: tab-title-bar-autohide
         title: Auto hide tab title bar
         title.zh: 自动隐藏 标签页标题栏
+        description.zh: 隐藏标签页上方的标题栏，节省垂直空间
         type: class-toggle
-    - 
+    -
         id: vault-profile-autohide
         title: Auto hide vault profile
         title.zh: 自动隐藏 vault 配置栏
+        description.zh: 隐藏左侧边栏顶部的仓库名称和头像区域
         type: class-toggle
     - 
         id: file-explorer
@@ -86,20 +91,23 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: CTA-BTN-enable
-        title: Enable bigger "New note" button
-        title.zh: 启用 更大的“New Note”按钮
+        title: Enable bigger “New note” button
+        title.zh: 启用 更大的”New Note”按钮
+        description.zh: 将文件列表顶部的新建笔记按钮放大并添加背景色，使其更醒目
         type: class-toggle
-    - 
+    -
         id: file-names-untrim
         title: Untrim file names
         title.zh: 不修剪文件名
+        description.zh: 显示完整的文件名，不因窗口宽度不足而截断
         type: class-toggle
-    - 
+    -
         id: folder-font-bold
         title: Bold folder font
         title.zh: 加粗文件夹字体
+        description.zh: 将文件夹名称加粗显示，便于区分文件和文件夹
         type: class-toggle
     - 
         id: file-explorer-icon
@@ -108,16 +116,18 @@ settings:
         type: heading
         collapsed: false
         level: 4
-    - 
+    -
         id: file-icon-remove
         title: Remove custom icon
         title.zh: 移除 自定义图标
+        description.zh: 移除通过 Icon Folder 等插件设置的自定义图标，恢复默认文件图标
         type: class-toggle
         default: false
-    - 
+    -
         id: colorful-folder
         title: Enable colorful folder icon
         title.zh: 启用 多彩文件夹图标
+        description.zh: 为不同层级的文件夹图标添加不同颜色，增强视觉区分
         type: class-toggle
         default: true
     - 
@@ -141,10 +151,11 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: new-tab-btn-select
         title: New tab buttons
         title.zh: 新标签页 按钮
+        description.zh: 选择新标签页顶部显示的按钮样式
         type: class-select
         allowEmpty: false
         default: new-tab-btn-default
@@ -153,10 +164,11 @@ settings:
                 value: new-tab-text-btn-restore
             -   label: default
                 value: new-tab-btn-default
-    - 
+    -
         id: new-tab-image-select
         title: New tab image
         title.zh: 新标签页 图像
+        description.zh: 选择新标签页显示的图像，可选择自定义图片
         type: class-select
         allowEmpty: false
         default: new-tab-image-default
@@ -184,26 +196,30 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: immersive-canvas
         title: immersive canvas
         title.zh: 沉浸式白板
+        description.zh: 移除白板的边框和阴影，使其与背景融为一体
         type: class-toggle
-    - 
+    -
         id: media-embed-card-border-off
         title: Remove border effect of media card.
         title.zh: 移除媒体卡片的边框效果
+        description.zh: 移除图片、视频等媒体嵌入卡片的边框和阴影
         type: class-toggle
     -
         id: canvas-card-border-width
         title: canvas card border
         title.zh: canvas 卡片边框
+        description.zh: 设置白板卡片的边框样式，如 "2px solid" 或 "none"
         type: variable-text
         default: 2px solid
-    - 
+    -
         id: canvas-card-menu
         title: canvas card menu position
         title.zh: canvas 卡片菜单位置
+        description.zh: 设置白板卡片右键菜单的弹出位置
         type: class-select
         allowEmpty: false
         default: canvas-card-menu-center
@@ -221,15 +237,17 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: extra-anim-remove
         title: Remove additional added animation
         title.zh: 移除 额外增加的动效
+        description.zh: 关闭插件添加的过渡动画，适合追求简洁或性能较低的设备
         type: class-toggle
-    - 
+    -
         id: anim-speed
         title: Animation speed
         title.zh: 动效速度
+        description.zh: 调整过渡动画的速度，1为默认，小于1变慢，大于1变快
         type: variable-number-slider
         default: 1
         min: 0.5
@@ -246,6 +264,7 @@ settings:
         id: card-layout-open
         title: Enable card layout
         title.zh: 启用卡片布局
+        description.zh: 将笔记内容区域显示为圆角卡片样式，提升视觉层次感
         type: class-toggle
         default: true
         classAliases: card-layout-open-light,card-layout-open-dark
@@ -256,20 +275,23 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: setting-item-title-icon-remove
         title: Remove setting item title icon
         title.zh: 移除 设置项标题图标
+        description.zh: 移除设置面板中每个选项左侧的小图标，使界面更简洁
         type: class-toggle
-    - 
+    -
         id: scrollbar-hide
         title: Hide scrollbar
         title.zh: 隐藏 滚动条
+        description.zh: 完全隐藏滚动条，内容仍可滚动，界面更简洁
         type: class-toggle
-    - 
+    -
         id: restored-scrollbars
         title: Restore scrollbar style
         title.zh: 还原 滚动条的样式
+        description.zh: 将滚动条恢复为系统默认样式，而非主题自定义的细滚动条
         type: class-toggle
 */
 /* @settings
@@ -288,16 +310,19 @@ settings:
         id: line-hover-indicator
         title: Enable Focus indicator
         title.zh: 启用 焦点指示器
+        description.zh: 鼠标悬停的行左侧显示竖线标记，帮助定位当前行
         type: class-toggle
-    - 
+    -
         id: focus-indicator-list-level
         title: indicate list level
         title.zh: 指示列表层级
+        description.zh: 焦点指示器根据列表缩进层级显示不同颜色
         type: class-toggle
-    - 
+    -
         id: focus-indicator-codeblock-line-number
         title: indicate codeblock line number
         title.zh: 指示代码块行号
+        description.zh: 在代码块中显示当前行号
         type: class-toggle
     - 
         id: border-focus-mode-heading
@@ -310,11 +335,13 @@ settings:
         id: border-focus-mode
         title: Enable focus mode
         title.zh: 启用 专注模式
+        description.zh: 降低非当前行的透明度，让注意力集中在正在编辑的段落
         type: class-toggle
-    - 
+    -
         id: line-normal-opacity
         title: Normal line opacity
         title.zh: 普通行透明度
+        description.zh: 专注模式下非当前行的透明度，值越小越聚焦
         type: variable-number-slider
         default: 0.5
         min: 0.05
@@ -327,10 +354,11 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: editor-grid-background-pattren
         title: Enable grid background pattern
         title.zh: 启用 网格背景图案
+        description.zh: 在编辑器背景显示淡雅的网格线，营造书写纸效果
         type: class-toggle
         default: true
     - 
@@ -348,15 +376,17 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: collapse-icon-restore
         title: Restore the collapse icon before headings
         title.zh: 还原标题前的折叠图标
+        description.zh: 在标题前显示三角形折叠图标，可点击展开/折叠标题下的内容
         type: class-toggle
-    - 
+    -
 		id: heading-indicator-off
 		title: Remove headings indicator
 		title.zh: 移除标题左侧的指示器
+		description.zh: 移除标题左侧的彩色竖线指示器
 		type: class-toggle
 		default: false
     - 
@@ -366,33 +396,38 @@ settings:
 		type: heading
 		level: 4
 		collapsed: true
-    - 
+    -
         id: inline-title-divider-remove
         title: Remove inline title divider
         title.zh: 移除页内标题分隔线
+        description.zh: 移除页内标题下方的水平分隔线
         type: class-toggle
-    - 
+    -
 		id: inline-title-font
 		title: inline title font
         title.zh: 页内标题 字体
+		description.zh: 自定义页内标题的字体，留空使用默认字体
 		type: variable-text
 		default: ''
-	- 
+	-
 		id: inline-title-size
 		title: inline title size
         title.zh: 页内标题 字体大小
+		description.zh: 设置页内标题的字体大小，如 1.5em、24px
 		type: variable-text
 		default: 1.5em
-	- 
+	-
         id: inline-title-weight
         title: inline title weight
         title.zh: 页内标题 字重
+        description.zh: 设置页内标题的字重，400为正常，700为粗体
         type: variable-number
         default: 700
-    - 
+    -
 		id: inline-title-text-transform
 		title: inline title text-transform
 		title.zh: 页内标题 text-transform
+		description.zh: 设置页内标题的文本转换，如 uppercase、capitalize
 		type: variable-text
 		default: ''
     -
@@ -407,30 +442,35 @@ settings:
         id: h1-divider-on
         title: Enable divider
         title.zh: 启用分隔线
+        description.zh: 在一级标题下方显示水平分隔线
         type: class-toggle
         default: false
     -
         id: h1-font
         title: Font
         title.zh: 字体
+        description.zh: 自定义一级标题的字体，留空使用默认字体
         type: variable-text
         default: ''
     -
         id: h1-weight
         title: Font weight
         title.zh: 字重
+        description.zh: 设置一级标题的字重，400为正常，700为粗体
         type: variable-number
         default: 700
     -
         id: h1-text-transform
         title: text-transform
         title.zh: text-transform
+        description.zh: 设置一级标题的文本转换，如 uppercase、capitalize
         type: variable-text
         default: ''
     -
         id: h1-color-select
         title: Text color
         title.zh: 文本颜色
+        description.zh: 选择一级标题的文本颜色方案
         type: class-select
         allowEmpty: false
         default: h1-color-default
@@ -443,30 +483,35 @@ settings:
         id: h2-divider-on
         title: Enable divider
         title.zh: 启用分隔线
+        description.zh: 在二级标题下方显示水平分隔线
         type: class-toggle
         default: false
     -
         id: h2-font
         title: Font
         title.zh: 字体
+        description.zh: 自定义二级标题的字体，留空使用默认字体
         type: variable-text
         default: ''
     -
         id: h2-weight
         title: Font weight
         title.zh: 字重
+        description.zh: 设置二级标题的字重，400为正常，700为粗体
         type: variable-number
         default: 675
     -
         id: h2-text-transform
         title: text-transform
         title.zh: text-transform
+        description.zh: 设置二级标题的文本转换，如 uppercase、capitalize
         type: variable-text
         default: ''
     -
         id: h2-color-select
         title: Text color
         title.zh: 文本颜色
+        description.zh: 选择二级标题的文本颜色方案
         type: class-select
         allowEmpty: false
         default: h2-color-default
@@ -479,30 +524,35 @@ settings:
         id: h3-divider-on
         title: Enable divider
         title.zh: 启用分隔线
+        description.zh: 在三级标题下方显示水平分隔线
         type: class-toggle
         default: false
     -
         id: h3-font
         title: Font
         title.zh: 字体
+        description.zh: 自定义三级标题的字体，留空使用默认字体
         type: variable-text
         default: ''
     -
         id: h3-weight
         title: Font weight
         title.zh: 字重
+        description.zh: 设置三级标题的字重，400为正常，700为粗体
         type: variable-number
         default: 650
     -
         id: h3-text-transform
         title: text-transform
         title.zh: text-transform
+        description.zh: 设置三级标题的文本转换，如 uppercase、capitalize
         type: variable-text
         default: ''
     -
         id: h3-color-select
         title: Text color
         title.zh: 文本颜色
+        description.zh: 选择三级标题的文本颜色方案
         type: class-select
         allowEmpty: false
         default: h3-color-default
@@ -515,30 +565,35 @@ settings:
         id: h4-divider-on
         title: Enable divider
         title.zh: 启用分隔线
+        description.zh: 在四级标题下方显示水平分隔线
         type: class-toggle
         default: false
     -
         id: h4-font
         title: Font
         title.zh: 字体
+        description.zh: 自定义四级标题的字体，留空使用默认字体
         type: variable-text
         default: ''
     -
         id: h4-weight
         title: Font weight
         title.zh: 字重
+        description.zh: 设置四级标题的字重，400为正常，700为粗体
         type: variable-number
         default: 625
     -
         id: h4-text-transform
         title: text-transform
         title.zh: text-transform
+        description.zh: 设置四级标题的文本转换，如 uppercase、capitalize
         type: variable-text
         default: ''
     -
         id: h4-color-select
         title: Text color
         title.zh: 文本颜色
+        description.zh: 选择四级标题的文本颜色方案
         type: class-select
         allowEmpty: false
         default: h4-color-default
@@ -551,30 +606,35 @@ settings:
         id: h5-divider-on
         title: Enable divider
         title.zh: 启用分隔线
+        description.zh: 在五级标题下方显示水平分隔线
         type: class-toggle
         default: false
     -
         id: h5-font
         title: Font
         title.zh: 字体
+        description.zh: 自定义五级标题的字体，留空使用默认字体
         type: variable-text
         default: ''
     -
         id: h5-weight
         title: Font weight
         title.zh: 字重
+        description.zh: 设置五级标题的字重，400为正常，700为粗体
         type: variable-number
         default: 600
     -
         id: h5-text-transform
         title: text-transform
         title.zh: text-transform
+        description.zh: 设置五级标题的文本转换，如 uppercase、capitalize
         type: variable-text
         default: ''
     -
         id: h5-color-select
         title: Text color
         title.zh: 文本颜色
+        description.zh: 选择五级标题的文本颜色方案
         type: class-select
         allowEmpty: false
         default: h5-color-default
@@ -587,30 +647,35 @@ settings:
         id: h6-divider-on
         title: Enable divider
         title.zh: 启用分隔线
+        description.zh: 在六级标题下方显示水平分隔线
         type: class-toggle
         default: false
     -
         id: h6-font
         title: Font
         title.zh: 字体
+        description.zh: 自定义六级标题的字体，留空使用默认字体
         type: variable-text
         default: ''
     -
         id: h6-weight
         title: Font weight
         title.zh: 字重
+        description.zh: 设置六级标题的字重，400为正常，700为粗体
         type: variable-number
         default: 575
     -
         id: h6-text-transform
         title: text-transform
         title.zh: text-transform
+        description.zh: 设置六级标题的文本转换，如 uppercase、capitalize
         type: variable-text
         default: ''
     -
         id: h6-color-select
         title: Text color
         title.zh: 文本颜色
+        description.zh: 选择六级标题的文本颜色方案
         type: class-select
         allowEmpty: false
         default: h6-color-default
@@ -626,16 +691,18 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
 		id: text-align-justify
 		title: Justify paragraph text
 		title.zh: 段落两端对齐
+		description.zh: 使段落文本左右两端对齐，类似报纸排版效果
 		type: class-toggle
 		default: false
     -
 		id: p-spacing-br
 		title: Paragraph spacing also takes effect after a line break (Reading mode)
 		title.zh: 段间距也对换行后的内容生效（阅读模式）
+		description.zh: 让 Shift+Enter 软换行后的内容也保持段落间距
 		type: class-toggle
 		default: false
     - 
@@ -645,16 +712,18 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: inline-code-background-light
         title: Customize inline code background (light mode)
         title.zh: 自定义 内联代码背景（亮色模式）
+        description.zh: 自定义亮色模式下内联代码的背景颜色，如 #f0f0f0
         type: variable-text
         default: ''
     -
         id: inline-code-background-dark
         title: Customize inline code background (dark mode)
         title.zh: 自定义 内联代码背景（暗色模式）
+        description.zh: 自定义暗色模式下内联代码的背景颜色，如 #2d2d2d
         type: variable-text
         default: ''
     - 
@@ -664,22 +733,25 @@ settings:
         type: heading
         collapsed: true
         level: 3
-	- 
+	-
 		id: link-decoration
 		title: Link decoration
         title.zh: 链接装饰
+		description.zh: 设置链接的装饰样式，如 underline、none、dashed
 		type: variable-text
 		default: underline
 	-
 		id: link-decoration-hover
 		title: Link decoration (hover)
         title.zh: 链接装饰（鼠标悬停时）
+		description.zh: 设置鼠标悬停时链接的装饰样式
 		type: variable-text
 		default: underline
 	-
 		id: link-decoration-thickness
 		title: Link decoration thickness
         title.zh: 链接装饰厚度
+		description.zh: 设置链接下划线的粗细，如 auto、1px、2px
 		type: variable-text
 		default: auto
     - 
@@ -693,18 +765,21 @@ settings:
 		id: link-external-decoration
 		title: External link decoration
         title.zh: 外部链接装饰
+		description.zh: 设置外部链接的装饰样式，如 underline、none
 		type: variable-text
 		default: underline
 	-
 		id: link-external-decoration-hover
 		title: External link decoration (hover)
         title.zh: 外部链接装饰（鼠标悬停时）
+		description.zh: 设置鼠标悬停时外部链接的装饰样式
 		type: variable-text
 		default: underline
 	-
 		id: link-external-filter
 		title: External link filter
         title.zh: 外部链接 filter
+		description.zh: 为外部链接添加 CSS 滤镜效果，如 grayscale(50%)、brightness(0.8)
 		type: variable-text
 		default: none
 	- 
@@ -714,22 +789,25 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
 		id: list-indent
 		title: list indent
         title.zh:  列表缩进
+		description.zh: 设置列表子项的缩进距离，值越大缩进越多
 		type: variable-text
 		default: 2.25em
-    - 
+    -
 		id: list-spacing
 		title: list spacing
         title.zh:  列表间距
+		description.zh: 设置列表项之间的垂直间距
 		type: variable-text
 		default: 0.075em
-    - 
+    -
 		id: ul-marker-restore
 		title: Restore default style of unordered list
         title.zh: 恢复无序列表的默认样式
+		description.zh: 将无序列表的圆点标记恢复为 Obsidian 默认样式
 		type: class-toggle
 		default: false
     - 
@@ -739,22 +817,25 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: table-header-background-light
         title: Customize table header background (light mode)
         title.zh: 自定义 表头背景（亮色模式）
+        description.zh: 自定义亮色模式下表格表头的背景颜色
         type: variable-text
         default: ''
     -
         id: table-header-background-dark
         title: Customize table header background (dark mode)
         title.zh: 自定义 表头背景（暗色模式）
+        description.zh: 自定义暗色模式下表格表头的背景颜色
         type: variable-text
         default: ''
-    - 
+    -
         id: table-width-select
         title: Table width
         title.zh: 表格宽度
+        description.zh: 选择表格宽度的计算方式
         type: class-select
         allowEmpty: false
         default: table-width-default
@@ -784,10 +865,11 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: img-center-align
         title: center-align the image
         title.zh: 图像居中显示
+        description.zh: 将笔记中的图片居中对齐，而非默认的左对齐
         type: class-toggle
     - 
         id: img-darken
@@ -810,10 +892,11 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: codeblock-style-select
         title: Codeblock theme
         title.zh: 代码块主题
+        description.zh: 选择代码块的配色主题方案
         type: class-select
         allowEmpty: false
         default: codeblock-style-customize
@@ -828,28 +911,32 @@ settings:
                 value: codeblock-style-solarized-dark
             -   label: One dark
                 value: codeblock-style-one-dark
-    - 
+    -
         id: code-background-light
         title: Customize codeblock background (light mode)
         title.zh: 自定义 代码块背景（亮色模式）
+        description.zh: 自定义亮色模式下代码块的背景颜色
         type: variable-text
         default: ''
     -
         id: code-border-light
         title: Customize codeblock border (light mode)
         title.zh: 自定义 代码块边框（亮色模式）
+        description.zh: 自定义亮色模式下代码块的边框样式，如 1px solid #ddd
         type: variable-text
         default: ''
     -
         id: code-background-dark
         title: Customize codeblock background (dark mode)
         title.zh: 自定义 代码块背景（暗色模式）
+        description.zh: 自定义暗色模式下代码块的背景颜色
         type: variable-text
         default: ''
     -
         id: code-border-dark
         title: Customize codeblock border (dark mode)
         title.zh: 自定义 代码块边框（暗色模式）
+        description.zh: 自定义暗色模式下代码块的边框样式
         type: variable-text
         default: ''
     - 
@@ -859,16 +946,18 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: blockquote-background-light
         title: Customize blockquote background (light mode)
         title.zh: 自定义 块引用背景（亮色模式）
+        description.zh: 自定义亮色模式下引用块的背景颜色
         type: variable-text
         default: ''
     -
         id: blockquote-background-dark
         title: Customize blockquote background (dark mode)
         title.zh: 自定义 块引用背景（暗色模式）
+        description.zh: 自定义暗色模式下引用块的背景颜色
         type: variable-text
         default: ''
     - 
@@ -878,10 +967,11 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: callout-style-select
         title: callout style
         title.zh: 标注风格
+        description.zh: 选择标注块的视觉风格方案
         type: class-select
         allowEmpty: false
         default: callout-style-customize
@@ -896,49 +986,56 @@ settings:
                 value: callout-style-3
             -   label: style 4
                 value: callout-style-4
-    - 
+    -
 		id: callout-border-width
 		title: callout border width
         title.zh: 标注边框大小
+        description.zh: 设置标注块左侧边框的宽度，如 0px、2px、4px
         type: variable-text
         default: 0px
-    - 
+    -
         id: callout-border-opacity
         title: callout border opacity
         title.zh: 标注边框透明度
+        description.zh: 调整标注边框的透明度，0为完全透明，1为完全不透明
         type: variable-number-slider
         default: 0.25
         min: 0
         max: 1
         step: 0.05
-    - 
+    -
 		id: callout-padding
 		title: callout padding
         title.zh: 标注边距
+		description.zh: 设置标注块内部的内边距，如 1em、16px
 		type: variable-text
 		default: ''
     -
 		id: callout-title-padding
 		title: callout title padding
         title.zh: 标注标题边距
+		description.zh: 设置标注标题区域的内边距
 		type: variable-text
 		default: ''
     -
 		id: callout-title-size
 		title: callout title size
         title.zh: 标注标题大小
+		description.zh: 设置标注标题的字体大小，如 1em、16px
 		type: variable-text
 		default: ''
     -
 		id: callout-content-padding
 		title: callout content padding
         title.zh: 标注内容边距
+		description.zh: 设置标注正文内容区域的内边距
 		type: variable-text
 		default: ''
     -
         id: callout-content-radius
         title: callout content radius
         title.zh: 标注内容圆角
+        description.zh: 设置标注内容区域的圆角大小，如 0px、8px
         type: variable-text
         default: ''
     - 
@@ -948,33 +1045,38 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: seamless-embeds
         title: seamless embeds
         title.zh: 无缝嵌入
+        description.zh: 移除嵌入文档的边框和背景，使其与正文融为一体
         type: class-toggle
-    - 
+    -
         id: embed-padding
         title: embed padding
         title.zh: 内嵌文档 padding
+        description.zh: 设置嵌入文档的内边距
         type: variable-text
         default: ''
     -
         id: embed-border-radius
         title: embed border radius
         title.zh: 内嵌文档 圆角半径
+        description.zh: 设置嵌入文档的圆角大小，如 0px、8px
         type: variable-text
         default: ''
     -
         id: embed-font-style
         title: embed font style
         title.zh: 内嵌文档 字体风格
+        description.zh: 设置嵌入文档的字体风格，如 normal、italic
         type: variable-text
         default: ''
     -
         id: embed-max-height
         title: embed max height
         title.zh: 内嵌文档 最大高度
+        description.zh: 限制嵌入文档的最大高度，超出部分可滚动，如 300px、50vh
         type: variable-text
         default: ''
     - 
@@ -995,6 +1097,7 @@ settings:
         id: checkbox-radius
         title: checkbox radius
         title.zh: 复选框 圆角半径
+        description.zh: 设置复选框的圆角大小，0px为方形，50%为圆形
         type: variable-text
         default: '6px'
     -
@@ -1016,6 +1119,7 @@ settings:
         id: letter-spacing
         title: Letter spacing
         title.zh: 字间距
+        description.zh: 调整字符之间的间距，0为默认，正值增大间距
         type: variable-number
         default: 1
         format: px
@@ -1023,30 +1127,35 @@ settings:
         id: line-height-customize
         title: Line height
         title.zh: 段落行高
+        description.zh: 调整段落文本的行高，值越大行距越宽松
         type: variable-number
         default: 2.2
     -
         id: code-line-height
         title: code Line height
         title.zh: 代码行高
+        description.zh: 调整代码块中文本的行高
         type: variable-number
         default: 1.6
     -
         id: blockquote-line-height
         title: blockquote Line height
         title.zh: 引用块行高
+        description.zh: 调整引用块中文本的行高
         type: variable-number
         default: 1.6
     -
         id: table-line-height
         title: Table Line height
         title.zh: 表格行高
+        description.zh: 调整表格单元格中文本的行高
         type: variable-number
         default: 1.8
     -
         id: p-spacing
         title: Paragraph spacing (Reading mode)
         title.zh: 段落间距（阅读模式）
+        description.zh: 设置阅读模式下段落之间的间距，如 1em、16px
         type: variable-text
         default: 1em
     -
@@ -1060,6 +1169,7 @@ settings:
         id: h1-alignment
         title: H1 Alignment
         title.zh: H1 对齐方式
+        description.zh: 选择 H1 标题是居中显示还是居左显示
         type: class-select
         allowEmpty: false
         default: h1-align-center
@@ -1072,6 +1182,7 @@ settings:
         id: h2-style-select
         title: H2 Style (Light)
         title.zh: H2 亮色模式风格
+        description.zh: 选择亮色模式下二级标题的装饰风格，双子塔或胶囊
         type: class-select
         allowEmpty: false
         default: h2-style-twin
@@ -1086,6 +1197,7 @@ settings:
         id: h2-style-dark-select
         title: H2 Style (Dark)
         title.zh: H2 暗色模式风格
+        description.zh: 选择暗色模式下二级标题的装饰风格，霓虹双子塔或玻璃胶囊
         type: class-select
         allowEmpty: false
         default: h2-style-dark-twin
@@ -1100,60 +1212,70 @@ settings:
         id: h2-spacing-scale-start
         title: H2 spacing start
         title.zh: H2前间距
+        description.zh: 调整二级标题上方的间距倍数
         type: variable-number
         default: 1.318
     -
         id: h2-spacing-scale-end
         title: H2 spacing end
         title.zh: H2后间距
+        description.zh: 调整二级标题下方的间距倍数
         type: variable-number
         default: 1.318
     -
         id: h3-spacing-scale-start
         title: H3 spacing start
         title.zh: H3前间距
+        description.zh: 调整三级标题上方的间距倍数
         type: variable-number
         default: 1.5
     -
         id: h3-spacing-scale-end
         title: H3 spacing end
         title.zh: H3后间距
+        description.zh: 调整三级标题下方的间距倍数
         type: variable-number
         default: 1.5
     -
         id: h4-spacing-scale-start
         title: H4 spacing start
         title.zh: H4前间距
+        description.zh: 调整四级标题上方的间距倍数
         type: variable-number
         default: 1.5
     -
         id: h4-spacing-scale-end
         title: H4 spacing end
         title.zh: H4后间距
+        description.zh: 调整四级标题下方的间距倍数
         type: variable-number
         default: 1.5
     -
         id: h5-spacing-scale-start
         title: H5 spacing start
         title.zh: H5前间距
+        description.zh: 调整五级标题上方的间距倍数
         type: variable-number
         default: 1.5
     -
         id: h5-spacing-scale-end
         title: H5 spacing end
         title.zh: H5后间距
+        description.zh: 调整五级标题下方的间距倍数
         type: variable-number
         default: 1.5
     -
         id: h6-spacing-scale-start
         title: H6 spacing start
         title.zh: H6前间距
+        description.zh: 调整六级标题上方的间距倍数
         type: variable-number
         default: 1.5
     -
         id: h6-spacing-scale-end
         title: H6 spacing end
         title.zh: H6后间距
+        description.zh: 调整六级标题下方的间距倍数
         type: variable-number
         default: 1.5
 */
@@ -1163,15 +1285,17 @@ name: Mobile
 name.zh: 移动端
 id: Mobile
 settings:
-    - 
+    -
         id: card-layout-pad-open
         title: Enable card layout (pad only)
         title.zh: 开启卡片式布局（平板端）
+        description.zh: 在平板设备上启用卡片式笔记布局
         type: class-toggle
-    - 
+    -
         id: drawer-phone-full-width
         title: Side drawer full screen (phone only)
         title.zh: 侧边抽屉全屏（手机端）
+        description.zh: 在手机端打开侧边栏时自动全屏显示，关闭后返回笔记
         type: class-toggle
 */
 
@@ -1187,15 +1311,17 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: DB-table-full-width-off
         title: Disable full width table
         title.zh: 关闭 全宽表格
+        description.zh: 让 DB Folder 插件的表格不自动撑满整个窗口宽度
         type: class-toggle
-    - 
+    -
         id: DB-table-bg-color
         title: background color
         title.zh: 背景颜色
+        description.zh: 设置 DB Folder 表格的背景颜色方案
         type: class-select
         allowEmpty: false
         default: DB-table-bg-color-default
@@ -1213,10 +1339,11 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: Projects-bg-color
         title: background color
         title.zh: 背景颜色
+        description.zh: 设置 Projects 插件的背景颜色方案
         type: class-select
         allowEmpty: false
         default: Projects-bg-color-default
@@ -1234,10 +1361,11 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: Surfing-bookmark-bar-hide
         title: Hide bookmark bar when browsing web
         title.zh: 浏览网页时隐藏书签栏
+        description.zh: 使用 Surfing 插件浏览网页时自动隐藏书签栏，获得更大浏览空间
         type: class-toggle
     - 
         id: Checklist
@@ -1246,10 +1374,11 @@ settings:
         type: heading
         collapsed: true
         level: 3
-    - 
+    -
         id: colorful-checkbox
         title: colorful checkbox
         title.zh: 多彩选框
+        description.zh: 为 Checklist 插件的复选框添加不同颜色，区分任务状态
         type: class-toggle
 */
 
@@ -9559,32 +9688,32 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 
-/* ZENdian Settings Panel — Apple-style card design */
+/* ZENdian Settings Panel — Horizontal tab layout */
 
 .zendian-settings-wrapper {
     display: flex;
-    gap: 20px;
+    flex-direction: column;
+    gap: 16px;
     min-height: 400px;
     padding: 4px 0;
 }
 
-/* Sidebar navigation */
+/* Top navigation tabs */
 
 .zendian-nav {
-    flex: 0 0 190px;
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    max-height: calc(100vh - 120px);
-    overflow-y: auto;
-    padding: 6px;
+    flex: none;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
     background: var(--background-secondary);
     border-radius: 10px;
     border: 1px solid var(--background-modifier-border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .zendian-nav::-webkit-scrollbar {
-    width: 4px;
+    height: 4px;
 }
 
 .zendian-nav::-webkit-scrollbar-thumb {
@@ -9593,18 +9722,14 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-nav-item {
-    padding: 8px 12px;
+    padding: 8px 16px;
     cursor: pointer;
     border-radius: 8px;
     font-size: 13px;
     color: var(--text-muted);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-bottom: 2px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     letter-spacing: 0.01em;
-    position: relative;
 }
 
 .zendian-nav-item:hover {
@@ -9619,23 +9744,9 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
-.zendian-nav-item.active::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 16px;
-    background: var(--text-on-accent);
-    border-radius: 0 2px 2px 0;
-    opacity: 0.6;
-}
-
 /* Content area */
 
 .zendian-content {
-    flex: 1;
     min-width: 0;
 }
 
@@ -9649,7 +9760,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Collapsible headings — card style */
+/* Section cards — always expanded */
 
 .zendian-heading-wrapper {
     margin-bottom: 12px;
@@ -9665,49 +9776,19 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-heading {
-    cursor: pointer;
-    user-select: none;
     display: flex;
     align-items: center;
-    gap: 8px;
     margin: 0;
-    padding: 12px 16px;
+    padding: 12px 16px 8px;
     font-size: 14px;
     font-weight: 600;
     color: var(--text-normal);
-    transition: background 0.15s ease;
-}
-
-.zendian-heading:hover {
-    background: var(--background-modifier-hover);
-}
-
-.zendian-collapse-indicator {
-    font-size: 9px;
-    color: var(--text-faint);
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    flex-shrink: 0;
-    width: 16px;
-    text-align: center;
-}
-
-.zendian-heading-wrapper.collapsed .zendian-collapse-indicator {
-    transform: rotate(0deg);
-}
-
-.zendian-heading-wrapper:not(.collapsed) .zendian-collapse-indicator {
-    transform: rotate(90deg);
-}
-
-.zendian-heading-wrapper.collapsed .zendian-heading-content {
-    display: none;
+    border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .zendian-heading-content {
     padding: 4px 16px 12px;
 }
-
-/* Settings within cards */
 
 .zendian-heading-content .setting-item {
     border-top: 1px solid var(--background-modifier-border);
@@ -9719,42 +9800,66 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     padding-top: 0;
 }
 
-/* Mode header (亮色/暗色 模式分隔) */
+/* Tab section */
 
-.zendian-mode-header {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 16px 0 8px;
+.zendian-tab-section {
+    padding-bottom: 8px;
+    animation: zendian-fade-in 0.2s ease;
+}
+
+/* Heading level tabs (H1-H6 switcher) */
+
+.zendian-heading-tabs {
     margin-top: 8px;
-    border-top: 1px solid var(--background-modifier-border);
 }
 
-.zendian-mode-header:first-child {
-    border-top: none;
-    margin-top: 0;
-    padding-top: 4px;
+.zendian-heading-tab-buttons {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 4px;
+    background: var(--background-primary);
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
 }
 
-/* Info text */
-
-.zendian-info-text {
-    padding: 12px 16px;
-    font-size: 13px;
+.zendian-heading-tab-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
     color: var(--text-muted);
-    line-height: 1.7;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
 }
 
-.zendian-info-text a {
-    color: var(--text-accent);
-    text-decoration: none;
+.zendian-heading-tab-btn:hover {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
 }
 
-.zendian-info-text a:hover {
-    color: var(--text-accent-hover);
-    text-decoration: underline;
+.zendian-heading-tab-btn.active {
+    color: var(--text-on-accent);
+    background: var(--interactive-accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.zendian-heading-tab-content {
+    padding: 4px 0;
+}
+
+.zendian-heading-tab-content .setting-item {
+    border-top: 1px solid var(--background-modifier-border);
+    padding: 8px 0;
+}
+
+.zendian-heading-tab-content .setting-item:first-child {
+    border-top: none;
+    padding-top: 0;
 }
 
 /* Heading levels grid table */
@@ -9850,24 +9955,68 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     outline: none;
 }
 
+/* Mode header */
+
+.zendian-mode-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 16px 0 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.zendian-mode-header:first-child {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 4px;
+}
+
+/* Info text */
+
+.zendian-info-text {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
+}
+
+.zendian-info-text a {
+    color: var(--text-accent);
+    text-decoration: none;
+}
+
+.zendian-info-text a:hover {
+    color: var(--text-accent-hover);
+    text-decoration: underline;
+}
+
+/* Disabled state */
+
+.zendian-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.zendian-disabled .setting-item-name {
+    color: var(--text-faint);
+}
+
+.zendian-disabled .setting-item-description {
+    color: var(--text-faint);
+}
+
 /* Responsive — mobile */
 
 @media (max-width: 600px) {
     .zendian-settings-wrapper {
-        flex-direction: column;
         gap: 12px;
     }
 
     .zendian-nav {
-        flex: none;
-        position: static;
-        max-height: none;
-        padding: 4px;
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        gap: 4px;
-        -webkit-overflow-scrolling: touch;
+        flex-wrap: wrap;
     }
 
     .zendian-nav::-webkit-scrollbar {
@@ -9877,11 +10026,10 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     .zendian-nav-item {
         font-size: 12px;
         padding: 6px 12px;
-        flex-shrink: 0;
     }
 
     .zendian-heading {
-        padding: 10px 12px;
+        padding: 10px 12px 6px;
         font-size: 13px;
     }
 
@@ -9897,5 +10045,15 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
     .zendian-hl-input {
         max-width: 70px;
+    }
+
+    .zendian-heading-tab-buttons {
+        flex-wrap: wrap;
+    }
+
+    .zendian-heading-tab-btn {
+        flex: 0 0 calc(33.33% - 4px);
+        padding: 6px 8px;
+        font-size: 12px;
     }
 }

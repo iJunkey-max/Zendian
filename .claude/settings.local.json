@@ -38,7 +38,10 @@
       "Bash(cp manifest.json \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian/\")",
       "Bash(cp C:/Users/Junkey/MyCode/Zendian/dist/main.js C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/main.js)",
       "Bash(cp C:/Users/Junkey/MyCode/Zendian/dist/styles.css C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/styles.css)",
-      "Bash(cp C:/Users/Junkey/MyCode/Zendian/manifest.json C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/manifest.json)"
+      "Bash(cp C:/Users/Junkey/MyCode/Zendian/manifest.json C:/Users/Junkey/Desktop/OB_test/.obsidian/plugins/zendian/manifest.json)",
+      "Bash(Select-String -Path \"dist\\\\main.js\" -Pattern \"MENU_CONFIG\")",
+      "Bash(Select-Object -First 3)",
+      "Bash(Copy-Item *)"
     ]
   }
 }

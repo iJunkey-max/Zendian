@@ -475,6 +475,21 @@ export class StyleSettingsManager {
     return undefined;
   }
 
+  findSettingById(settingId: string, groupId?: string): { group: CSSSettingsGroup; setting: CSSSetting } | null {
+    if (groupId) {
+      const group = this.groups.find((g) => g.id === groupId);
+      if (group) {
+        const setting = group.settings.find((s) => s.id === settingId);
+        if (setting) return { group, setting };
+      }
+    }
+    for (const group of this.groups) {
+      const setting = group.settings.find((s) => s.id === settingId);
+      if (setting) return { group, setting };
+    }
+    return null;
+  }
+
   private async saveData() {
     const data: Record<string, any> = {};
     for (const [key, value] of this.settings) {
