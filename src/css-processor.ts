@@ -249,10 +249,11 @@ export class StyleSettingsManager {
     for (const [key, value] of Object.entries(savedData)) {
       this.settings.set(key, value);
     }
-    this.syncAccentColor();
     await this.parsePluginCSS();
     this.applyAllSettings();
     this.observeThemeChange();
+    // 延迟同步强调色，确保 Obsidian 主题 CSS 已加载
+    this.syncAccentColorWithRetry();
   }
 
   cleanup() {
@@ -260,7 +261,18 @@ export class StyleSettingsManager {
       this.themeObserver.disconnect();
       this.themeObserver = null;
     }
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+    if (this.mediaQuery) {
+      this.mediaQuery.removeEventListener("change", this.onThemeChange);
+      this.mediaQuery = null;
+    }
   }
+
+  private accentSynced = false;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
 
   syncAccentColor() {
     try {
@@ -273,7 +285,7 @@ export class StyleSettingsManager {
       document.body.removeChild(el);
 
       const rgbMatch = computed.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-      if (!rgbMatch) return;
+      if (!rgbMatch) return false;
 
       const r = parseInt(rgbMatch[1]) / 255;
       const g = parseInt(rgbMatch[2]) / 255;
@@ -287,7 +299,8 @@ export class StyleSettingsManager {
         document.body.style.setProperty("--accent-h", "0");
         document.body.style.setProperty("--accent-s", "0%");
         document.body.style.setProperty("--accent-l", `${Math.round(l * 100)}%`);
-        return;
+        this.accentSynced = true;
+        return true;
       }
 
       const d = max - min;
@@ -304,12 +317,35 @@ export class StyleSettingsManager {
       document.body.style.setProperty("--accent-h", String(Math.round(h * 360)));
       document.body.style.setProperty("--accent-s", `${Math.round(s * 100)}%`);
       document.body.style.setProperty("--accent-l", `${Math.round(l * 100)}%`);
+      this.accentSynced = true;
+      return true;
     } catch {
-      console.warn("ZENdian: Could not sync accent color");
+      return false;
     }
   }
 
+  private syncAccentColorWithRetry(maxRetries = 10, delay = 500) {
+    if (this.syncAccentColor()) return;
+
+    let retries = 0;
+    const trySync = () => {
+      retries++;
+      if (this.syncAccentColor() || retries >= maxRetries) {
+        this.retryTimer = null;
+        return;
+      }
+      this.retryTimer = setTimeout(trySync, delay);
+    };
+    this.retryTimer = setTimeout(trySync, delay);
+  }
+
+  private mediaQuery: MediaQueryList | null = null;
+  private onThemeChange = () => {
+    this.syncAccentColor();
+  };
+
   private observeThemeChange() {
+    // 监听 body class 变化（主题切换、自定义主题色等）
     this.themeObserver = new MutationObserver(() => {
       this.syncAccentColor();
     });
@@ -317,6 +353,10 @@ export class StyleSettingsManager {
       attributes: true,
       attributeFilter: ["class"],
     });
+
+    // 监听系统深色/浅色模式切换
+    this.mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    this.mediaQuery.addEventListener("change", this.onThemeChange);
   }
 
   getGroups(): CSSSettingsGroup[] {
