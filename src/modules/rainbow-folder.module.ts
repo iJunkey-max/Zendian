@@ -1,7 +1,7 @@
 /**
  * 文件夹层级遮罩模块
  * 基于主题色，按层级递减遮罩浓度
- * JS 读取 Obsidian 原生 HSL 变量 → 计算 hsla → 设置 CSS 变量 → CSS 渲染
+ * JS 设置 alpha 深度变量，CSS 通过 hsla(var(--accent-h/s/l)) 自动响应主题色
  */
 
 import type { IFeatureModule, ModuleContext } from "../types/module.types";
@@ -47,10 +47,7 @@ export class RainbowFolderModule implements IFeatureModule {
   }
 
   onThemeChange(_isDark: boolean): void {
-    if (this.enabled) {
-      this.injectStyle();
-      this.applyDepths();
-    }
+    // CSS 变量 hsla(var(--accent-h/s/l)) 自动响应主题色变化，无需 JS 干预
   }
 
   private apply(enabled: boolean): void {
@@ -76,7 +73,7 @@ export class RainbowFolderModule implements IFeatureModule {
       `${scope} .nav-folder-title {`,
       "  transition: background-color 0.2s ease;",
       "  border-radius: 6px;",
-      "  background-color: var(--rf-bg) !important;",
+      "  background-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), var(--rf-alpha)) !important;",
       "}",
       `${scope} .nav-file-title.is-active {`,
       "  background-color: color-mix(in srgb, var(--interactive-accent) 35%, transparent) !important;",
@@ -112,27 +109,21 @@ export class RainbowFolderModule implements IFeatureModule {
     return depth;
   }
 
-  /** 遍历所有文件夹标题，设置 --rf-bg CSS 变量 */
+  /** 遍历所有文件夹标题，设置 --rf-alpha CSS 变量 */
   private applyDepths(): void {
-    const cs = getComputedStyle(document.body);
-    const h = cs.getPropertyValue("--accent-h").trim();
-    const s = cs.getPropertyValue("--accent-s").trim();
-    const l = cs.getPropertyValue("--accent-l").trim();
-    if (!h || !s || !l) return;
-
     const titles = document.querySelectorAll(`${EXPLORER} .nav-folder-title`);
     for (const title of titles) {
       const depth = this.getDepth(title as HTMLElement);
       const level = Math.min(depth, MAX_LEVELS);
       const alpha = Math.max(MIN_ALPHA, this.opacity * Math.pow(ALPHA_MULTIPLIER, level));
-      setCSSVar(title as HTMLElement, "--rf-bg", `hsla(${h},${s},${l},${alpha})`);
+      setCSSVar(title as HTMLElement, "--rf-alpha", String(alpha));
     }
   }
 
   private clearFolderVars(): void {
     const titles = document.querySelectorAll(`${EXPLORER} .nav-folder-title`);
     for (const title of titles) {
-      removeCSSVar(title as HTMLElement, "--rf-bg");
+      removeCSSVar(title as HTMLElement, "--rf-alpha");
     }
   }
 

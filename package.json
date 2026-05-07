@@ -1,6 +1,6 @@
 {
   "name": "zendian",
-  "version": "2.0.19E",
+  "version": "2.1.00F",
   "description": "A comprehensive Obsidian UI beautification plugin.",
   "main": "dist/main.js",
   "scripts": {

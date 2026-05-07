@@ -82,7 +82,7 @@ export class HeadingsModule implements IFeatureModule {
       setCSSVar(document.body, `--${lv}-text-transform`, h.textTransform || "");
       setCSSVar(document.body, `--${lv}-spacing-scale-start`, String(h.spacingStart));
       setCSSVar(document.body, `--${lv}-spacing-scale-end`, String(h.spacingEnd));
-      setCSSVar(document.body, `--${lv}-size`, String(h.size));
+      setCSSVar(document.body, `--${lv}-size`, `${h.size}em`);
 
       // alignment: class-select
       for (const cls of ALIGN_CLASSES[lv]) this.classes.remove(cls);

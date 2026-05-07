@@ -16,6 +16,7 @@ import type { PluginSettings } from "../types/settings.types";
 interface SettingDef {
   id: string;
   titleZh: string;
+  descZh?: string;
   type: "toggle" | "select" | "number" | "number-slider";
   get: (s: PluginSettings) => any;
   set: (s: PluginSettings, val: any) => Partial<PluginSettings[keyof PluginSettings]>;
@@ -47,20 +48,20 @@ interface TabDef {
 // 辅助函数
 // ============================================================
 
-function toggle(id: string, titleZh: string, get: (s: PluginSettings) => boolean, set: (s: PluginSettings, v: boolean) => any): SettingDef {
-  return { id, titleZh, type: "toggle", get, set: (s, v) => set(s, v) };
+function toggle(id: string, titleZh: string, get: (s: PluginSettings) => boolean, set: (s: PluginSettings, v: boolean) => any, descZh?: string): SettingDef {
+  return { id, titleZh, descZh, type: "toggle", get, set: (s, v) => set(s, v) };
 }
 
-function select(id: string, titleZh: string, options: { label: string; value: string }[], get: (s: PluginSettings) => string, set: (s: PluginSettings, v: string) => any): SettingDef {
-  return { id, titleZh, type: "select", get, set: (s, v) => set(s, v), options };
+function select(id: string, titleZh: string, options: { label: string; value: string }[], get: (s: PluginSettings) => string, set: (s: PluginSettings, v: string) => any, descZh?: string): SettingDef {
+  return { id, titleZh, descZh, type: "select", get, set: (s, v) => set(s, v), options };
 }
 
-function num(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, opts?: { min?: number; max?: number; step?: number; format?: string }): SettingDef {
-  return { id, titleZh, type: "number", get, set: (s, v) => set(s, v), ...opts };
+function num(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, opts?: { min?: number; max?: number; step?: number; format?: string }, descZh?: string): SettingDef {
+  return { id, titleZh, descZh, type: "number", get, set: (s, v) => set(s, v), ...opts };
 }
 
-function slider(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, min: number, max: number, step: number): SettingDef {
-  return { id, titleZh, type: "number-slider", get, set: (s, v) => set(s, v), min, max, step };
+function slider(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, min: number, max: number, step: number, descZh?: string): SettingDef {
+  return { id, titleZh, descZh, type: "number-slider", get, set: (s, v) => set(s, v), min, max, step };
 }
 
 // ============================================================
@@ -155,17 +156,17 @@ const MENU_CONFIG: TabDef[] = [
         id: "card-layout", title: "Card & Layout", titleZh: "卡片与布局",
         settings: [
           toggle("card-layout-open", "启用卡片布局", (s) => s.cardLayout.enabled, (s, v) => ({ cardLayout: { ...s.cardLayout, enabled: v } })),
-          toggle("immersive-canvas", "沉浸式白板", (s) => s.canvas.immersive, (s, v) => ({ canvas: { ...s.canvas, immersive: v } })),
+          toggle("immersive-canvas", "沉浸式白板", (s) => s.canvas.immersive, (s, v) => ({ canvas: { ...s.canvas, immersive: v } }), "移除白板的边框和阴影，使其与背景融为一体"),
           select("canvas-card-menu", "Canvas 卡片菜单位置", [
             { label: "居中", value: "center" }, { label: "左侧", value: "left" }, { label: "右侧", value: "right" },
-          ], (s) => s.cardLayout.canvasMenu, (s, v) => ({ cardLayout: { ...s.cardLayout, canvasMenu: v as any } })),
-          toggle("media-embed-card-border-off", "移除媒体卡片边框", (s) => s.cardLayout.mediaEmbedBorderOff, (s, v) => ({ cardLayout: { ...s.cardLayout, mediaEmbedBorderOff: v } })),
+          ], (s) => s.cardLayout.canvasMenu, (s, v) => ({ cardLayout: { ...s.cardLayout, canvasMenu: v as any } }), "设置白板卡片右键菜单的弹出位置"),
+          toggle("media-embed-card-border-off", "移除媒体卡片边框", (s) => s.cardLayout.mediaEmbedBorderOff, (s, v) => ({ cardLayout: { ...s.cardLayout, mediaEmbedBorderOff: v } }), "移除图片、视频等媒体嵌入卡片的边框和阴影"),
         ],
       },
       {
         id: "sidebar", title: "Sidebar", titleZh: "侧边栏",
         settings: [
-          toggle("outline-enhanced", "增强大纲样式", (s) => s.outline.enhanced, (s, v) => ({ outline: { ...s.outline, enhanced: v } })),
+          toggle("outline-enhanced", "增强大纲样式", (s) => s.outline.enhanced, (s, v) => ({ outline: { ...s.outline, enhanced: v } }), "显示完整的文件名，不因窗口宽度不足而截断"),
         ],
       },
       {
@@ -173,21 +174,21 @@ const MENU_CONFIG: TabDef[] = [
         settings: [
           select("new-tab-btn-select", "新标签页按钮", [
             { label: "文字按钮（Obsidian 默认）", value: "text-btn-restore" }, { label: "默认", value: "default" },
-          ], (s) => s.newTab.buttonStyle, (s, v) => ({ newTab: { ...s.newTab, buttonStyle: v as any } })),
+          ], (s) => s.newTab.buttonStyle, (s, v) => ({ newTab: { ...s.newTab, buttonStyle: v as any } }), "选择新标签页顶部显示的按钮样式"),
           select("new-tab-image-select", "新标签页图像", [
             { label: "无", value: "none" }, { label: "Obsidian Logo", value: "default" },
             { label: "旧版默认", value: "old" }, { label: "自定义", value: "customize" },
-          ], (s) => s.newTab.imageStyle, (s, v) => ({ newTab: { ...s.newTab, imageStyle: v as any } })),
+          ], (s) => s.newTab.imageStyle, (s, v) => ({ newTab: { ...s.newTab, imageStyle: v as any } }), "选择新标签页显示的图像，可选择自定义图片"),
         ],
       },
       {
         id: "ui-details", title: "UI Details", titleZh: "界面细节",
         settings: [
-          toggle("scrollbar-hide", "隐藏滚动条", (s) => s.scrollbar.hide, (s, v) => ({ scrollbar: { ...s.scrollbar, hide: v } })),
-          toggle("restored-scrollbars", "还原滚动条样式", (s) => s.scrollbar.restored, (s, v) => ({ scrollbar: { ...s.scrollbar, restored: v } })),
-          toggle("setting-item-title-icon-remove", "移除设置项图标", (s) => s.uiDetail.settingItemTitleIconRemove, (s, v) => ({ uiDetail: { ...s.uiDetail, settingItemTitleIconRemove: v } })),
-          toggle("extra-anim-remove", "移除额外动效", (s) => s.uiDetail.extraAnimRemove, (s, v) => ({ uiDetail: { ...s.uiDetail, extraAnimRemove: v } })),
-          slider("anim-speed", "动效速度", (s) => s.uiDetail.animSpeed, (s, v) => ({ uiDetail: { ...s.uiDetail, animSpeed: v } }), 0.5, 2, 0.05),
+          toggle("scrollbar-hide", "隐藏滚动条", (s) => s.scrollbar.hide, (s, v) => ({ scrollbar: { ...s.scrollbar, hide: v } }), "完全隐藏滚动条，内容仍可滚动，界面更简洁"),
+          toggle("restored-scrollbars", "还原滚动条样式", (s) => s.scrollbar.restored, (s, v) => ({ scrollbar: { ...s.scrollbar, restored: v } }), "将滚动条恢复为系统默认样式，而非主题自定义的细滚动条"),
+          toggle("setting-item-title-icon-remove", "移除设置项图标", (s) => s.uiDetail.settingItemTitleIconRemove, (s, v) => ({ uiDetail: { ...s.uiDetail, settingItemTitleIconRemove: v } }), "移除设置面板中每个选项左侧的小图标，使界面更简洁"),
+          toggle("extra-anim-remove", "移除额外动效", (s) => s.uiDetail.extraAnimRemove, (s, v) => ({ uiDetail: { ...s.uiDetail, extraAnimRemove: v } }), "关闭插件添加的过渡动画，适合追求简洁或性能较低的设备"),
+          slider("anim-speed", "动效速度", (s) => s.uiDetail.animSpeed, (s, v) => ({ uiDetail: { ...s.uiDetail, animSpeed: v } }), 0.5, 2, 0.05, "调整过渡动画的速度，1为默认，小于1变慢，大于1变快"),
         ],
       },
     ],
@@ -200,17 +201,17 @@ const MENU_CONFIG: TabDef[] = [
       {
         id: "file-tree-basic", title: "File Explorer", titleZh: "文件列表",
         settings: [
-          toggle("CTA-BTN-enable", "更大的新建笔记按钮", (s) => s.fileTree.ctaBtnEnable, (s, v) => ({ fileTree: { ...s.fileTree, ctaBtnEnable: v } })),
+          toggle("CTA-BTN-enable", "更大的新建笔记按钮", (s) => s.fileTree.ctaBtnEnable, (s, v) => ({ fileTree: { ...s.fileTree, ctaBtnEnable: v } }), "将文件列表顶部的新建笔记按钮放大并添加背景色，使其更醒目"),
           toggle("folder-font-bold", "加粗文件夹字体", (s) => s.fileTree.folderFontBold, (s, v) => ({ fileTree: { ...s.fileTree, folderFontBold: v } })),
-          toggle("file-icon-remove", "移除自定义图标", (s) => s.fileTree.fileIconRemove, (s, v) => ({ fileTree: { ...s.fileTree, fileIconRemove: v } })),
-          toggle("colorful-folder", "多彩文件夹图标", (s) => s.fileTree.colorfulFolder, (s, v) => ({ fileTree: { ...s.fileTree, colorfulFolder: v } })),
+          toggle("file-icon-remove", "移除自定义图标", (s) => s.fileTree.fileIconRemove, (s, v) => ({ fileTree: { ...s.fileTree, fileIconRemove: v } }), "移除通过 Icon Folder 等插件设置的自定义图标，恢复默认文件图标"),
+          toggle("colorful-folder", "多彩文件夹图标", (s) => s.fileTree.colorfulFolder, (s, v) => ({ fileTree: { ...s.fileTree, colorfulFolder: v } }), "为不同层级的文件夹图标添加不同颜色，增强视觉区分"),
         ],
       },
       {
         id: "file-tree-rainbow", title: "Folder Overlay", titleZh: "文件夹层级遮罩",
         settings: [
-          toggle("rainbow-folder", "启用层级遮罩", (s) => s.rainbowFolder.enabled, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, enabled: v } })),
-          slider("rainbow-folder-opacity", "遮罩深度", (s) => s.rainbowFolder.opacity, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, opacity: v } }), 0.05, 0.8, 0.05),
+          toggle("rainbow-folder", "启用层级遮罩", (s) => s.rainbowFolder.enabled, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, enabled: v } }), "为文件树中的文件夹标题添加彩虹色循环背景"),
+          slider("rainbow-folder-opacity", "遮罩深度", (s) => s.rainbowFolder.opacity, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, opacity: v } }), 0.05, 0.8, 0.05, "调整文件夹标题背景遮罩的透明度，0为完全透明，1为完全不透明"),
         ],
       },
     ],
@@ -234,10 +235,10 @@ const MENU_CONFIG: TabDef[] = [
       {
         id: "focus-mode", title: "Focus Mode", titleZh: "专注模式",
         settings: [
-          toggle("border-focus-mode", "启用专注模式", (s) => s.editorEnhance.focusMode, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusMode: v } })),
-          slider("line-normal-opacity", "普通行透明度", (s) => s.editorEnhance.focusModeOpacity, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeOpacity: v } }), 0.05, 1, 0.05),
+          toggle("border-focus-mode", "启用专注模式", (s) => s.editorEnhance.focusMode, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusMode: v } }), "降低非编辑行的透明度，减少视觉干扰，让注意力集中在当前正在编辑的段落。配合下方滑块可调节透明度强度"),
+          slider("line-normal-opacity", "普通行透明度", (s) => s.editorEnhance.focusModeOpacity, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeOpacity: v } }), 0.05, 1, 0.05, "降低非当前行的透明度，让注意力集中在正在编辑的段落"),
           {
-            ...toggle("focus-mode-typewriter", "打字机滚动", (s) => s.editorEnhance.focusModeTypewriter, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeTypewriter: v } })),
+            ...toggle("focus-mode-typewriter", "打字机滚动", (s) => s.editorEnhance.focusModeTypewriter, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeTypewriter: v } }), "输入时光标始终保持在屏幕垂直中央，减少视线跳动，适合长时间沉浸式写作"),
             visible: (s) => s.editorEnhance.focusMode,
           },
         ],
@@ -245,8 +246,8 @@ const MENU_CONFIG: TabDef[] = [
       {
         id: "hover-indicator", title: "Hover Indicator", titleZh: "焦点指示",
         settings: [
-          toggle("line-hover-indicator", "启用焦点指示器", (s) => s.editorEnhance.hoverIndicator, (s, v) => ({ editorEnhance: { ...s.editorEnhance, hoverIndicator: v } })),
-          toggle("focus-indicator-list-level", "指示列表层级", (s) => s.editorEnhance.hoverIndicatorListLevel, (s, v) => ({ editorEnhance: { ...s.editorEnhance, hoverIndicatorListLevel: v } })),
+          toggle("line-hover-indicator", "启用焦点指示器", (s) => s.editorEnhance.hoverIndicator, (s, v) => ({ editorEnhance: { ...s.editorEnhance, hoverIndicator: v } }), "鼠标悬停的行左侧显示竖线标记，在长文档中帮助快速定位当前浏览位置。配合列表层级指示可进一步区分嵌套层次"),
+          toggle("focus-indicator-list-level", "指示列表层级", (s) => s.editorEnhance.hoverIndicatorListLevel, (s, v) => ({ editorEnhance: { ...s.editorEnhance, hoverIndicatorListLevel: v } }), "焦点指示器根据列表缩进层级显示不同颜色"),
         ],
       },
     ],
@@ -259,14 +260,14 @@ const MENU_CONFIG: TabDef[] = [
       {
         id: "page-paragraph", title: "Page & Paragraph", titleZh: "页面与段落",
         settings: [
-          slider("file-line-width", "阅读区宽度", (s) => s.typography.fileLineWidth, (s, v) => ({ typography: { ...s.typography, fileLineWidth: v } }), 400, 1600, 50),
-          toggle("editor-grid-background-pattren", "网格背景图案", (s) => s.editorEnhance.gridBackground, (s, v) => ({ editorEnhance: { ...s.editorEnhance, gridBackground: v } })),
+          slider("file-line-width", "阅读区宽度", (s) => s.typography.fileLineWidth, (s, v) => ({ typography: { ...s.typography, fileLineWidth: v } }), 400, 1600, 50, "单位 px"),
+          toggle("editor-grid-background-pattren", "网格背景图案", (s) => s.editorEnhance.gridBackground, (s, v) => ({ editorEnhance: { ...s.editorEnhance, gridBackground: v } }), "在编辑器背景显示淡雅的网格线，营造书写纸效果"),
           select("grid-background-pattern-size", "网格背景尺寸", [
             { label: "小", value: "24px" }, { label: "中", value: "36px" }, { label: "大", value: "48px" },
-          ], (s) => s.editorEnhance.gridBackgroundSize, (s, v) => ({ editorEnhance: { ...s.editorEnhance, gridBackgroundSize: v } })),
-          toggle("text-align-justify", "段落两端对齐", (s) => s.typography.textAlignJustify, (s, v) => ({ typography: { ...s.typography, textAlignJustify: v } })),
-          slider("letter-spacing", "字间距", (s) => s.typography.letterSpacing, (s, v) => ({ typography: { ...s.typography, letterSpacing: v } }), 0, 5, 0.5),
-          slider("line-height-customize", "段落行高", (s) => s.typography.lineHeight, (s, v) => ({ typography: { ...s.typography, lineHeight: v } }), 1, 3, 0.1),
+          ], (s) => s.editorEnhance.gridBackgroundSize, (s, v) => ({ editorEnhance: { ...s.editorEnhance, gridBackgroundSize: v } }), "接受任何 CSS background-size 值"),
+          toggle("text-align-justify", "段落两端对齐", (s) => s.typography.textAlignJustify, (s, v) => ({ typography: { ...s.typography, textAlignJustify: v } }), "使段落文本左右两端对齐，类似报纸排版效果"),
+          slider("letter-spacing", "字间距", (s) => s.typography.letterSpacing, (s, v) => ({ typography: { ...s.typography, letterSpacing: v } }), 0, 5, 0.5, "调整字符之间的间距，0为默认，正值增大间距"),
+          slider("line-height-customize", "段落行高", (s) => s.typography.lineHeight, (s, v) => ({ typography: { ...s.typography, lineHeight: v } }), 1, 3, 0.1, "调整段落文本的行高，值越大行距越宽松"),
         ],
       },
       {
@@ -279,14 +280,14 @@ const MENU_CONFIG: TabDef[] = [
           select("link-decoration", "链接装饰", [
             { label: "下划线偏移", value: "underline-offset" }, { label: "下划线", value: "underline" },
             { label: "无装饰", value: "none" }, { label: "虚线", value: "dotted" },
-          ], (s) => s.link.decoration, (s, v) => ({ link: { ...s.link, decoration: v } })),
+          ], (s) => s.link.decoration, (s, v) => ({ link: { ...s.link, decoration: v } }), "设置链接的装饰样式，如 underline、none、dashed"),
           select("link-decoration-thickness", "链接装饰粗细", [
             { label: "自动", value: "auto" }, { label: "细", value: "1px" }, { label: "粗", value: "2px" },
-          ], (s) => s.link.decorationThickness, (s, v) => ({ link: { ...s.link, decorationThickness: v } })),
+          ], (s) => s.link.decorationThickness, (s, v) => ({ link: { ...s.link, decorationThickness: v } }), "设置链接下划线的粗细，如 auto、1px、2px"),
           select("link-external-decoration", "外部链接样式", [
             { label: "下划线偏移", value: "underline-offset" }, { label: "下划线", value: "underline" },
             { label: "无装饰", value: "none" }, { label: "虚线", value: "dotted" },
-          ], (s) => s.link.externalDecoration, (s, v) => ({ link: { ...s.link, externalDecoration: v } })),
+          ], (s) => s.link.externalDecoration, (s, v) => ({ link: { ...s.link, externalDecoration: v } }), "设置外部链接的装饰样式，如 underline、none"),
         ],
       },
     ],
@@ -303,9 +304,9 @@ const MENU_CONFIG: TabDef[] = [
             { label: "自定义", value: "customize" }, { label: "Dracula", value: "dracula" },
             { label: "Solarized Light", value: "solarized-light" }, { label: "Solarized Dark", value: "solarized-dark" },
             { label: "One Dark", value: "one-dark" },
-          ], (s) => s.codeBlock.theme, (s, v) => ({ codeBlock: { ...s.codeBlock, theme: v as any } })),
-          slider("code-line-height", "代码行高", (s) => s.typography.codeLineHeight, (s, v) => ({ typography: { ...s.typography, codeLineHeight: v } }), 1, 3, 0.1),
-          slider("blockquote-line-height", "引用块行高", (s) => s.typography.blockquoteLineHeight, (s, v) => ({ typography: { ...s.typography, blockquoteLineHeight: v } }), 1, 3, 0.1),
+          ], (s) => s.codeBlock.theme, (s, v) => ({ codeBlock: { ...s.codeBlock, theme: v as any } }), "选择代码块的配色主题方案"),
+          slider("code-line-height", "代码行高", (s) => s.typography.codeLineHeight, (s, v) => ({ typography: { ...s.typography, codeLineHeight: v } }), 1, 3, 0.1, "调整代码块中文本的行高"),
+          slider("blockquote-line-height", "引用块行高", (s) => s.typography.blockquoteLineHeight, (s, v) => ({ typography: { ...s.typography, blockquoteLineHeight: v } }), 1, 3, 0.1, "调整引用块中文本的行高"),
         ],
       },
       {
@@ -314,15 +315,15 @@ const MENU_CONFIG: TabDef[] = [
           select("list-indent", "列表缩进", [
             { label: "紧凑", value: "1.5em" }, { label: "标准", value: "2.25em" }, { label: "宽松", value: "3em" },
           ], (s) => s.listTable.listIndent, (s, v) => ({ listTable: { ...s.listTable, listIndent: v } })),
-          slider("list-spacing", "列表间距", (s) => parseFloat(s.listTable.listSpacing) || 0.075, (s, v) => ({ listTable: { ...s.listTable, listSpacing: `${v}em` } }), 0, 1, 0.025),
-          toggle("ul-marker-restore", "恢复无序列表默认样式", (s) => s.listTable.ulMarkerRestore, (s, v) => ({ listTable: { ...s.listTable, ulMarkerRestore: v } })),
-          toggle("disable-alternative-checkboxes", "禁用备用复选框", (s) => s.listTable.disableAlternativeCheckboxes, (s, v) => ({ listTable: { ...s.listTable, disableAlternativeCheckboxes: v } })),
-          toggle("colorful-checkbox", "多彩复选框", (s) => s.checkbox.colorful, (s, v) => ({ checkbox: { ...s.checkbox, colorful: v } })),
+          slider("list-spacing", "列表间距", (s) => parseFloat(s.listTable.listSpacing) || 0.075, (s, v) => ({ listTable: { ...s.listTable, listSpacing: `${v}em` } }), 0, 1, 0.025, "设置列表项之间的垂直间距"),
+          toggle("ul-marker-restore", "恢复无序列表默认样式", (s) => s.listTable.ulMarkerRestore, (s, v) => ({ listTable: { ...s.listTable, ulMarkerRestore: v } }), "将无序列表的圆点标记恢复为 Obsidian 默认样式"),
+          toggle("disable-alternative-checkboxes", "禁用备用复选框", (s) => s.listTable.disableAlternativeCheckboxes, (s, v) => ({ listTable: { ...s.listTable, disableAlternativeCheckboxes: v } }), "如果你使用 CSS 片段实现了自己的复选框样式，请禁用此项"),
+          toggle("colorful-checkbox", "多彩复选框", (s) => s.checkbox.colorful, (s, v) => ({ checkbox: { ...s.checkbox, colorful: v } }), "为 Checklist 插件的复选框添加不同颜色，区分任务状态"),
           select("table-width-select", "表格宽度", [
             { label: "与行宽一致", value: "default" }, { label: "Obsidian 默认", value: "obsidian-default" }, { label: "自定义", value: "customized" },
-          ], (s) => s.listTable.tableWidthMode, (s, v) => ({ listTable: { ...s.listTable, tableWidthMode: v as any } })),
-          slider("table-width", "自定义表格宽度", (s) => s.listTable.tableWidth, (s, v) => ({ listTable: { ...s.listTable, tableWidth: v } }), 10, 100, 1),
-          slider("table-line-height", "表格行高", (s) => s.typography.tableLineHeight, (s, v) => ({ typography: { ...s.typography, tableLineHeight: v } }), 1, 3, 0.1),
+          ], (s) => s.listTable.tableWidthMode, (s, v) => ({ listTable: { ...s.listTable, tableWidthMode: v as any } }), "选择表格宽度的计算方式"),
+          slider("table-width", "自定义表格宽度", (s) => s.listTable.tableWidth, (s, v) => ({ listTable: { ...s.listTable, tableWidth: v } }), 10, 100, 1, "编辑器面板宽度的百分之（%）"),
+          slider("table-line-height", "表格行高", (s) => s.typography.tableLineHeight, (s, v) => ({ typography: { ...s.typography, tableLineHeight: v } }), 1, 3, 0.1, "调整表格单元格中文本的行高"),
         ],
       },
       {
@@ -331,13 +332,13 @@ const MENU_CONFIG: TabDef[] = [
           select("callout-style-select", "标注风格", [
             { label: "自定义", value: "customize" }, { label: "风格 1", value: "style-1" },
             { label: "风格 2", value: "style-2" }, { label: "风格 3", value: "style-3" }, { label: "风格 4", value: "style-4" },
-          ], (s) => s.callout.style, (s, v) => ({ callout: { ...s.callout, style: v as any } })),
-          slider("callout-border-opacity", "标注边框透明度", (s) => s.callout.borderOpacity, (s, v) => ({ callout: { ...s.callout, borderOpacity: v } }), 0, 1, 0.05),
-          toggle("seamless-embeds", "无缝嵌入", (s) => s.embed.seamless, (s, v) => ({ embed: { ...s.embed, seamless: v } })),
+          ], (s) => s.callout.style, (s, v) => ({ callout: { ...s.callout, style: v as any } }), "选择标注块的视觉风格方案"),
+          slider("callout-border-opacity", "标注边框透明度", (s) => s.callout.borderOpacity, (s, v) => ({ callout: { ...s.callout, borderOpacity: v } }), 0, 1, 0.05, "调整标注边框的透明度，0为完全透明，1为完全不透明"),
+          toggle("seamless-embeds", "无缝嵌入", (s) => s.embed.seamless, (s, v) => ({ embed: { ...s.embed, seamless: v } }), "移除嵌入文档的边框和背景，使其与正文融为一体"),
           select("embed-max-height", "嵌入最大高度", [
             { label: "不限制", value: "" }, { label: "300px", value: "300px" },
             { label: "500px", value: "500px" }, { label: "800px", value: "800px" },
-          ], (s) => s.embed.maxHeight, (s, v) => ({ embed: { ...s.embed, maxHeight: v } })),
+          ], (s) => s.embed.maxHeight, (s, v) => ({ embed: { ...s.embed, maxHeight: v } }), "限制嵌入文档的最大高度，超出部分可滚动"),
         ],
       },
       {
@@ -358,21 +359,21 @@ const MENU_CONFIG: TabDef[] = [
       {
         id: "mobile-layout", title: "Mobile Layout", titleZh: "移动端布局",
         settings: [
-          toggle("card-layout-pad-open", "平板卡片布局", (s) => s.mobile.cardLayoutPad, (s, v) => ({ mobile: { ...s.mobile, cardLayoutPad: v } })),
-          toggle("drawer-phone-full-width", "手机侧边栏全屏", (s) => s.mobile.drawerPhoneFullWidth, (s, v) => ({ mobile: { ...s.mobile, drawerPhoneFullWidth: v } })),
+          toggle("card-layout-pad-open", "平板卡片布局", (s) => s.mobile.cardLayoutPad, (s, v) => ({ mobile: { ...s.mobile, cardLayoutPad: v } }), "在平板设备上启用卡片式笔记布局"),
+          toggle("drawer-phone-full-width", "手机侧边栏全屏", (s) => s.mobile.drawerPhoneFullWidth, (s, v) => ({ mobile: { ...s.mobile, drawerPhoneFullWidth: v } }), "在手机端打开侧边栏时自动全屏显示，关闭后返回笔记"),
         ],
       },
       {
         id: "plugin-compat", title: "Plugin Compatibility", titleZh: "第三方插件适配",
         settings: [
-          toggle("DB-table-full-width-off", "关闭 DB Folder 全宽", (s) => s.pluginCompat.dbTableFullWidthOff, (s, v) => ({ pluginCompat: { ...s.pluginCompat, dbTableFullWidthOff: v } })),
+          toggle("DB-table-full-width-off", "关闭 DB Folder 全宽", (s) => s.pluginCompat.dbTableFullWidthOff, (s, v) => ({ pluginCompat: { ...s.pluginCompat, dbTableFullWidthOff: v } }), "让 DB Folder 插件的表格不自动撑满整个窗口宽度"),
           select("DB-table-bg-color", "DB Folder 背景色", [
             { label: "默认", value: "default" }, { label: "适配背景", value: "adapt" }, { label: "统一背景", value: "unify" },
-          ], (s) => s.pluginCompat.dbTableBgColor, (s, v) => ({ pluginCompat: { ...s.pluginCompat, dbTableBgColor: v as any } })),
+          ], (s) => s.pluginCompat.dbTableBgColor, (s, v) => ({ pluginCompat: { ...s.pluginCompat, dbTableBgColor: v as any } }), "设置 DB Folder 表格的背景颜色方案"),
           select("Projects-bg-color", "Projects 背景色", [
             { label: "默认", value: "default" }, { label: "适配背景", value: "adapt" }, { label: "统一背景", value: "unify" },
-          ], (s) => s.pluginCompat.projectsBgColor, (s, v) => ({ pluginCompat: { ...s.pluginCompat, projectsBgColor: v as any } })),
-          toggle("Surfing-bookmark-bar-hide", "Surfing 隐藏书签栏", (s) => s.pluginCompat.surfingBookmarkBarHide, (s, v) => ({ pluginCompat: { ...s.pluginCompat, surfingBookmarkBarHide: v } })),
+          ], (s) => s.pluginCompat.projectsBgColor, (s, v) => ({ pluginCompat: { ...s.pluginCompat, projectsBgColor: v as any } }), "设置 Projects 插件的背景颜色方案"),
+          toggle("Surfing-bookmark-bar-hide", "Surfing 隐藏书签栏", (s) => s.pluginCompat.surfingBookmarkBarHide, (s, v) => ({ pluginCompat: { ...s.pluginCompat, surfingBookmarkBarHide: v } }), "使用 Surfing 插件浏览网页时自动隐藏书签栏，获得更大浏览空间"),
         ],
       },
     ],
@@ -647,16 +648,18 @@ export class ZENdianSettingTab extends PluginSettingTab {
       ? containerEl.createDiv("zendian-disabled")
       : containerEl;
 
+    const applyDesc = (s: Setting) => { if (def.descZh) s.setDesc(def.descZh); return s; };
+
     switch (def.type) {
       case "toggle":
-        new Setting(wrapper).setName(def.titleZh).addToggle((toggle) => {
+        applyDesc(new Setting(wrapper).setName(def.titleZh)).addToggle((toggle) => {
           toggle.setValue(def.get(settings));
           toggle.onChange(async (val) => { await this.settingsManager.updateMultiple(def.set(settings, val)); });
         });
         break;
 
       case "select":
-        new Setting(wrapper).setName(def.titleZh).addDropdown((dropdown) => {
+        applyDesc(new Setting(wrapper).setName(def.titleZh)).addDropdown((dropdown) => {
           for (const opt of def.options ?? []) dropdown.addOption(opt.value, opt.label);
           dropdown.setValue(def.get(settings));
           dropdown.onChange(async (val) => { await this.settingsManager.updateMultiple(def.set(settings, val)); });
@@ -664,7 +667,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
         break;
 
       case "number":
-        new Setting(wrapper).setName(def.titleZh).addText((text) => {
+        applyDesc(new Setting(wrapper).setName(def.titleZh)).addText((text) => {
           text.inputEl.type = "number";
           if (def.min !== undefined) text.inputEl.min = String(def.min);
           if (def.max !== undefined) text.inputEl.max = String(def.max);
@@ -675,7 +678,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
         break;
 
       case "number-slider":
-        new Setting(wrapper).setName(def.titleZh).addSlider((slider) => {
+        applyDesc(new Setting(wrapper).setName(def.titleZh)).addSlider((slider) => {
           slider.setLimits(def.min ?? 0, def.max ?? 1, def.step ?? 0.01);
           slider.setValue(def.get(settings));
           slider.setDynamicTooltip();

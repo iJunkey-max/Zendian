@@ -10155,6 +10155,31 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     padding-top: 0;
 }
 
+/* Section heading & content (used by non-card tabs) */
+
+.zendian-section-heading h3 {
+    margin: 0;
+    padding: 12px 16px 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-normal);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.zendian-section-content {
+    padding: 4px 16px 12px;
+}
+
+.zendian-section-content .setting-item {
+    border-top: 1px solid var(--background-modifier-border);
+    padding: 8px 0;
+}
+
+.zendian-section-content .setting-item:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
 /* Tab section */
 
 .zendian-tab-section {
@@ -10595,6 +10620,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-about-title {
     position: relative;
     z-index: 1;
+    text-align: center;
     font-size: 36px;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -10616,6 +10642,9 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     position: relative;
     z-index: 1;
     display: inline-block;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
     font-size: 12px;
     font-weight: 500;
     color: var(--text-muted);
@@ -10630,7 +10659,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     position: relative;
     z-index: 1;
     font-size: 13px;
-    color: var(--text-faint);
+    color: var(--text-muted);
     margin: 0;
     letter-spacing: 0.04em;
 }
@@ -10741,7 +10770,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     text-align: center;
     padding: 4px 0 8px;
     font-size: 12px;
-    color: var(--text-faint);
+    color: var(--text-muted);
     letter-spacing: 0.03em;
 }
 
