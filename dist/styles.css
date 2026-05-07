@@ -23,8 +23,8 @@ settings:
         title: Version
         title.zh: 版本
         type: info-text
-        description: "v2.0.18U"
-        description.zh: "v2.0.18U"
+        description: "v2.0.19E"
+        description.zh: "v2.0.19E"
     -
         id: zendian-changelog
         title: Changelog
@@ -4847,44 +4847,81 @@ body {
     }
 }
 
-/* ====== line emphasis ====== */
-/* ====== highlight ====== */
+/* ====== Focus Mode — Glassmorphism + Depth of Field ====== */
+
 body {
     --line-normal-opacity: 0.5;
-    --line-active-bg: hsla(var(--accent-h), calc(var(--accent-s) * 0.6), var(--accent-l), 0.08);
+    --line-active-bg: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
 }
 
-.border-focus-mode .cm-lineWrapping>.cm-line.cm-active {
-    background-color: var(--line-active-bg);
-    border-radius: var(--radius-s);
-    opacity: 1;
+/* 底部留白：允许最后一行滚动到 75% 视口位置 */
+.border-focus-mode .markdown-source-view .cm-scroller {
+    padding-bottom: 75vh;
 }
 
-.border-focus-mode .cm-lineWrapping>.cm-line {
-    padding-left: var(--size-4-1);
-    padding-right: var(--size-4-1);
+/* 非活动行：降噪层 */
+.border-focus-mode .cm-lineWrapping > .cm-line {
     opacity: var(--line-normal-opacity);
+    filter: blur(0.5px);
+    transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                filter 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.border-focus-mode .cm-lineWrapping>.cm-table-widget .cm-line {
+/* 活动行：毛玻璃高亮层 */
+.border-focus-mode .cm-lineWrapping > .cm-line.cm-active {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1.02);
+    font-weight: 500;
+    background-color: var(--line-active-bg);
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05),
+                0 2px 8px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 4px;
+}
+
+/* 异常处理：表格组件 */
+.border-focus-mode .cm-lineWrapping > .cm-table-widget .cm-line {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     background-color: unset !important;
     border-radius: unset !important;
     padding-left: unset !important;
     padding-right: unset !important;
 }
 
+/* 异常处理：代码块 */
 .border-focus-mode .markdown-source-view .cm-scroller .cm-line.cm-active.HyperMD-codeblock-bg:not(.HyperMD-codeblock-begin-bg, .HyperMD-codeblock-end-bg) {
     border-radius: 0px;
+    transform: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .border-focus-mode .markdown-source-view .cm-scroller .cm-line.cm-active.HyperMD-codeblock-begin-bg {
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
+    transform: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .border-focus-mode .markdown-source-view .cm-scroller .cm-line.cm-active.HyperMD-codeblock-end-bg {
     border-top-left-radius: 0px;
     border-top-right-radius: 0px;
+    transform: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 /* ====== hover indicator ====== */
@@ -10498,92 +10535,232 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     color: var(--text-faint);
 }
 
-/* About page */
+/* ============================================================
+   About page — Glassmorphism redesign
+   ============================================================ */
 
 .zendian-about {
-    max-width: 560px;
+    max-width: 580px;
     margin: 0 auto;
-    padding: 8px 0;
+    padding: 8px 0 24px;
 }
 
-.zendian-about-header {
+/* ── Hero Section ── */
+
+.zendian-about-hero {
+    position: relative;
     text-align: center;
-    padding: 24px 0 16px;
+    padding: 40px 16px 32px;
+    overflow: hidden;
 }
 
-.zendian-about-logo {
-    font-size: 48px;
-    line-height: 1;
-    margin-bottom: 8px;
+.zendian-about-glow {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        var(--interactive-accent) 0%,
+        transparent 70%
+    );
+    opacity: 0.12;
+    filter: blur(40px);
+    animation: zendian-glow-pulse 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.zendian-about-icon {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    margin-bottom: 12px;
+    color: var(--interactive-accent);
+    animation: zendian-icon-float 6s ease-in-out infinite;
+}
+
+.zendian-about-icon svg {
+    width: 56px;
+    height: 56px;
 }
 
 .zendian-about-title {
-    font-size: 28px;
-    font-weight: 700;
-    margin: 0 0 4px;
-    color: var(--text-normal);
+    position: relative;
+    z-index: 1;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    background: linear-gradient(
+        135deg,
+        var(--text-normal) 0%,
+        var(--interactive-accent) 50%,
+        var(--text-normal) 100%
+    );
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: zendian-gradient-shift 8s ease infinite;
 }
 
 .zendian-about-version {
-    font-size: 13px;
+    position: relative;
+    z-index: 1;
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 500;
     color: var(--text-muted);
     background: var(--background-modifier-hover);
-    padding: 2px 10px;
-    border-radius: 12px;
-}
-
-.zendian-about-desc {
-    text-align: center;
-    padding: 0 16px 16px;
-    font-size: 14px;
-    color: var(--text-muted);
-    line-height: 1.7;
-}
-
-.zendian-about-features,
-.zendian-about-usage {
-    background: var(--background-secondary);
-    border-radius: 10px;
+    padding: 3px 12px;
+    border-radius: 20px;
     border: 1px solid var(--background-modifier-border);
-    padding: 16px;
-    margin-bottom: 12px;
-}
-
-.zendian-about-features h3,
-.zendian-about-usage h3 {
-    font-size: 14px;
-    font-weight: 600;
-    margin: 0 0 10px;
-    color: var(--text-normal);
-}
-
-.zendian-about-features ul,
-.zendian-about-usage ul {
-    margin: 0;
-    padding-left: 20px;
-}
-
-.zendian-about-features li,
-.zendian-about-usage li {
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.8;
+    margin-bottom: 10px;
 }
 
 .zendian-about-author {
-    text-align: center;
-    padding: 8px 0;
+    position: relative;
+    z-index: 1;
     font-size: 13px;
+    color: var(--text-faint);
+    margin: 0;
+    letter-spacing: 0.04em;
+}
+
+/* ── Description Card ── */
+
+.zendian-about-card {
+    background: var(--background-secondary);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin: 0 0 20px;
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.zendian-about-card p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* ── Feature Grid ── */
+
+.zendian-about-features {
+    margin-bottom: 20px;
+}
+
+.zendian-about-features h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-normal);
+    margin: 0 0 14px;
+    text-align: center;
+    letter-spacing: 0.02em;
+}
+
+.zendian-about-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.zendian-about-feature-card {
+    background: var(--background-secondary);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    padding: 16px;
+    transition:
+        transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.25s ease;
+    cursor: default;
+}
+
+.zendian-about-feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    border-color: var(--interactive-accent);
+}
+
+.zendian-about-feat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--background-modifier-hover);
+    color: var(--interactive-accent);
+    margin-bottom: 10px;
+    transition: background 0.25s ease;
+}
+
+.zendian-about-feature-card:hover .zendian-about-feat-icon {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.zendian-about-feat-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.zendian-about-feat-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-normal);
+    margin-bottom: 4px;
+}
+
+.zendian-about-feat-desc {
+    font-size: 12px;
+    line-height: 1.6;
     color: var(--text-muted);
 }
 
-.zendian-about-author a {
-    color: var(--text-accent);
-    text-decoration: none;
+/* ── Footer ── */
+
+.zendian-about-footer {
+    text-align: center;
+    padding: 4px 0 8px;
+    font-size: 12px;
+    color: var(--text-faint);
+    letter-spacing: 0.03em;
 }
 
-.zendian-about-author a:hover {
-    text-decoration: underline;
+/* ── Animations ── */
+
+@keyframes zendian-glow-pulse {
+    0%, 100% { opacity: 0.10; transform: translateX(-50%) scale(1); }
+    50%      { opacity: 0.18; transform: translateX(-50%) scale(1.08); }
+}
+
+@keyframes zendian-icon-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+}
+
+@keyframes zendian-gradient-shift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 /* Responsive — mobile */
@@ -10629,5 +10806,37 @@ body.theme-dark .codeblock-customizer-line-number-specific {
         flex: 0 0 calc(33.33% - 4px);
         padding: 6px 8px;
         font-size: 12px;
+    }
+
+    .zendian-about-hero {
+        padding: 28px 12px 24px;
+    }
+
+    .zendian-about-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    .zendian-about-icon svg {
+        width: 44px;
+        height: 44px;
+    }
+
+    .zendian-about-title {
+        font-size: 28px;
+    }
+
+    .zendian-about-card {
+        padding: 16px;
+        margin: 0 0 16px;
+    }
+
+    .zendian-about-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .zendian-about-feature-card {
+        padding: 14px;
     }
 }

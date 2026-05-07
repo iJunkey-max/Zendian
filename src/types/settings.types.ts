@@ -107,6 +107,7 @@ export interface HeadingSettings {
 export interface EditorEnhanceSettings {
   focusMode: boolean;
   focusModeOpacity: number;
+  focusModeTypewriter: boolean;
   hoverIndicator: boolean;
   hoverIndicatorListLevel: boolean;
   hoverIndicatorCodeblockLineNumber: boolean;
@@ -372,6 +373,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   editorEnhance: {
     focusMode: false,
     focusModeOpacity: 0.5,
+    focusModeTypewriter: true,
     hoverIndicator: false,
     hoverIndicatorListLevel: false,
     hoverIndicatorCodeblockLineNumber: false,

@@ -2,6 +2,22 @@
 
 ZENdian 插件的所有重要变更将记录在此文件中。
 
+## [2.0.19E] - 2026-05-07
+
+### 新增
+
+- 专注模式打字机滚动：新增 CM6 ViewPlugin，光标行始终保持在窗口 3/4 处，原生平滑滚动
+- 毛玻璃景深效果：非活动行 blur(0.5px) 降噪，活动行 scale(1.02) + backdrop-filter 毛玻璃高亮
+- 专注模式设置新增「打字机滚动」开关（专注模式关闭时灰显）
+
+### 变更
+
+- 专注模式视觉全面重构：active line 背景从 hsla 迁移至 color-mix(in srgb, var(--interactive-accent) 8%, transparent)
+- 活动行增加 font-weight: 500、box-shadow、border-radius: 8px
+- cm-scroller 增加 padding-bottom: 75vh 确保最后一行可滚动到 3/4 处
+- 代码块/表格组件异常处理：取消 transform、box-shadow、backdrop-filter 避免视觉错位
+- 模块系统扩展：ModuleContext 新增 registerEditorExtension，支持模块注册 CM6 扩展
+
 ## [2.0.18U] - 2026-05-07
 
 ### 新增

@@ -74,8 +74,8 @@ settings:
         title: Version
         title.zh: 版本
         type: info-text
-        description: "v2.0.18U"
-        description.zh: "v2.0.18U"
+        description: "v2.0.19E"
+        description.zh: "v2.0.19E"
     -
         id: zendian-changelog
         title: Changelog

@@ -52,7 +52,8 @@ export default class ZENdianPlugin extends Plugin {
 
     this.moduleManager = new ModuleManager(
       this.events,
-      () => this.settingsManager.getSettings()
+      () => this.settingsManager.getSettings(),
+      this.registerEditorExtension.bind(this)
     );
 
     // 2. 注册功能模块

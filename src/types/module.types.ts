@@ -17,6 +17,8 @@ export interface ModuleContext {
   getSettings: () => PluginSettings;
   /** 获取指定设置值的快捷方法 */
   getSetting: <K extends keyof PluginSettings>(key: K) => PluginSettings[K];
+  /** 注册 CodeMirror 6 编辑器扩展 */
+  registerEditorExtension: (extension: any) => void;
 }
 
 /**

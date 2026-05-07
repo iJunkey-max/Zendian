@@ -24,6 +24,7 @@ interface SettingDef {
   max?: number;
   step?: number;
   format?: string;
+  visible?: (s: PluginSettings) => boolean;
 }
 
 interface SectionDef {
@@ -61,6 +62,77 @@ function num(id: string, titleZh: string, get: (s: PluginSettings) => number, se
 function slider(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, min: number, max: number, step: number): SettingDef {
   return { id, titleZh, type: "number-slider", get, set: (s, v) => set(s, v), min, max, step };
 }
+
+// ============================================================
+// About 页面 SVG 图标
+// ============================================================
+
+const ABOUT_SVG_LOGO = `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M24 4L42 14V34L24 44L6 34V14L24 4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M24 4L42 14L24 24L6 14L24 4Z" fill="currentColor" fill-opacity="0.12"/>
+  <path d="M24 24V44" stroke="currentColor" stroke-width="2"/>
+  <circle cx="24" cy="24" r="4" fill="currentColor" fill-opacity="0.3"/>
+</svg>`;
+
+const FEAT_ICONS = {
+  autoHide: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="3" width="20" height="18" rx="2"/>
+    <path d="M2 8h20"/>
+    <circle cx="7" cy="5.5" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="10" cy="5.5" r="1" fill="currentColor" stroke="none"/>
+    <path d="M9 15l-3-3m0 0l3-3m-3 3h6" opacity="0.7"/>
+    <path d="M18 15l-3-3m0 0l3-3m-3 3h6" transform="translate(-3,0)" opacity="0.3"/>
+  </svg>`,
+  focusMode: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9"/>
+    <circle cx="12" cy="12" r="4"/>
+    <line x1="12" y1="3" x2="12" y2="7"/>
+    <line x1="12" y1="17" x2="12" y2="21"/>
+    <line x1="3" y1="12" x2="7" y2="12"/>
+    <line x1="17" y1="12" x2="21" y2="12"/>
+  </svg>`,
+  cardLayout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="3"/>
+    <rect x="6" y="6" width="5" height="5" rx="1.5" fill="currentColor" fill-opacity="0.15"/>
+    <rect x="13" y="6" width="5" height="5" rx="1.5" fill="currentColor" fill-opacity="0.15"/>
+    <rect x="6" y="13" width="12" height="5" rx="1.5" fill="currentColor" fill-opacity="0.15"/>
+  </svg>`,
+  headings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 5v14"/>
+    <path d="M4 12h8"/>
+    <path d="M12 5v14"/>
+    <path d="M17 7v10"/>
+    <path d="M17 12h3.5"/>
+    <path d="M17 7h3"/>
+  </svg>`,
+  codeBlocks: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="3" width="20" height="18" rx="2"/>
+    <path d="M2 7h20"/>
+    <path d="M8 13l-2.5 2.5L8 18"/>
+    <path d="M16 13l2.5 2.5L16 18"/>
+    <line x1="13" y1="12" x2="11" y2="19" opacity="0.6"/>
+  </svg>`,
+  compat: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+    <path d="M2 17l10 5 10-5"/>
+    <path d="M2 12l10 5 10-5"/>
+  </svg>`,
+};
+
+interface FeatureItem {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
+const FEATURES: FeatureItem[] = [
+  { icon: FEAT_ICONS.autoHide, title: "自动隐藏", desc: "Tab 栏、侧边栏、状态栏等 UI 元素智能隐藏" },
+  { icon: FEAT_ICONS.focusMode, title: "专注模式", desc: "降低非当前行透明度，聚焦当前编辑" },
+  { icon: FEAT_ICONS.cardLayout, title: "卡片式布局", desc: "圆角卡片提升视觉层次与内容组织" },
+  { icon: FEAT_ICONS.headings, title: "标题自定义", desc: "H1-H6 字重、分隔线、间距、字号全面定制" },
+  { icon: FEAT_ICONS.codeBlocks, title: "代码与引用块", desc: "代码块、引用块、标注、表格的全面样式定制" },
+  { icon: FEAT_ICONS.compat, title: "第三方兼容", desc: "DB Folder、Projects、Surfing 等插件兼容" },
+];
 
 // ============================================================
 // 菜单配置
@@ -164,6 +236,10 @@ const MENU_CONFIG: TabDef[] = [
         settings: [
           toggle("border-focus-mode", "启用专注模式", (s) => s.editorEnhance.focusMode, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusMode: v } })),
           slider("line-normal-opacity", "普通行透明度", (s) => s.editorEnhance.focusModeOpacity, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeOpacity: v } }), 0.05, 1, 0.05),
+          {
+            ...toggle("focus-mode-typewriter", "打字机滚动", (s) => s.editorEnhance.focusModeTypewriter, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeTypewriter: v } })),
+            visible: (s) => s.editorEnhance.focusMode,
+          },
         ],
       },
       {
@@ -513,28 +589,39 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
   private renderAboutPage(containerEl: HTMLElement): void {
     const about = containerEl.createDiv("zendian-about");
-    const header = about.createDiv("zendian-about-header");
-    header.createEl("div", { text: "✦", cls: "zendian-about-logo" });
-    header.createEl("h1", { text: "ZENdian", cls: "zendian-about-title" });
-    header.createEl("span", { text: `v${(this.plugin as any).manifest?.version ?? "unknown"}`, cls: "zendian-about-version" });
 
-    about.createDiv("zendian-about-desc").createEl("p", {
+    // ── Hero Section ──
+    const hero = about.createDiv("zendian-about-hero");
+    hero.createDiv("zendian-about-glow");
+    const iconWrap = hero.createDiv("zendian-about-icon");
+    iconWrap.innerHTML = ABOUT_SVG_LOGO;
+    hero.createEl("h1", { text: "ZENdian", cls: "zendian-about-title" });
+    const version = (this.plugin as any).manifest?.version ?? "unknown";
+    hero.createEl("span", { text: `v${version}`, cls: "zendian-about-version" });
+    hero.createEl("p", { text: "Designed by Junkey", cls: "zendian-about-author" });
+
+    // ── Description Card ──
+    const card = about.createDiv("zendian-about-card");
+    card.createEl("p", {
       text: "一款综合性的 Obsidian UI 美化插件，集成 Border 主题、Phycat 苹果风格配色、增强 Markdown 渲染和 Style Settings 自定义面板。",
     });
 
+    // ── Feature Grid ──
     const features = about.createDiv("zendian-about-features");
     features.createEl("h3", { text: "功能亮点" });
-    const list = features.createEl("ul");
-    for (const item of [
-      "自动隐藏 Tab 栏、侧边栏、状态栏等 UI 元素",
-      "专注模式 — 降低非当前行透明度，聚焦编辑",
-      "卡片式布局 — 圆角卡片提升视觉层次",
-      "H1-H6 标题自定义 — 字重、分隔线、间距、字号",
-      "代码块、引用块、标注、表格的全面样式定制",
-      "第三方插件兼容 — DB Folder、Projects、Surfing",
-    ]) {
-      list.createEl("li", { text: item });
+    const grid = features.createDiv("zendian-about-grid");
+    for (const feat of FEATURES) {
+      const featureCard = grid.createDiv("zendian-about-feature-card");
+      const iconEl = featureCard.createDiv("zendian-about-feat-icon");
+      iconEl.innerHTML = feat.icon;
+      featureCard.createEl("div", { text: feat.title, cls: "zendian-about-feat-title" });
+      featureCard.createEl("div", { text: feat.desc, cls: "zendian-about-feat-desc" });
     }
+
+    // ── Footer ──
+    about.createDiv("zendian-about-footer").createEl("span", {
+      text: "Crafted with care by Junkey",
+    });
   }
 
   private renderTabContent(containerEl: HTMLElement, tab: TabDef): void {
@@ -556,17 +643,20 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
   private renderSetting(containerEl: HTMLElement, def: SettingDef): void {
     const settings = this.settingsManager.getSettings();
+    const wrapper = (def.visible && !def.visible(settings))
+      ? containerEl.createDiv("zendian-disabled")
+      : containerEl;
 
     switch (def.type) {
       case "toggle":
-        new Setting(containerEl).setName(def.titleZh).addToggle((toggle) => {
+        new Setting(wrapper).setName(def.titleZh).addToggle((toggle) => {
           toggle.setValue(def.get(settings));
           toggle.onChange(async (val) => { await this.settingsManager.updateMultiple(def.set(settings, val)); });
         });
         break;
 
       case "select":
-        new Setting(containerEl).setName(def.titleZh).addDropdown((dropdown) => {
+        new Setting(wrapper).setName(def.titleZh).addDropdown((dropdown) => {
           for (const opt of def.options ?? []) dropdown.addOption(opt.value, opt.label);
           dropdown.setValue(def.get(settings));
           dropdown.onChange(async (val) => { await this.settingsManager.updateMultiple(def.set(settings, val)); });
@@ -574,7 +664,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
         break;
 
       case "number":
-        new Setting(containerEl).setName(def.titleZh).addText((text) => {
+        new Setting(wrapper).setName(def.titleZh).addText((text) => {
           text.inputEl.type = "number";
           if (def.min !== undefined) text.inputEl.min = String(def.min);
           if (def.max !== undefined) text.inputEl.max = String(def.max);
@@ -585,7 +675,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
         break;
 
       case "number-slider":
-        new Setting(containerEl).setName(def.titleZh).addSlider((slider) => {
+        new Setting(wrapper).setName(def.titleZh).addSlider((slider) => {
           slider.setLimits(def.min ?? 0, def.max ?? 1, def.step ?? 0.01);
           slider.setValue(def.get(settings));
           slider.setDynamicTooltip();

@@ -3429,44 +3429,81 @@ body {
     }
 }
 
-/* ====== line emphasis ====== */
-/* ====== highlight ====== */
+/* ====== Focus Mode — Glassmorphism + Depth of Field ====== */
+
 body {
     --line-normal-opacity: 0.5;
-    --line-active-bg: hsla(var(--accent-h), calc(var(--accent-s) * 0.6), var(--accent-l), 0.08);
+    --line-active-bg: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
 }
 
-.border-focus-mode .cm-lineWrapping>.cm-line.cm-active {
-    background-color: var(--line-active-bg);
-    border-radius: var(--radius-s);
-    opacity: 1;
+/* 底部留白：允许最后一行滚动到 75% 视口位置 */
+.border-focus-mode .markdown-source-view .cm-scroller {
+    padding-bottom: 75vh;
 }
 
-.border-focus-mode .cm-lineWrapping>.cm-line {
-    padding-left: var(--size-4-1);
-    padding-right: var(--size-4-1);
+/* 非活动行：降噪层 */
+.border-focus-mode .cm-lineWrapping > .cm-line {
     opacity: var(--line-normal-opacity);
+    filter: blur(0.5px);
+    transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                filter 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.border-focus-mode .cm-lineWrapping>.cm-table-widget .cm-line {
+/* 活动行：毛玻璃高亮层 */
+.border-focus-mode .cm-lineWrapping > .cm-line.cm-active {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1.02);
+    font-weight: 500;
+    background-color: var(--line-active-bg);
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05),
+                0 2px 8px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 4px;
+}
+
+/* 异常处理：表格组件 */
+.border-focus-mode .cm-lineWrapping > .cm-table-widget .cm-line {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     background-color: unset !important;
     border-radius: unset !important;
     padding-left: unset !important;
     padding-right: unset !important;
 }
 
+/* 异常处理：代码块 */
 .border-focus-mode .markdown-source-view .cm-scroller .cm-line.cm-active.HyperMD-codeblock-bg:not(.HyperMD-codeblock-begin-bg, .HyperMD-codeblock-end-bg) {
     border-radius: 0px;
+    transform: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .border-focus-mode .markdown-source-view .cm-scroller .cm-line.cm-active.HyperMD-codeblock-begin-bg {
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
+    transform: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .border-focus-mode .markdown-source-view .cm-scroller .cm-line.cm-active.HyperMD-codeblock-end-bg {
     border-top-left-radius: 0px;
     border-top-right-radius: 0px;
+    transform: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 /* ====== hover indicator ====== */
