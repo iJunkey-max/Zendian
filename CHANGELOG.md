@@ -2,6 +2,46 @@
 
 ZENdian 插件的所有重要变更将记录在此文件中。
 
+## [2.0.16] - 2026-05-07
+
+### 变更
+
+- 移除亮色模式 HR 覆盖块（虚线变体），回退继承全局渐变横线 + 中间方框样式
+- YAML frontmatter 选择器从已废弃的 `.frontmatter-container` 迁移至 Obsidian 1.4+ Properties UI 的 `.metadata-container`
+- 隐藏 Obsidian 默认属性标题（`.metadata-properties-heading`）
+
+### 修复
+
+- 修复亮色模式下分隔线（`---`）因 `border: none` + `height: 0` 导致塌陷不可见的问题
+- 修复文档属性样式未生效的问题（根因：Obsidian 1.4+ 已废弃 `.frontmatter-container` DOM 结构）
+
+## [2.0.15] - 2026-05-07
+
+### 新增
+
+- 图片渲染样式：圆角 12px、微阴影、hover 缩放 + 亮度提升 + 深阴影、figcaption 居中变色
+- YAML frontmatter 专属样式：虚线边框、主色淡背景、右上角 "YAML" 标签、hover 浮起 + 实线边框 + 发光
+- 脚注样式：`.footnote-ref` 加粗强调色、`.footnote-item em` 小字灰色
+- 选区高亮色（`::selection`）和光标颜色（`caret-color`）跟随主题主色
+- 亮色主题 HR 变体：虚线样式 + scaleX 缩放动画，替代暗色渐变菱形风格
+- 暗色 `caution` callout 完整样式（背景、标题、emoji、hover）
+- 源码视图 H3-H6 标题 hover 效果：文字变色、霓虹发光、位移、伪元素增强
+- 链接 hover 霓虹发光：暗色双色 text-shadow、亮色柔和阴影
+
+### 变更
+
+- 增强 callout hover 效果：添加 `transform: scale(1.01) translateY(-2px)` + `box-shadow` 浮起效果
+- 增强 callout emoji hover：添加 `text-shadow: 0 0 25px currentColor` 发光
+- 补充缺失的暗色 callout hover 规则（danger、error、bug、failure、missing、abstract、summary、tldr、quote）
+- 增强加粗 hover：添加 `border-bottom` 霓虹边框 + 增强 `text-shadow` 双色发光
+- `tldr` 加入 `abstract/summary` callout 组
+
+### 修复
+
+- 修复暗色 `failure`/`missing` callout 背景为纯黑（`rgba(0,0,0,0.2)`）而非红色调的问题
+- 修复暗色 `caution` callout 缺失导致回退到灰色基础背景的问题
+- 修复暗色 `caution` callout 背景色仅在 hover 时显示的问题（添加 `--callout-background` CSS 变量）
+
 ## [2.0.14] - 2026-05-07
 
 ### 重构
