@@ -23,8 +23,8 @@ settings:
         title: Version
         title.zh: 版本
         type: info-text
-        description: "v1.0.0"
-        description.zh: "v1.0.0"
+        description: "v2.0.18U"
+        description.zh: "v2.0.18U"
     -
         id: zendian-changelog
         title: Changelog
@@ -6559,8 +6559,8 @@ body.theme-dark:not(.theme-dark-apple) {
   --link-hover-color: #409cff;
   --h1-color: var(--text-color);
   --h1-underline-color: var(--primary-color);
-  --h2-bg-image: radial-gradient(ellipse at center bottom, rgba(10, 132, 255, 0.15), transparent 70%);
-  --h2-bg-image-hover: radial-gradient(ellipse at center bottom, rgba(10, 132, 255, 0.25), transparent 60%);
+  --h2-bg-image: radial-gradient(ellipse at center bottom, color-mix(in srgb, var(--primary-color), transparent 85%), transparent 70%);
+  --h2-bg-image-hover: radial-gradient(ellipse at center bottom, color-mix(in srgb, var(--primary-color), transparent 75%), transparent 60%);
   --code-block-bg: #1c1c1e;
   --code-keyword: #ff9f0a;
   --code-function: #0a84ff;
@@ -6598,9 +6598,9 @@ body.theme-light:not(.theme-light-apple) {
   --select-text-bg-color: rgba(0, 113, 227, 0.2);
   --glow-color: rgba(0, 113, 227, 0.35);
   --border-color: color-mix(in srgb, var(--primary-color), transparent 75%);
-  --h2-bg-gradient: linear-gradient(to right, var(--light-lighter), var(--primary-color), var(--light-lighter));
-  --h2-shadow-color: rgba(0, 113, 227, 0.12);
-  --h2-shadow-hover: rgba(0, 113, 227, 0.28);
+  --h2-bg-gradient: linear-gradient(to right, color-mix(in srgb, var(--primary-color), transparent 70%), var(--primary-color), color-mix(in srgb, var(--primary-color), transparent 70%));
+  --h2-shadow-color: color-mix(in srgb, var(--primary-color), transparent 88%);
+  --h2-shadow-hover: color-mix(in srgb, var(--primary-color), transparent 72%);
   --text-bold: var(--text-color);
   --code-normal: #2c2c2e;
   --code-keyword: #5e5ce6;
@@ -6876,14 +6876,12 @@ body.theme-light .markdown-source-view.mod-cm6 .cm-line:not(.HyperMD-header):not
   width: fit-content;
   padding: 6px 16px;
   border-radius: 8px;
-  background-image: var(--h2-bg-gradient) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color), transparent 30%), var(--primary-color), color-mix(in srgb, var(--primary-color), transparent 30%));
   background-size: 200% auto;
   background-position: 0% center;
   background-repeat: no-repeat;
-  box-shadow: 0 2px 5px var(--h2-shadow-color);
-  border: 1px solid transparent !important;
-  background-clip: padding-box;
-  overflow: hidden;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color), transparent 70%);
+  border: none !important;
   border-bottom: none !important;
   transition: background-position 0.5s ease-out, transform 0.4s ease, box-shadow 0.4s ease
 }
@@ -6892,7 +6890,7 @@ body.theme-light .markdown-source-view.mod-cm6 .cm-line:not(.HyperMD-header):not
 .theme-light.h2-style-capsule .markdown-source-view.mod-cm6 .HyperMD-header-2:hover {
   background-position: 100% center;
   transform: scale(1.01);
-  box-shadow: 0 8px 20px var(--h2-shadow-hover)
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--primary-color), transparent 55%)
 }
 
 .theme-light.h2-style-capsule .markdown-source-view.mod-cm6 .HyperMD-header-2 .cm-formatting-header {
@@ -7149,13 +7147,13 @@ body.theme-light .markdown-source-view.mod-cm6 .cm-line:not(.HyperMD-header):not
   padding: 5px 16px;
   border-radius: 8px;
   display: inline-block;
-  background-color: rgba(255, 255, 255, 0.02);
-  background-image: var(--h2-bg-image);
+  background-color: rgba(255, 255, 255, 0.03);
+  background-image: radial-gradient(ellipse at center bottom, color-mix(in srgb, var(--primary-color), transparent 85%), transparent 70%);
   background-repeat: no-repeat;
   background-position: center bottom;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   border-left: 1px solid transparent;
   border-right: 1px solid transparent;
   border-bottom: 1px solid transparent;
@@ -7171,7 +7169,7 @@ body.theme-light .markdown-source-view.mod-cm6 .cm-line:not(.HyperMD-header):not
   position: absolute;
   inset: 0;
   z-index: -1;
-  background-image: var(--h2-bg-image-hover);
+  background-image: radial-gradient(ellipse at center bottom, color-mix(in srgb, var(--primary-color), transparent 70%), transparent 60%);
   background-repeat: no-repeat;
   background-position: center bottom;
   opacity: 0;

@@ -22,6 +22,9 @@ const COLOR_CLASSES: Record<Level, string[]> = {
   h6: ["h6-color-default", "h6-color-designated"],
 };
 
+/** H2 样式 class 候选 */
+const H2_STYLE_CLASSES = ["h2-style-twin", "h2-style-capsule", "h2-style-dark-twin", "h2-style-dark-capsule"];
+
 /** 每个级别的对齐 class */
 const ALIGN_CLASSES: Record<Level, string[]> = {
   h1: ["h1-align-left", "h1-align-center", "h1-align-right"],
@@ -89,5 +92,11 @@ export class HeadingsModule implements IFeatureModule {
       for (const cls of COLOR_CLASSES[lv]) this.classes.remove(cls);
       this.classes.add(`${lv}-color-${h.colorScheme === "accent" ? "designated" : "default"}`);
     }
+
+    // H2 style: class-select (统一控制亮色+暗色)
+    for (const cls of H2_STYLE_CLASSES) this.classes.remove(cls);
+    const h2style = s.h2.style || "twin";
+    this.classes.add(h2style === "capsule" ? "h2-style-capsule" : "h2-style-twin");
+    this.classes.add(h2style === "capsule" ? "h2-style-dark-capsule" : "h2-style-dark-twin");
   }
 }

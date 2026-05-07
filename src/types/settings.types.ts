@@ -21,6 +21,7 @@ export interface HeadingStyle {
   spacingStart: number;
   spacingEnd: number;
   size: number;
+  style?: string;
 }
 
 /** H1 特有设置 */
@@ -318,6 +319,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       spacingStart: 1.318,
       spacingEnd: 1.318,
       size: 1.462,
+      style: "twin",
     },
     h3: {
       divider: false,

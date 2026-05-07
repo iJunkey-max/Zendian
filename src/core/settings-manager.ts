@@ -200,8 +200,8 @@ export class SettingsManager {
       ["Editor@@h1-text-transform", (v) => (settings.headings.h1.textTransform = v || "")],
       ["Editor@@h1-color-select", (v) => (settings.headings.h1.colorScheme = v || "default")],
 
-      ["Editor@@h2-style-select", (v) => (settings.headings.h2.lightStyle = v || "twin")],
-      ["Editor@@h2-style-dark-select", (v) => (settings.headings.h2.darkStyle = v || "neon-twin")],
+      ["Editor@@h2-style-select", (v) => (settings.headings.h2.style = v === "h2-style-capsule" ? "capsule" : "twin")],
+      ["Editor@@h2-style-dark-select", () => {}],
       ["Editor@@h2-divider-on", (v) => (settings.headings.h2.divider = !!v)],
       ["Editor@@h2-font", (v) => (settings.headings.h2.font = v || "")],
       ["Editor@@h2-weight", (v) => (settings.headings.h2.weight = v ?? 675)],

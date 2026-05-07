@@ -2,7 +2,7 @@
 
 Obsidian UI 美化插件。整合 Border 主题、Phycat Apple 风格配色与 Style Settings，提供统一设置面板和精致视觉体验。
 
-当前版本：`2.0.14` | 最低 Obsidian 版本：`0.16.0`
+当前版本：`2.0.18U` | 最低 Obsidian 版本：`1.12.7`
 
 ## 功能特性
 

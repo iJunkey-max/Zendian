@@ -377,6 +377,19 @@ function renderHeadingTabs(
     const s = settingsManager.getSettings();
     const h = s.headings[lv] as any;
 
+    // H2 专属：样式切换（亮色+暗色统一）
+    if (lv === "h2") {
+      new Setting(area).setName("标题风格").addDropdown((d) => {
+        d.addOption("twin", "线条");
+        d.addOption("capsule", "方框");
+        d.setValue(h.style || "twin");
+        d.onChange(async (v) => {
+          const cur = settingsManager.getSettings();
+          await settingsManager.updateMultiple({ headings: { ...cur.headings, h2: { ...cur.headings.h2, style: v } } });
+        });
+      });
+    }
+
     // 通用设置
     new Setting(area).setName("对齐方式").addDropdown((d) => {
       d.addOption("left", "居左");
