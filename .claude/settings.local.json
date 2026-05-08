@@ -65,7 +65,10 @@
       "Bash(git commit *)",
       "Bash(copy /Y \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\main.js\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\main.js\")",
       "Bash(copy /Y \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\dist\\\\styles.css\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\styles.css\")",
-      "Bash(copy /Y \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\manifest.json\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\manifest.json\")"
+      "Bash(copy /Y \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\manifest.json\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\manifest.json\")",
+      "Bash(gh release *)",
+      "Bash(where.exe gh *)",
+      "PowerShell(Get-Command *)"
     ]
   }
 }
