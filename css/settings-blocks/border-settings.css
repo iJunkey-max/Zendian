@@ -72,28 +72,7 @@ settings:
         title.zh: 加粗文件夹字体
         description.zh: 将文件夹名称加粗显示，便于区分文件和文件夹
         type: class-toggle
-    - 
-        id: file-explorer-icon
-        title: icon
-        title.zh: 图标
-        type: heading
-        collapsed: false
-        level: 4
     -
-        id: file-icon-remove
-        title: Remove custom icon
-        title.zh: 移除 自定义图标
-        description.zh: 移除通过 Icon Folder 等插件设置的自定义图标，恢复默认文件图标
-        type: class-toggle
-        default: false
-    -
-        id: colorful-folder
-        title: Enable colorful folder icon
-        title.zh: 启用 多彩文件夹图标
-        description.zh: 为不同层级的文件夹图标添加不同颜色，增强视觉区分
-        type: class-toggle
-        default: true
-    - 
         id: outline-panel
         title: Outline Panel
         title.zh: 大纲面板

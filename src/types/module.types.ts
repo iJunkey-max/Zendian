@@ -3,6 +3,7 @@
  * 所有功能模块必须实现此接口
  */
 
+import type { App } from "obsidian";
 import type { PluginSettings } from "./settings.types";
 import type { EventBus } from "../core/event-bus";
 
@@ -19,6 +20,8 @@ export interface ModuleContext {
   getSetting: <K extends keyof PluginSettings>(key: K) => PluginSettings[K];
   /** 注册 CodeMirror 6 编辑器扩展 */
   registerEditorExtension: (extension: any) => void;
+  /** Obsidian App 实例，供需要访问 vault / 图标 API 的模块使用 */
+  app: App;
 }
 
 /**

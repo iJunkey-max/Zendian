@@ -246,8 +246,6 @@ export class SettingsManager {
       ["Components@@CTA-BTN-enable", (v) => (settings.fileTree.ctaBtnEnable = !!v)],
       ["Components@@file-names-untrim", (v) => (settings.fileTree.fileNamesUntrim = !!v)],
       ["Components@@folder-font-bold", (v) => (settings.fileTree.folderFontBold = !!v)],
-      ["Components@@file-icon-remove", (v) => (settings.fileTree.fileIconRemove = !!v)],
-      ["Components@@colorful-folder", () => (settings.fileTree.colorfulFolder = true)],
 
       // New Tab
       ["Components@@new-tab-btn-select", (v) => (settings.newTab.buttonStyle = v || "default")],

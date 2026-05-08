@@ -244,8 +244,22 @@ export interface FileTreeSettings {
   ctaBtnEnable: boolean;
   fileNamesUntrim: boolean;
   folderFontBold: boolean;
-  fileIconRemove: boolean;
-  colorfulFolder: boolean;
+}
+
+/** 图标匹配规则 */
+export interface IconRule {
+  regex: string;
+  iconId: string;
+  color?: string;
+}
+
+/** 图标系统模块设置 */
+export interface IconSystemSettings {
+  enabled: boolean;
+  customEnabled: boolean;
+  installedLibraries: string[];
+  defaultRules: IconRule[];
+  customIcons: Record<string, string>;
 }
 
 // ============================================================
@@ -280,6 +294,7 @@ export interface PluginSettings {
   pluginCompat: PluginCompatSettings;
   uiDetail: UIDetailSettings;
   fileTree: FileTreeSettings;
+  iconSystem: IconSystemSettings;
 }
 
 // ============================================================
@@ -474,7 +489,28 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     ctaBtnEnable: false,
     fileNamesUntrim: false,
     folderFontBold: false,
-    fileIconRemove: false,
-    colorfulFolder: true,
+  },
+  iconSystem: {
+    enabled: false,
+    customEnabled: false,
+    installedLibraries: [],
+    defaultRules: [
+      { regex: "\\.md$", iconId: "lucide-file-text" },
+      { regex: "\\.pdf$", iconId: "lucide-file-text" },
+      { regex: "\\.(png|jpe?g|gif|svg|bmp|webp)$", iconId: "lucide-image" },
+      { regex: "\\.(mp3|wav|ogg|flac|m4a)$", iconId: "lucide-headphones" },
+      { regex: "\\.(mp4|webm|avi|mov|mkv)$", iconId: "lucide-film" },
+      { regex: "\\.(zip|7z|tar|gz|rar)$", iconId: "lucide-archive" },
+      { regex: "\\.(js|ts|jsx|tsx)$", iconId: "lucide-file-code" },
+      { regex: "\\.(html|htm)$", iconId: "lucide-globe" },
+      { regex: "\\.css$", iconId: "lucide-palette" },
+      { regex: "\\.(json|yaml|yml|toml)$", iconId: "lucide-braces" },
+      { regex: "\\.(doc|docx)$", iconId: "lucide-file-text" },
+      { regex: "\\.(xls|xlsx|csv)$", iconId: "lucide-table" },
+      { regex: "\\.(ppt|pptx)$", iconId: "lucide-presentation" },
+      { regex: "\\.excalidraw\\.md$", iconId: "lucide-pen-tool" },
+      { regex: "\\.canvas$", iconId: "lucide-layout-dashboard" },
+    ],
+    customIcons: {},
   },
 };

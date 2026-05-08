@@ -35,6 +35,7 @@ import { FileTreeModule } from "./modules/file-tree.module";
 import { HeadingsModule } from "./modules/headings.module";
 import { RainbowFolderModule } from "./modules/rainbow-folder.module";
 import { NewTabModule } from "./modules/new-tab.module";
+import { IconSystemModule } from "./modules/icon-system.module";
 
 // UI
 import { ZENdianSettingTab } from "./ui/settings-tab";
@@ -53,7 +54,8 @@ export default class ZENdianPlugin extends Plugin {
     this.moduleManager = new ModuleManager(
       this.events,
       () => this.settingsManager.getSettings(),
-      this.registerEditorExtension.bind(this)
+      this.registerEditorExtension.bind(this),
+      this.app
     );
 
     // 2. 注册功能模块
@@ -79,6 +81,7 @@ export default class ZENdianPlugin extends Plugin {
     this.moduleManager.register(new HeadingsModule());
     this.moduleManager.register(new RainbowFolderModule());
     this.moduleManager.register(new NewTabModule());
+    this.moduleManager.register(new IconSystemModule());
 
     // 3. 加载所有模块
     await this.moduleManager.loadAll();

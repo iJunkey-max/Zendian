@@ -203,8 +203,13 @@ const MENU_CONFIG: TabDef[] = [
         settings: [
           toggle("CTA-BTN-enable", "更大的新建笔记按钮", (s) => s.fileTree.ctaBtnEnable, (s, v) => ({ fileTree: { ...s.fileTree, ctaBtnEnable: v } }), "将文件列表顶部的新建笔记按钮放大并添加背景色，使其更醒目"),
           toggle("folder-font-bold", "加粗文件夹字体", (s) => s.fileTree.folderFontBold, (s, v) => ({ fileTree: { ...s.fileTree, folderFontBold: v } })),
-          toggle("file-icon-remove", "移除自定义图标", (s) => s.fileTree.fileIconRemove, (s, v) => ({ fileTree: { ...s.fileTree, fileIconRemove: v } }), "移除通过 Icon Folder 等插件设置的自定义图标，恢复默认文件图标"),
-          toggle("colorful-folder", "多彩文件夹图标", (s) => s.fileTree.colorfulFolder, (s, v) => ({ fileTree: { ...s.fileTree, colorfulFolder: v } }), "为不同层级的文件夹图标添加不同颜色，增强视觉区分"),
+        ],
+      },
+      {
+        id: "icon-system", title: "Icon System", titleZh: "图标系统",
+        settings: [
+          toggle("icon-system-enabled", "启用图标系统", (s) => s.iconSystem.enabled, (s, v) => ({ iconSystem: { ...s.iconSystem, enabled: v } }), "为文件树启用数据驱动的动态图标系统，替代默认的静态图标"),
+          toggle("icon-system-custom", "启用自定义图标", (s) => s.iconSystem.customEnabled, (s, v) => ({ iconSystem: { ...s.iconSystem, customEnabled: v } }), "允许通过右键菜单为单独文件指定自定义图标"),
         ],
       },
       {

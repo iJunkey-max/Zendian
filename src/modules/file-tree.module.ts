@@ -31,7 +31,5 @@ export class FileTreeModule implements IFeatureModule {
     this.classes.toggle("CTA-BTN-enable", s.ctaBtnEnable);
     this.classes.toggle("file-names-untrim", s.fileNamesUntrim);
     this.classes.toggle("folder-font-bold", s.folderFontBold);
-    this.classes.toggle("file-icon-remove", s.fileIconRemove);
-    this.classes.toggle("colorful-folder", s.colorfulFolder);
   }
 }
