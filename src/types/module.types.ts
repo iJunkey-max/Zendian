@@ -22,6 +22,8 @@ export interface ModuleContext {
   registerEditorExtension: (extension: any) => void;
   /** Obsidian App 实例，供需要访问 vault / 图标 API 的模块使用 */
   app: App;
+  /** 更新设置（部分更新，自动持久化并通知其他模块） */
+  updateSettings: (updates: Partial<PluginSettings>) => Promise<void>;
 }
 
 /**

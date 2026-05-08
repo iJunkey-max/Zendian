@@ -257,6 +257,7 @@ export interface IconRule {
 export interface IconSystemSettings {
   enabled: boolean;
   customEnabled: boolean;
+  tabIconsEnabled: boolean;
   installedLibraries: string[];
   defaultRules: IconRule[];
   customIcons: Record<string, string>;
@@ -493,6 +494,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   iconSystem: {
     enabled: false,
     customEnabled: false,
+    tabIconsEnabled: false,
     installedLibraries: [],
     defaultRules: [
       { regex: "\\.md$", iconId: "lucide-file-text" },

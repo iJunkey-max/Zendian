@@ -8,6 +8,8 @@ import type ZENdianPlugin from "../main";
 import type { SettingsManager } from "../core/settings-manager";
 import type { ModuleManager } from "../core/module-manager";
 import type { PluginSettings } from "../types/settings.types";
+import { BUILTIN_LIBRARIES, type IconSystemModule } from "../modules/icon-system.module";
+import { IconPickerModal } from "./icon-picker-modal";
 
 // ============================================================
 // 设置项定义
@@ -34,6 +36,7 @@ interface SectionDef {
   titleZh: string;
   settings?: SettingDef[];
   headingTabs?: boolean;
+  iconSystem?: boolean;
 }
 
 interface TabDef {
@@ -206,18 +209,22 @@ const MENU_CONFIG: TabDef[] = [
         ],
       },
       {
-        id: "icon-system", title: "Icon System", titleZh: "图标系统",
-        settings: [
-          toggle("icon-system-enabled", "启用图标系统", (s) => s.iconSystem.enabled, (s, v) => ({ iconSystem: { ...s.iconSystem, enabled: v } }), "为文件树启用数据驱动的动态图标系统，替代默认的静态图标"),
-          toggle("icon-system-custom", "启用自定义图标", (s) => s.iconSystem.customEnabled, (s, v) => ({ iconSystem: { ...s.iconSystem, customEnabled: v } }), "允许通过右键菜单为单独文件指定自定义图标"),
-        ],
-      },
-      {
         id: "file-tree-rainbow", title: "Folder Overlay", titleZh: "文件夹层级遮罩",
         settings: [
           toggle("rainbow-folder", "启用层级遮罩", (s) => s.rainbowFolder.enabled, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, enabled: v } }), "为文件树中的文件夹标题添加彩虹色循环背景"),
           slider("rainbow-folder-opacity", "遮罩深度", (s) => s.rainbowFolder.opacity, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, opacity: v } }), 0.05, 0.8, 0.05, "调整文件夹标题背景遮罩的透明度，0为完全透明，1为完全不透明"),
         ],
+      },
+    ],
+  },
+  {
+    id: "icon-resources",
+    name: "图标与资源库",
+    icon: "🎨",
+    sections: [
+      {
+        id: "icon-system-main", title: "Icon System", titleZh: "图标系统",
+        iconSystem: true,
       },
     ],
   },
@@ -639,6 +646,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
       if (section.headingTabs) {
         renderHeadingTabs(sectionContent, this.settingsManager);
+      } else if (section.iconSystem) {
+        this.renderIconSystem(sectionContent);
       } else {
         for (const def of section.settings ?? []) {
           this.renderSetting(sectionContent, def);
@@ -691,5 +700,164 @@ export class ZENdianSettingTab extends PluginSettingTab {
         });
         break;
     }
+  }
+
+  private renderIconSystem(containerEl: HTMLElement): void {
+    const sm = this.settingsManager;
+    const mod = this.moduleManager.getModule("icon-system") as IconSystemModule | undefined;
+
+    // ── 基础开关 ──
+    const toggleSection = containerEl.createDiv("zendian-icon-section");
+    toggleSection.createEl("h4", { text: "基本设置 (General)" });
+
+    new Setting(toggleSection).setName("启用全局文件图标").setDesc("为文件树启用数据驱动的动态图标系统，替代默认的静态图标").addToggle((t) => {
+      const s = sm.getSettings();
+      t.setValue(s.iconSystem.enabled);
+      t.onChange(async (v) => await sm.updateMultiple({ iconSystem: { ...s.iconSystem, enabled: v } }));
+    });
+
+    new Setting(toggleSection).setName("启用独立自定义图标").setDesc("允许通过右键菜单为单独文件指定自定义图标").addToggle((t) => {
+      const s = sm.getSettings();
+      t.setValue(s.iconSystem.customEnabled);
+      t.onChange(async (v) => await sm.updateMultiple({ iconSystem: { ...s.iconSystem, customEnabled: v } }));
+    });
+
+    new Setting(toggleSection).setName("启用标签页图标").setDesc("在工作区的标签页标题前显示对应的文件图标").addToggle((t) => {
+      const s = sm.getSettings();
+      t.setValue(s.iconSystem.tabIconsEnabled);
+      t.onChange(async (v) => await sm.updateMultiple({ iconSystem: { ...s.iconSystem, tabIconsEnabled: v } }));
+    });
+
+    // ── 已安装图库 ──
+    const libSection = containerEl.createDiv("zendian-icon-section");
+    libSection.createEl("h4", { text: "图标库 (Icon Libraries)" });
+
+    for (const lib of BUILTIN_LIBRARIES) {
+      new Setting(libSection)
+        .setName(lib.label)
+        .setDesc(`安装 ${lib.label} 图标集`)
+        .addToggle((t) => {
+          t.setValue(mod?.isLibraryInstalled(lib.name) ?? false);
+          t.onChange(async (v) => {
+            if (!mod) return;
+            try {
+              v ? await mod.installLibrary(lib.name) : await mod.uninstallLibrary(lib.name);
+            } catch (err) {
+              console.error("[ZENdian] Library operation failed:", err);
+              t.setValue(!v);
+            }
+          });
+        });
+    }
+
+    // 添加自定义库入口
+    const addLibSetting = new Setting(libSection).setName("添加图标库").setDesc("输入自定义图标库名称（预置库请使用上方开关）");
+    let libInput: HTMLInputElement;
+    addLibSetting.addText((text) => {
+      libInput = text.inputEl;
+      text.setPlaceholder("my-icons");
+    });
+    addLibSetting.addButton((btn) => {
+      btn.setButtonText("安装").onClick(async () => {
+        const name = libInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+        if (!name || !mod) return;
+        try {
+          await mod.installLibrary(name);
+          libInput.value = "";
+        } catch {
+          // ignore
+        }
+      });
+    });
+
+    // ── 默认图标规则 ──
+    const rulesSection = containerEl.createDiv("zendian-icon-section");
+    rulesSection.createEl("h4", { text: "默认图标规则 (Default Rules)" });
+
+    const rulesContainer = rulesSection.createDiv("zendian-icon-rules-list");
+
+    const renderRules = () => {
+      rulesContainer.empty();
+      const s = sm.getSettings();
+      const rules = s.iconSystem.defaultRules;
+
+      for (let i = 0; i < rules.length; i++) {
+        const rule = rules[i];
+        const row = rulesContainer.createDiv("zendian-icon-rule-row");
+
+        // 正则输入
+        const regexInput = row.createEl("input", {
+          cls: "zendian-icon-rule-regex",
+          type: "text",
+          value: rule.regex,
+          placeholder: "\\.md$",
+        }) as HTMLInputElement;
+
+        // 图标选择按钮
+        const iconBtn = row.createEl("button", {
+          cls: "zendian-icon-rule-icon-btn",
+          text: rule.iconId || "选择图标",
+        }) as HTMLButtonElement;
+        iconBtn.addEventListener("click", () => {
+          const libraries = ["Lucide", ...(s.iconSystem.installedLibraries)];
+          new IconPickerModal(this.app, libraries, (iconId) => {
+            if (iconId === null) return;
+            iconBtn.textContent = iconId;
+            const current = sm.getSettings();
+            const newRules = [...current.iconSystem.defaultRules];
+            newRules[i] = { ...newRules[i], iconId };
+            sm.updateMultiple({ iconSystem: { ...current.iconSystem, defaultRules: newRules } });
+          }).open();
+        });
+
+        // 颜色输入
+        const colorInput = row.createEl("input", {
+          cls: "zendian-icon-rule-color",
+          type: "text",
+          value: rule.color || "",
+          placeholder: "颜色(可选)",
+        }) as HTMLInputElement;
+
+        // 失焦时保存正则和颜色
+        const saveFields = async () => {
+          const current = sm.getSettings();
+          const newRules = [...current.iconSystem.defaultRules];
+          newRules[i] = {
+            ...newRules[i],
+            regex: regexInput.value,
+            color: colorInput.value || undefined,
+          };
+          await sm.updateMultiple({ iconSystem: { ...current.iconSystem, defaultRules: newRules } });
+        };
+        regexInput.addEventListener("blur", saveFields);
+        colorInput.addEventListener("blur", saveFields);
+
+        // 删除按钮
+        const delBtn = row.createEl("button", {
+          cls: "zendian-icon-rule-delete",
+          text: "×",
+        }) as HTMLButtonElement;
+        delBtn.addEventListener("click", async () => {
+          const current = sm.getSettings();
+          const newRules = current.iconSystem.defaultRules.filter((_, idx) => idx !== i);
+          await sm.updateMultiple({ iconSystem: { ...current.iconSystem, defaultRules: newRules } });
+          renderRules();
+        });
+      }
+
+      // 添加新规则按钮
+      const addBtn = rulesContainer.createEl("button", {
+        cls: "zendian-icon-rule-add",
+        text: "+ 添加规则",
+      });
+      addBtn.addEventListener("click", async () => {
+        const current = sm.getSettings();
+        const newRules = [...current.iconSystem.defaultRules, { regex: "", iconId: "lucide-file", color: undefined }];
+        await sm.updateMultiple({ iconSystem: { ...current.iconSystem, defaultRules: newRules } });
+        renderRules();
+      });
+    };
+
+    renderRules();
   }
 }

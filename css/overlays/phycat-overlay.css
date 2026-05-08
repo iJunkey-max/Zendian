@@ -3581,5 +3581,29 @@ body.theme-dark .codeblock-customizer-line-number,
 body.theme-dark .codeblock-customizer-line-number-specific {
   color: color-mix(in srgb, var(--text-color), var(--primary-color) 18%) !important;
   opacity: 0.95;
-  text-shadow: 0 0 6px color-mix(in srgb, var(--primary-color), transparent 70%)
+  text-shadow: 0 0 6px color-mix(in srgb, var(--primary-color), transparent 70%);
+}
+
+/* ─── Icon System ─── */
+
+/* 隐藏 Obsidian 原生文件/文件夹图标 */
+.workspace-leaf-content[data-type="file-explorer"] .nav-file-icon,
+.workspace-leaf-content[data-type="file-explorer"] .nav-folder-icon {
+  display: none;
+}
+
+/* zendian-icon 注入容器：继承当前元素颜色 */
+.zendian-icon {
+  color: currentColor;
+}
+
+.zendian-icon svg {
+  color: inherit;
+}
+
+/* 激活状态下图标跟随文字颜色 */
+.nav-file-title.is-active .zendian-icon,
+.nav-folder-title.is-active .zendian-icon {
+  color: var(--nav-item-color-active);
+}
 }

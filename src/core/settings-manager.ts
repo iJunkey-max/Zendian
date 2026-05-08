@@ -87,9 +87,16 @@ export class SettingsManager {
   private migrate(oldData: Record<string, any>): PluginSettings {
     const settings = structuredClone(DEFAULT_SETTINGS);
 
-    // 如果已经是新格式，直接返回
+    // 如果已经是新格式，与默认值深度合并后返回
     if (oldData.autoHide && typeof oldData.autoHide === "object") {
-      return oldData as PluginSettings;
+      for (const key of Object.keys(settings) as Array<keyof PluginSettings>) {
+        if (key in oldData && typeof oldData[key] === "object" && oldData[key] !== null && !Array.isArray(oldData[key])) {
+          settings[key] = { ...settings[key], ...oldData[key] } as any;
+        } else if (key in oldData) {
+          (settings as any)[key] = oldData[key];
+        }
+      }
+      return settings;
     }
 
     // 旧格式迁移映射

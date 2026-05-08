@@ -7,6 +7,7 @@ import type { App } from "obsidian";
 import type { IFeatureModule, ModuleContext } from "../types/module.types";
 import type { PluginSettings } from "../types/settings.types";
 import type { EventBus } from "./event-bus";
+import type { SettingsManager } from "./settings-manager";
 import { Events } from "./event-bus";
 
 export class ModuleManager {
@@ -14,13 +15,14 @@ export class ModuleManager {
   private loaded = new Set<string>();
   private ctx: ModuleContext;
 
-  constructor(private events: EventBus, private getSettings: () => PluginSettings, private _registerEditorExtension?: (ext: any) => void, app?: App) {
+  constructor(private events: EventBus, private getSettings: () => PluginSettings, private _registerEditorExtension?: (ext: any) => void, app?: App, settingsManager?: SettingsManager) {
     this.ctx = {
       events,
       getSettings,
       getSetting: <K extends keyof PluginSettings>(key: K) => this.getSettings()[key],
       registerEditorExtension: (ext: any) => this._registerEditorExtension?.(ext),
       app: app!,
+      updateSettings: (updates) => settingsManager!.updateMultiple(updates),
     };
 
     // 监听设置变更，分发给各模块
