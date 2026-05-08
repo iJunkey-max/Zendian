@@ -209,6 +209,8 @@ export class IconSystemModule implements IFeatureModule {
       "  width: 16px;",
       "  height: 16px;",
       "  flex-shrink: 0;",
+      "  margin-right: 6px;",
+      "  margin-left: 2px;",
       "}",
       ".zendian-icon svg {",
       "  width: 16px;",

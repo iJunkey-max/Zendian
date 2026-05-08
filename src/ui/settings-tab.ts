@@ -121,6 +121,12 @@ const FEAT_ICONS = {
     <path d="M2 17l10 5 10-5"/>
     <path d="M2 12l10 5 10-5"/>
   </svg>`,
+  iconSystem: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+    <circle cx="12" cy="13" r="2" fill="currentColor" fill-opacity="0.2"/>
+    <path d="M12 11v4"/>
+    <path d="M10 13h4"/>
+  </svg>`,
 };
 
 interface FeatureItem {
@@ -136,6 +142,7 @@ const FEATURES: FeatureItem[] = [
   { icon: FEAT_ICONS.headings, title: "标题自定义", desc: "H1-H6 字重、分隔线、间距、字号全面定制" },
   { icon: FEAT_ICONS.codeBlocks, title: "代码与引用块", desc: "代码块、引用块、标注、表格的全面样式定制" },
   { icon: FEAT_ICONS.compat, title: "第三方兼容", desc: "DB Folder、Projects、Surfing 等插件兼容" },
+  { icon: FEAT_ICONS.iconSystem, title: "图标系统", desc: "数据驱动的文件树图标，支持 Lucide + 第三方图标库" },
 ];
 
 // ============================================================

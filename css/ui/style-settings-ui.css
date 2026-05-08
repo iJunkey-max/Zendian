@@ -95,12 +95,12 @@
 }
 
 .zendian-heading-content {
-    padding: 4px 16px 12px;
+    padding: 4px 0 12px;
 }
 
 .zendian-heading-content .setting-item {
     border-top: 1px solid var(--background-modifier-border);
-    padding: 8px 0;
+    padding: 12px 16px;
 }
 
 .zendian-heading-content .setting-item:first-child {
@@ -120,12 +120,12 @@
 }
 
 .zendian-section-content {
-    padding: 4px 16px 12px;
+    padding: 4px 0 12px;
 }
 
 .zendian-section-content .setting-item {
     border-top: 1px solid var(--background-modifier-border);
-    padding: 8px 0;
+    padding: 12px 16px;
 }
 
 .zendian-section-content .setting-item:first-child {
@@ -230,7 +230,7 @@
 
 .zendian-heading-group .setting-item {
     border-top: 1px solid var(--background-modifier-border);
-    padding: 6px 0;
+    padding: 12px 16px;
 }
 
 .zendian-heading-group .setting-item:first-child {
@@ -246,7 +246,7 @@
 
 .zendian-heading-settings .setting-item {
     border-top: 1px solid var(--background-modifier-border);
-    padding: 8px 0;
+    padding: 12px 16px;
 }
 
 .zendian-heading-settings .setting-item:first-child {
