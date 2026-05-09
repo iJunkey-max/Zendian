@@ -232,8 +232,8 @@ body.theme-light {
 body.theme-dark {
   --glow-shadow-text: 0 0 8px var(--glow-color);
   --glow-shadow-box: 0 0 8px var(--glow-color);
-  --background-primary: hsl(var(--accent-h), calc(var(--accent-s) / 5), calc(1.25 * var(--accent-l) / 4.5));
-  --background-primary-alt: hsl(var(--accent-h), calc(var(--accent-s) / 5), calc(1.25 * var(--accent-l) / 3.9));
+  --background-primary: hsl(var(--accent-h), calc(var(--accent-s) / 5), calc(1.25 * var(--accent-l) / 8));
+  --background-primary-alt: hsl(var(--accent-h), calc(var(--accent-s) / 5), calc(1.25 * var(--accent-l) / 7));
   --background-secondary: color-mix(in srgb, var(--bg-color), #000 15%);
   --background-secondary-alt: color-mix(in srgb, var(--bg-color), #000 25%);
   --text-faint: var(--border-color);

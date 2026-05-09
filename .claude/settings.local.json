@@ -68,7 +68,13 @@
       "Bash(copy /Y \"C:\\\\Users\\\\Junkey\\\\MyCode\\\\Zendian\\\\manifest.json\" \"C:\\\\Users\\\\Junkey\\\\Desktop\\\\OB_test\\\\.obsidian\\\\plugins\\\\zendian\\\\manifest.json\")",
       "Bash(gh release *)",
       "Bash(where.exe gh *)",
-      "PowerShell(Get-Command *)"
+      "PowerShell(Get-Command *)",
+      "PowerShell(gh *)",
+      "PowerShell($env:GITHUB_TOKEN; $env:GH_TOKEN)",
+      "Bash(winget install *)",
+      "PowerShell(winget install *)",
+      "Bash(git credential *)",
+      "Bash(git rm *)"
     ]
   }
 }

@@ -6,6 +6,7 @@ export class BannerModule {
     ctx: any;
     eventRefs: any[] = [];
     pollTimer: any = null;
+    private failedUrls: Set<string> = new Set();
 
     async load(ctx: any) {
         this.ctx = ctx;
@@ -38,6 +39,7 @@ export class BannerModule {
             clearInterval(this.pollTimer);
             this.pollTimer = null;
         }
+        this.failedUrls.clear();
         this.cleanup();
         this.ctx = null;
     }
@@ -85,6 +87,11 @@ export class BannerModule {
     }
 
     injectBanner(leaf: WorkspaceLeaf, imgUrl: string, settings: any) {
+        if (this.failedUrls.has(imgUrl)) {
+            this.removeBannerFromLeaf(leaf);
+            return;
+        }
+
         const container = leaf.view.containerEl.closest(".workspace-leaf-content");
         if (!container) return;
 
@@ -122,6 +129,10 @@ export class BannerModule {
         const img = document.createElement("img");
         img.className = "zendian-banner-img";
         img.src = imgUrl;
+        img.onerror = () => {
+            this.failedUrls.add(imgUrl);
+            this.removeBannerFromLeaf(leaf);
+        };
         wrapper.appendChild(img);
 
         scroller.prepend(wrapper);
