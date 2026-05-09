@@ -36,6 +36,7 @@ import { HeadingsModule } from "./modules/headings.module";
 import { RainbowFolderModule } from "./modules/rainbow-folder.module";
 import { NewTabModule } from "./modules/new-tab.module";
 import { IconSystemModule } from "./modules/icon-system.module";
+import { BannerModule } from "./modules/banner.module";
 
 // UI
 import { ZENdianSettingTab } from "./ui/settings-tab";
@@ -83,6 +84,7 @@ export default class ZENdianPlugin extends Plugin {
     this.moduleManager.register(new RainbowFolderModule());
     this.moduleManager.register(new NewTabModule());
     this.moduleManager.register(new IconSystemModule());
+    this.moduleManager.register(new BannerModule());
 
     // 3. 加载所有模块
     await this.moduleManager.loadAll();

@@ -1,0 +1,67 @@
+/* ============================================================
+   Banner — 页眉图片 终极版
+   ============================================================ */
+
+/* 1. 设置滚动容器为相对定位，确保头图能相对它绝对定位，无视其内部卡片的宽距限制 */
+.workspace-leaf-content[data-zendian-banner] .cm-scroller,
+.workspace-leaf-content[data-zendian-banner] .markdown-preview-view {
+    position: relative !important;
+}
+
+/* 2. 绝对定位的头图：随内容滚动，强制向两侧溢出以覆盖原生间距 */
+.zendian-banner-wrapper {
+    position: absolute;
+    top: 0;
+    left: -50px;
+    width: calc(100% + 100px);
+    height: var(--zendian-banner-height, 250px);
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* ★ 核心修复：最高优先级重置，彻底阻断 .markdown-preview-view img 的全局污染 */
+.workspace-leaf-content[data-zendian-banner] img.zendian-banner-img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    box-shadow: none !important;
+    transform: none !important;
+    filter: none !important;
+    mask-image: linear-gradient(to bottom, black 50%, transparent 100%) !important;
+    -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%) !important;
+}
+
+/* 3. 安全推挤排版：禁止去推挤高度敏感的 .cm-content，改用安全级别最高的 .cm-sizer 顶内边距 */
+.workspace-leaf-content[data-zendian-banner] .cm-sizer,
+.workspace-leaf-content[data-zendian-banner] .markdown-preview-sizer {
+    padding-top: calc(var(--zendian-banner-height, 250px) - 40px) !important;
+}
+
+/* 4. 视觉层级保护：防止毛玻璃被图片遮挡 */
+.workspace-leaf-content[data-zendian-banner] .metadata-container,
+.workspace-leaf-content[data-zendian-banner] .inline-title {
+    position: relative;
+    z-index: 2;
+}
+
+/* 沉浸式属性面板调整 */
+.workspace-leaf-content[data-zendian-banner] .metadata-container {
+    background-color: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    margin-top: 10px !important;
+}
+.theme-dark .workspace-leaf-content[data-zendian-banner] .metadata-container {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+}
+.workspace-leaf-content[data-zendian-banner] .inline-title {
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}

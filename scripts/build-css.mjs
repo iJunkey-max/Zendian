@@ -16,6 +16,7 @@ const CSS_MERGE_ORDER = [
   "css/settings-blocks/border-settings.css",
   "css/base/border-theme.css",
   "css/overlays/phycat-overlay.css",
+  "css/overlays/banner.css",
   "css/ui/style-settings-ui.css",
 ];
 

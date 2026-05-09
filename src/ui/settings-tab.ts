@@ -19,7 +19,7 @@ interface SettingDef {
   id: string;
   titleZh: string;
   descZh?: string;
-  type: "toggle" | "select" | "number" | "number-slider";
+  type: "toggle" | "select" | "number" | "number-slider" | "text";
   get: (s: PluginSettings) => any;
   set: (s: PluginSettings, val: any) => Partial<PluginSettings[keyof PluginSettings]>;
   options?: { label: string; value: string }[];
@@ -27,6 +27,7 @@ interface SettingDef {
   max?: number;
   step?: number;
   format?: string;
+  placeholder?: string;
   visible?: (s: PluginSettings) => boolean;
 }
 
@@ -65,6 +66,10 @@ function num(id: string, titleZh: string, get: (s: PluginSettings) => number, se
 
 function slider(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, min: number, max: number, step: number, descZh?: string): SettingDef {
   return { id, titleZh, descZh, type: "number-slider", get, set: (s, v) => set(s, v), min, max, step };
+}
+
+function text(id: string, titleZh: string, get: (s: PluginSettings) => string, set: (s: PluginSettings, v: string) => any, placeholder?: string, descZh?: string): SettingDef {
+  return { id, titleZh, descZh, type: "text", get, set: (s, v) => set(s, v), placeholder };
 }
 
 // ============================================================
@@ -292,6 +297,14 @@ const MENU_CONFIG: TabDef[] = [
       {
         id: "heading-system", title: "Heading System", titleZh: "标题系统",
         headingTabs: true,
+      },
+      {
+        id: "banner", title: "Banner", titleZh: "页眉图片",
+        settings: [
+          toggle("banner-enabled", "启用页眉图片", (s) => s.banner.enabled, (s, v) => ({ banner: { ...s.banner, enabled: v } }), "在笔记顶部显示页眉图片，需在 frontmatter 中设置对应键名的图片链接"),
+          text("banner-yaml-key", "页眉 YAML 键名", (s) => s.banner.yamlKey, (s, v) => ({ banner: { ...s.banner, yamlKey: v } }), "banner", "用于读取图片的 YAML frontmatter 键名"),
+          slider("banner-height", "页眉高度", (s) => s.banner.height, (s, v) => ({ banner: { ...s.banner, height: v } }), 150, 400, 10, "调整页眉图片的高度（像素）"),
+        ],
       },
       {
         id: "text-details", title: "Text Details", titleZh: "文本细节",
@@ -695,6 +708,14 @@ export class ZENdianSettingTab extends PluginSettingTab {
           if (def.step !== undefined) text.inputEl.step = String(def.step);
           text.setValue(String(def.get(settings)));
           text.onChange(async (val) => { const n = parseFloat(val); if (!isNaN(n)) await this.settingsManager.updateMultiple(def.set(settings, n)); });
+        });
+        break;
+
+      case "text":
+        applyDesc(new Setting(wrapper).setName(def.titleZh)).addText((text) => {
+          if (def.placeholder) text.setPlaceholder(def.placeholder);
+          text.setValue(def.get(settings));
+          text.onChange(async (val) => { await this.settingsManager.updateMultiple(def.set(settings, val)); });
         });
         break;
 

@@ -253,6 +253,14 @@ export interface IconRule {
   color?: string;
 }
 
+/** 页眉图片模块设置 */
+export interface BannerSettings {
+  enabled: boolean;
+  yamlKey: string;
+  height: number;
+  style: string;
+}
+
 /** 图标系统模块设置 */
 export interface IconSystemSettings {
   enabled: boolean;
@@ -296,6 +304,7 @@ export interface PluginSettings {
   uiDetail: UIDetailSettings;
   fileTree: FileTreeSettings;
   iconSystem: IconSystemSettings;
+  banner: BannerSettings;
 }
 
 // ============================================================
@@ -514,5 +523,11 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       { regex: "\\.canvas$", iconId: "lucide-layout-dashboard" },
     ],
     customIcons: {},
+  },
+  banner: {
+    enabled: false,
+    yamlKey: "banner",
+    height: 250,
+    style: "fade-bottom",
   },
 };
