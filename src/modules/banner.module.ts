@@ -90,6 +90,7 @@ export class BannerModule {
 
         container.setAttribute("data-zendian-banner", "");
         (container as HTMLElement).style.setProperty("--zendian-banner-height", `${settings.height}px`);
+        (container as HTMLElement).style.setProperty("--zendian-banner-position", settings.position || "center");
 
         // ★ 核心修复：严格判断当前视图模式，绝不使用宽泛的 querySelector
         const mode = (leaf.view as any).getMode ? (leaf.view as any).getMode() : "source";
@@ -131,6 +132,7 @@ export class BannerModule {
         if (container) {
             container.removeAttribute("data-zendian-banner");
             (container as HTMLElement).style.removeProperty("--zendian-banner-height");
+            (container as HTMLElement).style.removeProperty("--zendian-banner-position");
             const wrapper = container.querySelector(".zendian-banner-wrapper");
             if (wrapper) wrapper.remove();
         }
@@ -141,6 +143,7 @@ export class BannerModule {
         document.querySelectorAll("[data-zendian-banner]").forEach(el => {
             el.removeAttribute("data-zendian-banner");
             (el as HTMLElement).style.removeProperty("--zendian-banner-height");
+            (el as HTMLElement).style.removeProperty("--zendian-banner-position");
         });
     }
 }

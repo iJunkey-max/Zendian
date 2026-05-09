@@ -303,7 +303,12 @@ const MENU_CONFIG: TabDef[] = [
         settings: [
           toggle("banner-enabled", "启用页眉图片", (s) => s.banner.enabled, (s, v) => ({ banner: { ...s.banner, enabled: v } }), "在笔记顶部显示页眉图片，需在 frontmatter 中设置对应键名的图片链接"),
           text("banner-yaml-key", "页眉 YAML 键名", (s) => s.banner.yamlKey, (s, v) => ({ banner: { ...s.banner, yamlKey: v } }), "banner", "用于读取图片的 YAML frontmatter 键名"),
-          slider("banner-height", "页眉高度", (s) => s.banner.height, (s, v) => ({ banner: { ...s.banner, height: v } }), 150, 400, 10, "调整页眉图片的高度（像素）"),
+          slider("banner-height", "页眉高度", (s) => s.banner.height, (s, v) => ({ banner: { ...s.banner, height: v } }), 150, 1000, 10, "调整页眉图片的高度（像素）"),
+          select("banner-position", "图片对齐方式", [
+            { label: "居中 (Center)", value: "center" },
+            { label: "顶部向下 (Top)", value: "top" },
+            { label: "底部向上 (Bottom)", value: "bottom" },
+          ], (s) => s.banner.position, (s, v) => ({ banner: { ...s.banner, position: v } }), "选择图片在页眉容器中的对齐和裁剪锚点"),
         ],
       },
       {

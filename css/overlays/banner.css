@@ -30,8 +30,10 @@
     padding: 0 !important;
     border: none !important;
     border-radius: 0 !important;
+    /* ★ 关键修改点 1：依然使用 cover 保证不留出丑陋的白边 */
     object-fit: cover !important;
-    object-position: center !important;
+    /* ★ 关键修改点 2：将视觉焦点强制锚定在"水平居中，垂直置顶" */
+    object-position: var(--zendian-banner-position, center) !important;
     box-shadow: none !important;
     transform: none !important;
     filter: none !important;

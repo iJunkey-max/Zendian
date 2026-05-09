@@ -23,15 +23,15 @@ settings:
         title: Version
         title.zh: 版本
         type: info-text
-        description: "v2.1.02E"
-        description.zh: "v2.1.02E"
+        description: "v2.1.03"
+        description.zh: "v2.1.03"
     -
         id: zendian-changelog
         title: Changelog
         title.zh: 版本记录
         type: info-text
-        description: "**v2.1.02E** — Dynamic icon system<br>- Data-driven file tree icons with regex matching<br>- Lucide built-in + Boxicons/Coolicons/Tabler support<br>- Icon picker modal with grid layout<br>- Right-click custom icons per file<br>- Tab icons for workspace tabs<br>**v1.0.0** — Initial release<br>- Merged Border theme, Phycat overlay, and Style Settings<br>- Apple-style settings panel with sidebar navigation<br>- Full Chinese localization<br>- Rainbow folder support<br>- Theme accent color sync with Obsidian<br>- Default card layout with grid background"
-        description.zh: "**v2.1.02E** — 动态图标系统<br>- 数据驱动文件树图标，正则匹配引擎<br>- 内置 Lucide + Boxicons/Coolicons/Tabler 图标库<br>- 图标选择器弹窗，CSS Grid 多列网格<br>- 右键自定义单个文件图标<br>- 标签页图标显示<br>**v1.0.0** — 首发版本<br>- 整合 Border 主题、Phycat 覆盖层与 Style Settings<br>- 苹果风格设置面板，侧边栏导航<br>- 全面中文本地化<br>- 彩虹文件夹支持<br>- 主题色与 Obsidian 同步<br>- 默认卡片布局与网格背景"
+        description: "**v2.1.03** — Banner (Page Header Image)<br>- Frontmatter-driven banner images for notes<br>- Glassmorphism metadata overlay, fade mask<br>- Per-leaf data-attribute isolation for split views<br>- Configurable height, YAML key, image position<br>- Reading/editing mode polling + event sync<br>**v2.1.02E** — Dynamic icon system<br>- Data-driven file tree icons with regex matching<br>- Lucide built-in + Boxicons/Coolicons/Tabler support<br>- Icon picker modal with grid layout<br>- Right-click custom icons per file<br>- Tab icons for workspace tabs<br>**v1.0.0** — Initial release<br>- Merged Border theme, Phycat overlay, and Style Settings<br>- Apple-style settings panel with sidebar navigation<br>- Full Chinese localization<br>- Rainbow folder support<br>- Theme accent color sync with Obsidian<br>- Default card layout with grid background"
+        description.zh: "**v2.1.03** — 页眉图片 (Banner)<br>- 基于 frontmatter 的笔记页眉图片<br>- 毛玻璃属性面板融合、渐变遮罩<br>- data-attribute 隔离分屏视图<br>- 可配置高度、YAML 键名、图片对齐方式<br>- 阅读/编辑模式心跳轮询 + 事件同步<br>**v2.1.02E** — 动态图标系统<br>- 数据驱动文件树图标，正则匹配引擎<br>- 内置 Lucide + Boxicons/Coolicons/Tabler 图标库<br>- 图标选择器弹窗，CSS Grid 多列网格<br>- 右键自定义单个文件图标<br>- 标签页图标显示<br>**v1.0.0** — 首发版本<br>- 整合 Border 主题、Phycat 覆盖层与 Style Settings<br>- 苹果风格设置面板，侧边栏导航<br>- 全面中文本地化<br>- 彩虹文件夹支持<br>- 主题色与 Obsidian 同步<br>- 默认卡片布局与网格背景"
         markdown: true
 */
 
@@ -9948,8 +9948,10 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     padding: 0 !important;
     border: none !important;
     border-radius: 0 !important;
+    /* ★ 关键修改点 1：依然使用 cover 保证不留出丑陋的白边 */
     object-fit: cover !important;
-    object-position: center !important;
+    /* ★ 关键修改点 2：将视觉焦点强制锚定在"水平居中，垂直置顶" */
+    object-position: var(--zendian-banner-position, center) !important;
     box-shadow: none !important;
     transform: none !important;
     filter: none !important;
