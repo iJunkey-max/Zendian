@@ -17,6 +17,35 @@ import type { HomepageProject, HomepageQuickNote, RecentNoteItem } from "./types
 
 export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
 
+/** SVG 图标工具 — 16x16 Lucide 风格 */
+const SVG_ICON = {
+  wave: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10h10"/><path d="M7 14h6"/><path d="M19.5 8c.28 0 .5.22.5.5v7a.5.5 0 0 1-.5.5h-15a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 1 .5-.5h3.5l1.5-2h6l1.5 2h3.5z"/></svg>`,
+  search: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+  sun: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+  mapPin: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  calendar: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>`,
+  checkCircle: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>`,
+  circle: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`,
+  fileText: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`,
+  checkSquare: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>`,
+  bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+  clock: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  folder: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`,
+  squareCheck: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>`,
+  stickyNote: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M14 3v4a2 2 0 0 0 2 2h4"/></svg>`,
+  flame: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+  barChart: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>`,
+  rocket: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>`,
+  pencil: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`,
+  tag: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>`,
+} as const;
+
+function svgIcon(key: keyof typeof SVG_ICON, cls?: string): HTMLSpanElement {
+  const span = createSpan({ cls: `homepage-icon${cls ? ` ${cls}` : ""}` });
+  span.innerHTML = SVG_ICON[key];
+  return span;
+}
+
 /** 待办 Tab 定义 */
 const TODO_TABS = [
   { key: "all", label: "全部" },
@@ -114,20 +143,17 @@ export class HomepageView extends ItemView {
     // 左侧：问候
     const left = header.createDiv({ cls: "homepage-header-left" });
     const h1 = left.createEl("h1", { cls: "homepage-header-greeting" });
-    h1.createSpan({ text: "👋 " });
+    h1.appendChild(svgIcon("wave", "homepage-header-icon"));
     h1.createSpan({ cls: "homepage-header-greeting-text", text: "你好，加载中..." });
     left.createEl("p", { cls: "homepage-header-date", text: "加载中..." });
-    left.createEl("p", { cls: "homepage-header-quote-text", text: "保持专注，继续构建你的知识体系吧！" });
 
     // 右侧：搜索框 + 天气
     const right = header.createDiv({ cls: "homepage-header-right" });
-    (right as HTMLElement).style.gap = "3rem";
 
     // 搜索框
     const searchBox = right.createDiv({ cls: "homepage-search-box" });
-    (searchBox as HTMLElement).style.marginTop = "1rem";
-    const searchIcon = searchBox.createEl("i", { cls: "homepage-search-icon" });
-    searchIcon.createEl("span", { text: "🔍" });
+    const searchIcon = searchBox.createEl("span", { cls: "homepage-search-icon" });
+    searchIcon.innerHTML = SVG_ICON.search;
     const searchInput = searchBox.createEl("input", {
       cls: "homepage-search-input",
       attr: { type: "text", placeholder: "搜索笔记..." },
@@ -145,25 +171,26 @@ export class HomepageView extends ItemView {
     // 天气卡片
     const weatherCard = right.createDiv({ cls: "homepage-weather-card" });
     const weatherIconWrap = weatherCard.createDiv({ cls: "homepage-weather-icon-wrap" });
-    weatherIconWrap.createSpan({ cls: "homepage-weather-icon", text: "☀️" });
+    weatherIconWrap.innerHTML = SVG_ICON.sun;
     const weatherInfo = weatherCard.createDiv({ cls: "homepage-weather-info" });
     weatherInfo.createDiv({ cls: "homepage-weather-temp", text: "--°C" });
     weatherInfo.createDiv({ cls: "homepage-weather-desc", text: "加载中..." });
     const weatherSep = weatherCard.createDiv({ cls: "homepage-weather-separator" });
     const weatherLoc = weatherCard.createDiv({ cls: "homepage-weather-location" });
     weatherLoc.createSpan({ cls: "homepage-weather-location-text", text: "" });
-    weatherLoc.createSpan({ text: " 📍" });
+    const locIcon = weatherLoc.createSpan({ cls: "homepage-icon" });
+    locIcon.innerHTML = SVG_ICON.mapPin;
   }
 
   // ── 每日回顾 (col-span-6) ──────────────────────────────────
 
   private renderDailyReview(parent: HTMLElement): void {
-    const card = parent.createDiv({ cls: "homepage-card homepage-col-6", attr: { "data-section": "daily-review" } });
+    const card = parent.createDiv({ cls: "homepage-card homepage-col-7", attr: { "data-section": "daily-review" } });
 
     // 标题行
     const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
-    titleLeft.createSpan({ text: "📅 " });
+    titleLeft.appendChild(svgIcon("calendar"));
     titleLeft.createSpan({ text: "每日回顾" });
     titleRow.createEl("a", { cls: "homepage-card-link", text: "查看全部" });
 
@@ -200,46 +227,40 @@ export class HomepageView extends ItemView {
     // 右侧：检查列表
     const checklist = body.createDiv({ cls: "homepage-review-checklist" });
     const items = [
-      { key: "notes", icon: "📝", label: "记录笔记", value: "0 条" },
-      { key: "tasks", icon: "✅", label: "完成待办", value: "0 项" },
-      { key: "reading", icon: "📖", label: "阅读文章", value: "0 篇" },
-      { key: "remaining", icon: "⏳", label: "剩余待办", value: "0 项" },
+      { key: "notes", icon: "fileText" as const, label: "记录笔记", value: "0 条" },
+      { key: "tasks", icon: "checkSquare" as const, label: "完成待办", value: "0 项" },
+      { key: "reading", icon: "bookOpen" as const, label: "阅读文章", value: "0 篇" },
+      { key: "remaining", icon: "clock" as const, label: "剩余待办", value: "0 项" },
     ];
     for (const item of items) {
       const row = checklist.createDiv({ cls: "homepage-review-item", attr: { "data-review": item.key } });
       const left = row.createDiv({ cls: "homepage-review-item-left" });
-      left.createSpan({ text: `${item.icon} ` });
+      left.appendChild(svgIcon(item.icon));
       left.createSpan({ cls: "homepage-review-item-label", text: item.label });
       row.createSpan({ cls: "homepage-review-item-value", text: item.value, attr: { "data-review-value": item.key } });
-      row.createSpan({ cls: "homepage-review-item-check", text: "✅" });
+      const checkIcon = row.createSpan({ cls: "homepage-review-item-check homepage-icon" });
+      checkIcon.innerHTML = SVG_ICON.checkCircle;
     }
 
-    // 底部引言
-    const quoteArea = card.createDiv({ cls: "homepage-review-quote" });
-    const q = this.dataService.getTodayQuote();
-    quoteArea.createEl("p", { cls: "homepage-review-quote-text", text: `"${q.text}"` });
-    quoteArea.createEl("p", { cls: "homepage-review-quote-author", text: `— ${q.author}` });
   }
 
   // ── 进行中的项目 (col-span-6) ─────────────────────────────
 
   private renderProjects(parent: HTMLElement): void {
-    const card = parent.createDiv({ cls: "homepage-card homepage-col-6", attr: { "data-section": "projects" } });
+    const card = parent.createDiv({ cls: "homepage-card homepage-col-5", attr: { "data-section": "projects" } });
 
     // 标题行
     const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
-    titleLeft.createSpan({ text: "📁 " });
+    titleLeft.appendChild(svgIcon("folder"));
     titleLeft.createSpan({ text: "进行中的项目" });
-    titleRow.createEl("a", { cls: "homepage-card-link", text: "查看全部" });
+    const titleRight = titleRow.createDiv({ cls: "homepage-card-title-actions" });
+    const newLink = titleRight.createEl("a", { cls: "homepage-card-link", text: "新建项目" });
+    newLink.addEventListener("click", () => this.openProjectModal());
+    titleRight.createEl("a", { cls: "homepage-card-link", text: "查看全部" });
 
     // 项目列表
     card.createDiv({ cls: "homepage-project-list" });
-
-    // 底部新建按钮
-    const footer = card.createDiv({ cls: "homepage-card-footer" });
-    const newBtn = footer.createEl("button", { cls: "homepage-card-btn", text: "+ 新建项目" });
-    newBtn.addEventListener("click", () => this.openProjectModal());
   }
 
   // ── 待办 (col-span-4) ─────────────────────────────────────
@@ -250,7 +271,7 @@ export class HomepageView extends ItemView {
     // 标题行
     const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
-    titleLeft.createSpan({ text: "✅ " });
+    titleLeft.appendChild(svgIcon("checkSquare"));
     titleLeft.createSpan({ text: "待办" });
     const addLink = titleRow.createEl("a", { cls: "homepage-card-link", text: "添加待办" });
 
@@ -274,10 +295,6 @@ export class HomepageView extends ItemView {
 
     // 待办列表
     card.createDiv({ cls: "homepage-todo-list" });
-
-    // 底部添加按钮
-    const footer = card.createDiv({ cls: "homepage-card-footer" });
-    const addBtn = footer.createEl("button", { cls: "homepage-card-btn homepage-card-btn--primary", text: "+ 添加待办" });
   }
 
   // ── 便签 (col-span-4) ─────────────────────────────────────
@@ -288,7 +305,7 @@ export class HomepageView extends ItemView {
     // 标题行
     const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
-    titleLeft.createSpan({ text: "📝 " });
+    titleLeft.appendChild(svgIcon("stickyNote"));
     titleLeft.createSpan({ text: "便签" });
     const addLink = titleRow.createEl("a", { cls: "homepage-card-link", text: "新建便签" });
     addLink.addEventListener("click", () => this.openQuickNoteModal());
@@ -306,7 +323,9 @@ export class HomepageView extends ItemView {
     yellowList.createEl("li", { text: "如何构建高效的知识体系" });
     yellowList.createEl("li", { text: "工具：Obsidian + AI" });
     const yellowDate = yellow.createDiv({ cls: "homepage-sticky-date", attr: { "data-sticky-date": "0" } });
-    yellowDate.createSpan({ text: "📅 5月28日" });
+    const yellowDateIcon = yellowDate.createSpan({ cls: "homepage-icon" });
+    yellowDateIcon.innerHTML = SVG_ICON.calendar;
+    yellowDate.createSpan({ text: " 5月28日" });
 
     // 蓝绿并排
     const bottomRow = container.createDiv({ cls: "homepage-sticky-bottom-row" });
@@ -339,11 +358,8 @@ export class HomepageView extends ItemView {
     // 标题行
     const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
-    titleLeft.createSpan({ text: "🔥 " });
+    titleLeft.appendChild(svgIcon("flame"));
     titleLeft.createSpan({ text: "热力图" });
-    const selectEl = titleRow.createEl("select", { cls: "homepage-heatmap-select" });
-    selectEl.createEl("option", { text: "日记", attr: { value: "daily" } });
-    selectEl.createEl("option", { text: "笔记", attr: { value: "notes" } });
 
     // 热力图主体
     const heatmapWrap = card.createDiv({ cls: "homepage-heatmap-wrap" });
@@ -359,20 +375,19 @@ export class HomepageView extends ItemView {
       dayLabels.createDiv({ cls: "homepage-heatmap-day-label", text: d });
     }
 
-    // 网格容器 — Grid 布局
+    // 网格容器 — 7行×17列 = 119格（约4个月）
     const gridEl = heatmapBody.createDiv({ cls: "homepage-heatmap-grid" });
-    for (let i = 0; i < 7 * 35; i++) {
+    for (let i = 0; i < 7 * 17; i++) {
       gridEl.createDiv({ cls: "homepage-heatmap-cell" });
     }
 
-    // 底部图例
+    // 底部图例（横向排列）
     const legend = card.createDiv({ cls: "homepage-heatmap-legend" });
-    const legendLeft = legend.createDiv({ cls: "homepage-heatmap-legend-left" });
-    legendLeft.createSpan({ cls: "homepage-heatmap-legend-label", text: "少" });
+    legend.createSpan({ cls: "homepage-heatmap-legend-label", text: "少" });
     for (let i = 0; i <= 4; i++) {
-      legendLeft.createDiv({ cls: "homepage-heatmap-cell homepage-heatmap-legend-cell", attr: { "data-level": String(i) } });
+      legend.createDiv({ cls: "homepage-heatmap-cell homepage-heatmap-legend-cell", attr: { "data-level": String(i) } });
     }
-    legendLeft.createSpan({ cls: "homepage-heatmap-legend-label", text: "多" });
+    legend.createSpan({ cls: "homepage-heatmap-legend-label", text: "多" });
     legend.createDiv({ cls: "homepage-heatmap-legend-total", attr: { "data-heatmap-total": "" }, text: "总计: ..." });
   }
 
@@ -386,7 +401,7 @@ export class HomepageView extends ItemView {
 
     const titleRow = topArea.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
-    titleLeft.createSpan({ text: "📊 " });
+    titleLeft.appendChild(svgIcon("barChart"));
     titleLeft.createSpan({ text: "本月数据" });
 
     const metricsGrid = topArea.createDiv({ cls: "homepage-metrics-grid" });
@@ -454,7 +469,8 @@ export class HomepageView extends ItemView {
     decorSvg.createSvg("path", { attr: { d: "M50 100 L100 40 L150 100 Z", fill: "#dce0ff" } });
     decorSvg.createSvg("path", { attr: { d: "M100 100 L160 20 L200 100 Z", fill: "#b9c2ff" } });
     decorSvg.createSvg("path", { attr: { d: "M0 100 L60 60 L120 100 Z", fill: "#eeefff" } });
-    decor.createDiv({ cls: "homepage-metrics-decor-icon", text: "👨‍🚀" });
+    const decorIcon = decor.createDiv({ cls: "homepage-metrics-decor-icon homepage-icon" });
+    decorIcon.innerHTML = SVG_ICON.rocket;
   }
 
   // ── 最近笔记 (col-span-4) ─────────────────────────────────
@@ -465,7 +481,7 @@ export class HomepageView extends ItemView {
     // 标题行
     const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
-    titleLeft.createSpan({ text: "📄 " });
+    titleLeft.appendChild(svgIcon("fileText"));
     titleLeft.createSpan({ text: "最近笔记" });
     titleRow.createEl("a", { cls: "homepage-card-link", text: "查看全部" });
 
@@ -524,7 +540,7 @@ export class HomepageView extends ItemView {
   // ── 热力图 ────────────────────────────────────────────────
 
   private loadHeatmap(): void {
-    const data = this.statsService.getHeatmapData(245);
+    const data = this.statsService.getHeatmapData(119);
     const cells = this.containerEl.querySelectorAll(".homepage-heatmap-grid .homepage-heatmap-cell");
 
     const maxCount = Math.max(1, ...data.map((d) => d.count));
@@ -605,7 +621,7 @@ export class HomepageView extends ItemView {
       // 左侧：图标 + 标题
       const left = item.createDiv({ cls: "homepage-recent-item-left" });
       const iconWrap = left.createDiv({ cls: "homepage-recent-icon" });
-      iconWrap.createSpan({ text: "📄" });
+      iconWrap.innerHTML = SVG_ICON.fileText;
       left.createSpan({ cls: "homepage-recent-title", text: note.title });
 
       // 右侧：标签 + 时间
@@ -859,8 +875,8 @@ export class HomepageView extends ItemView {
     const ringFill = this.containerEl.querySelector(".homepage-review-ring-fill") as SVGCircleElement | null;
     if (ringFill) {
       const circumference = 2 * Math.PI * 40; // r=40
-      ringFill.setAttribute("stroke-dasharray", `${circumference * (completionRate / 100)} ${circumference * (1 - completionRate / 100)}`);
-      ringFill.setAttribute("stroke-dashoffset", "0");
+      ringFill.setAttribute("stroke-dasharray", `${circumference}`);
+      ringFill.setAttribute("stroke-dashoffset", `${circumference * (1 - completionRate / 100)}`);
     }
   }
 

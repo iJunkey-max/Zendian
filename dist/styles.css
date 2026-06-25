@@ -10027,20 +10027,37 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   font-family: inherit;
 }
 
+/* SVG 图标通用样式 */
+.zendian-homepage .homepage-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: inherit;
+  vertical-align: middle;
+}
+
+.zendian-homepage .homepage-icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
 /* ── 亮色主题 ────────────────────────────────────────────── */
 
 .theme-light .zendian-homepage {
-  --bg: #f7f8fa;
+  --bg: #f5f6f8;
   --surface: #ffffff;
-  --text-main: #1a1d2e;
-  --text-muted: #8e92a4;
-  --text-lighter: #b5b8c5;
+  --text-main: #181b25;
+  --text-muted: #8b90a0;
+  --text-lighter: #b0b5c2;
 
-  --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.03), 0 4px 12px -2px rgba(0, 0, 0, 0.01);
-  --shadow-note: 0 4px 14px -2px rgba(0, 0, 0, 0.02);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 6px 24px -2px rgba(0, 0, 0, 0.03);
+  --shadow-note: 0 2px 8px -1px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.05), 0 12px 32px -4px rgba(0, 0, 0, 0.06);
 
   /* 便签 */
-  --hp-sticky-yellow: #fef9e3;
+  --hp-sticky-yellow: #fffbeb;
   --hp-sticky-blue-start: #eef2ff;
   --hp-sticky-blue-end: #e0e7ff;
   --hp-sticky-green-start: #ecfdf5;
@@ -10048,60 +10065,61 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
   /* 搜索 */
   --hp-search-bg: #ffffff;
-  --hp-search-border: #f3f4f6;
+  --hp-search-border: #e8eaef;
 
   /* 进度 */
-  --hp-progress-bg: #f0f2f5;
+  --hp-progress-bg: #eef0f4;
 
   /* 分割线 */
-  --hp-border: rgba(0, 0, 0, 0.05);
-  --hp-divider: #f3f4f6;
+  --hp-border: rgba(0, 0, 0, 0.06);
+  --hp-divider: #eef0f4;
 
   /* 阴影 */
-  --hp-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
-  --hp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --hp-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 6px 24px -2px rgba(0, 0, 0, 0.03);
+  --hp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 /* ── 暗色主题 ────────────────────────────────────────────── */
 
 .theme-dark .zendian-homepage {
-  --bg: #0f1117;
-  --surface: #1a1d2e;
-  --text-main: #e8eaed;
-  --text-muted: #9aa0b0;
-  --text-lighter: #6b7185;
+  --bg: #0c0e14;
+  --surface: #161921;
+  --text-main: #e5e7eb;
+  --text-muted: #8b91a5;
+  --text-lighter: #5c6278;
 
-  --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.2), 0 4px 12px -2px rgba(0, 0, 0, 0.1);
-  --shadow-note: 0 4px 14px -2px rgba(0, 0, 0, 0.15);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 28px -4px rgba(0, 0, 0, 0.25);
+  --shadow-note: 0 2px 8px -1px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.25), 0 14px 36px -4px rgba(0, 0, 0, 0.35);
 
-  --hp-sticky-yellow: rgba(254, 249, 227, 0.08);
-  --hp-sticky-blue-start: rgba(238, 242, 255, 0.06);
-  --hp-sticky-blue-end: rgba(224, 231, 255, 0.08);
-  --hp-sticky-green-start: rgba(236, 253, 245, 0.06);
-  --hp-sticky-green-end: rgba(209, 250, 229, 0.08);
+  --hp-sticky-yellow: rgba(254, 249, 227, 0.06);
+  --hp-sticky-blue-start: rgba(238, 242, 255, 0.04);
+  --hp-sticky-blue-end: rgba(224, 231, 255, 0.06);
+  --hp-sticky-green-start: rgba(236, 253, 245, 0.04);
+  --hp-sticky-green-end: rgba(209, 250, 229, 0.06);
 
-  --hp-search-bg: #1e2235;
-  --hp-search-border: #2d3348;
+  --hp-search-bg: #1a1e2a;
+  --hp-search-border: #282e3e;
 
-  --hp-progress-bg: #2d3348;
+  --hp-progress-bg: #232838;
 
-  --hp-border: rgba(255, 255, 255, 0.06);
+  --hp-border: rgba(255, 255, 255, 0.07);
   --hp-divider: rgba(255, 255, 255, 0.06);
 
-  --hp-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-  --hp-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.2);
+  --hp-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 28px -4px rgba(0, 0, 0, 0.25);
+  --hp-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
 
-  --hp-heat-0: #1e2235;
-  --hp-heat-1: rgba(99, 102, 241, 0.2);
-  --hp-heat-2: rgba(99, 102, 241, 0.35);
-  --hp-heat-3: rgba(99, 102, 241, 0.5);
+  --hp-heat-0: #1a1e2a;
+  --hp-heat-1: rgba(92, 92, 255, 0.15);
+  --hp-heat-2: rgba(92, 92, 255, 0.3);
+  --hp-heat-3: rgba(92, 92, 255, 0.5);
   --hp-heat-4: var(--primary);
 
-  --hp-tag-blue-bg: rgba(59, 130, 246, 0.15);
+  --hp-tag-blue-bg: rgba(59, 130, 246, 0.12);
   --hp-tag-blue-text: #60a5fa;
-  --hp-tag-red-bg: rgba(239, 68, 68, 0.15);
+  --hp-tag-red-bg: rgba(239, 68, 68, 0.12);
   --hp-tag-red-text: #f87171;
-  --hp-tag-green-bg: rgba(34, 197, 94, 0.15);
+  --hp-tag-green-bg: rgba(34, 197, 94, 0.12);
   --hp-tag-green-text: #4ade80;
 }
 
@@ -10110,7 +10128,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-container {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 1.5rem 1.5rem 0;
+  padding: 0.75rem 1.5rem 0;
 }
 
 .zendian-homepage .homepage-wrapper {
@@ -10119,7 +10137,20 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(92, 92, 255, 0.035) 1px, transparent 0),
+    radial-gradient(ellipse at 15% 10%, rgba(92, 92, 255, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 80%, rgba(124, 124, 255, 0.04) 0%, transparent 50%);
+  background-size: 24px 24px, 100% 100%, 100% 100%;
+}
+
+.theme-dark .zendian-homepage .homepage-wrapper {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(92, 92, 255, 0.05) 1px, transparent 0),
+    radial-gradient(ellipse at 15% 10%, rgba(92, 92, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 80%, rgba(124, 124, 255, 0.05) 0%, transparent 50%);
+  background-size: 24px 24px, 100% 100%, 100% 100%;
 }
 
 /* ── 2. Header ──────────────────────────────────────────── */
@@ -10128,8 +10159,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 2rem;
-  margin-top: 1rem;
+  margin-bottom: 1rem;
+  margin-top: 0.25rem;
 }
 
 .zendian-homepage .homepage-header-left {
@@ -10141,18 +10172,23 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-header-right {
   display: flex;
   align-items: center;
-  gap: 3rem;
+  gap: 1.5rem;
 }
 
 .zendian-homepage .homepage-header-greeting {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   color: var(--text-main);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
+}
+
+.zendian-homepage .homepage-header-icon {
+  font-size: 1.5rem;
+  color: var(--text-main);
 }
 
 .zendian-homepage .homepage-header-date,
@@ -10169,35 +10205,35 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 /* ── 3. 搜索框 ──────────────────────────────────────────── */
 
 .zendian-homepage .homepage-search-box {
-  margin-top: 1rem;
+  margin-top: 0.25rem;
   position: relative;
   display: flex;
   align-items: center;
 }
 
 .zendian-homepage .homepage-search-input {
-  background: white;
-  border: 1px solid #f3f4f6;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  background: var(--surface);
+  border: 1px solid var(--hp-search-border);
+  box-shadow: var(--hp-shadow-sm);
   border-radius: 9999px;
   padding-left: 2.25rem;
   padding-right: 3rem;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
-  font-size: 0.875rem;
-  width: 16rem;
+  font-size: 0.8125rem;
+  width: 14rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  color: var(--text-main);
 }
 
-.theme-dark .zendian-homepage .homepage-search-input {
-  background: var(--hp-search-bg);
-  border-color: var(--hp-search-border);
+.zendian-homepage .homepage-search-input::placeholder {
+  color: var(--text-lighter);
 }
 
 .zendian-homepage .homepage-search-input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(92, 92, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(92, 92, 255, 0.08);
 }
 
 .zendian-homepage .homepage-search-icon {
@@ -10207,6 +10243,14 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   height: 1rem;
   color: var(--text-lighter);
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zendian-homepage .homepage-search-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .zendian-homepage .homepage-search-kbd {
@@ -10226,22 +10270,17 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 /* ── 4. 天气卡片 ────────────────────────────────────────── */
 
 .zendian-homepage .homepage-weather-card {
-  background: white;
-  border-radius: 1rem;
+  background: var(--surface);
+  border-radius: 0.875rem;
   box-shadow: var(--shadow-card);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 1rem;
+  border: 1px solid var(--hp-border);
+  padding: 0.875rem 1rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.875rem;
 }
 
-.theme-dark .zendian-homepage .homepage-weather-card {
-  background: var(--surface);
-  border-color: var(--hp-border);
-}
-
-.zendian-homepage .homepage-weather-icon-wrapper {
+.zendian-homepage .homepage-weather-icon-wrap {
   width: 2.5rem;
   height: 2.5rem;
   display: flex;
@@ -10250,9 +10289,15 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   background: #fefce8;
   border-radius: 9999px;
   flex-shrink: 0;
+  color: #eab308;
 }
 
-.theme-dark .zendian-homepage .homepage-weather-icon-wrapper {
+.zendian-homepage .homepage-weather-icon-wrap svg {
+  width: 18px;
+  height: 18px;
+}
+
+.theme-dark .zendian-homepage .homepage-weather-icon-wrap {
   background: rgba(254, 252, 232, 0.08);
 }
 
@@ -10274,13 +10319,17 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-homepage .homepage-weather-location {
-  margin-left: 1rem;
-  padding-left: 1rem;
+  margin-left: 0.75rem;
+  padding-left: 0.75rem;
   border-left: 1px solid #f3f4f6;
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
+  color: var(--text-lighter);
+}
+
+.zendian-homepage .homepage-weather-location .homepage-icon {
   color: var(--text-lighter);
 }
 
@@ -10293,15 +10342,16 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 1.5rem;
-  align-items: start;
+  gap: 1.25rem;
+  align-items: stretch;
+  padding-bottom: 1.5rem;
 }
 
 .zendian-homepage .homepage-left {
   grid-column: span 8;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   min-width: 0;
 }
 
@@ -10309,32 +10359,44 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   grid-column: span 4;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   min-width: 0;
 }
 
 .zendian-homepage .homepage-col-4 { grid-column: span 4; }
+.zendian-homepage .homepage-col-5 { grid-column: span 5; }
 .zendian-homepage .homepage-col-6 { grid-column: span 6; }
+.zendian-homepage .homepage-col-7 { grid-column: span 7; }
 .zendian-homepage .homepage-col-8 { grid-column: span 8; }
 .zendian-homepage .homepage-col-12 { grid-column: span 12; }
 
 /* ── 6. 卡片通用 ────────────────────────────────────────── */
 
 .zendian-homepage .homepage-card {
-  background: white;
-  border-radius: 1.25rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.01);
-  padding: 1.5rem;
+  background: var(--surface);
+  border-radius: 0.875rem;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--hp-border);
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.zendian-homepage .homepage-card:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: rgba(92, 92, 255, 0.12);
+}
+
+.theme-dark .zendian-homepage .homepage-card:hover {
+  border-color: rgba(92, 92, 255, 0.18);
 }
 
 /* Row 1: 每日回顾 + 项目 (col-6) */
 .zendian-homepage .homepage-col-6 {
-  height: 280px;
+  height: 260px;
 }
 
 /* Row 2: 待办 + 便签 + 热力图 (col-4) */
@@ -10342,9 +10404,9 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   height: 320px;
 }
 
-/* Row 3: 本月数据 (col-8) */
+/* Row 3: 本月数据 (col-8) + 最近笔记 (col-4) */
 .zendian-homepage .homepage-col-8 {
-  height: 360px;
+  height: 320px;
 }
 
 /* 内容区域自动填充 */
@@ -10366,7 +10428,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   min-height: 0;
 }
 
-/* 隐藏滚动条 */
+/* 滚动条 */
 .zendian-homepage .homepage-review-body::-webkit-scrollbar,
 .zendian-homepage .homepage-project-list::-webkit-scrollbar,
 .zendian-homepage .homepage-todo-list::-webkit-scrollbar,
@@ -10374,8 +10436,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-heatmap-wrap::-webkit-scrollbar,
 .zendian-homepage .homepage-metrics-grid::-webkit-scrollbar,
 .zendian-homepage .homepage-recent-list::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
 }
 
 .zendian-homepage .homepage-review-body::-webkit-scrollbar-thumb,
@@ -10385,8 +10447,18 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-heatmap-wrap::-webkit-scrollbar-thumb,
 .zendian-homepage .homepage-metrics-grid::-webkit-scrollbar-thumb,
 .zendian-homepage .homepage-recent-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.08);
   border-radius: 2px;
+}
+
+.zendian-homepage .homepage-review-body::-webkit-scrollbar-thumb:hover,
+.zendian-homepage .homepage-project-list::-webkit-scrollbar-thumb:hover,
+.zendian-homepage .homepage-todo-list::-webkit-scrollbar-thumb:hover,
+.zendian-homepage .homepage-sticky-grid::-webkit-scrollbar-thumb:hover,
+.zendian-homepage .homepage-heatmap-wrap::-webkit-scrollbar-thumb:hover,
+.zendian-homepage .homepage-metrics-grid::-webkit-scrollbar-thumb:hover,
+.zendian-homepage .homepage-recent-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .zendian-homepage .homepage-review-body::-webkit-scrollbar-track,
@@ -10399,28 +10471,6 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   background: transparent;
 }
 
-.theme-dark .zendian-homepage .homepage-card {
-  background: var(--surface);
-  border-color: var(--hp-border);
-  box-shadow: var(--hp-shadow);
-}
-
-.zendian-homepage .homepage-section,
-.zendian-homepage .homepage-sidebar-section {
-  border-radius: 1.25rem;
-  padding: 1.5rem;
-  background: white;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.01);
-  transition: box-shadow 0.25s, transform 0.25s;
-}
-
-.theme-dark .zendian-homepage .homepage-section,
-.theme-dark .zendian-homepage .homepage-sidebar-section {
-  background: var(--surface);
-  border-color: var(--hp-border);
-  box-shadow: var(--hp-shadow);
-}
 
 /* ── 7. 卡片标题 ────────────────────────────────────────── */
 
@@ -10428,7 +10478,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .zendian-homepage .homepage-card-title {
@@ -10436,19 +10487,32 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  font-size: 1.125rem;
+  font-size: 0.9375rem;
   color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.zendian-homepage .homepage-card-title .homepage-icon {
+  color: var(--primary);
+  font-size: 1rem;
+  opacity: 0.85;
 }
 
 .zendian-homepage .homepage-card-link {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-lighter);
   cursor: pointer;
   transition: color 0.15s;
 }
 
 .zendian-homepage .homepage-card-link:hover {
   color: var(--primary);
+}
+
+.zendian-homepage .homepage-card-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 /* ── 8. 环形进度条 ──────────────────────────────────────── */
@@ -10462,15 +10526,14 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 .zendian-homepage .homepage-review-ring-wrapper {
   position: relative;
-  width: 8rem;
-  height: 8rem;
+  width: 6.5rem;
+  height: 6.5rem;
   flex-shrink: 0;
 }
 
 .zendian-homepage .homepage-review-ring {
   width: 100%;
   height: 100%;
-  transform: rotate(-90deg);
 }
 
 .zendian-homepage .homepage-review-ring-bg {
@@ -10501,14 +10564,17 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-homepage .homepage-review-ring-value {
-  font-size: 1.5rem;
+  font-size: 1.375rem;
   font-weight: 700;
   color: var(--text-main);
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .zendian-homepage .homepage-review-ring-label {
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--text-lighter);
+  margin-top: 2px;
 }
 
 /* ── 9. 检查列表 ────────────────────────────────────────── */
@@ -10516,7 +10582,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-review-checklist {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.625rem;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -10527,17 +10593,14 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  padding: 0.25rem 0;
 }
 
 .zendian-homepage .homepage-review-item-left {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #4b5563;
-}
-
-.theme-dark .zendian-homepage .homepage-review-item-left {
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
@@ -10545,6 +10608,12 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   width: 1rem;
   height: 1rem;
   color: #22c55e;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-review-item-check svg {
+  width: 14px;
+  height: 14px;
 }
 
 .zendian-homepage .homepage-review-check {
@@ -10565,9 +10634,9 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-homepage .homepage-review-item-value {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-main);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 /* ── 10. 引言区 ──────────────────────────────────────────── */
@@ -10605,7 +10674,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-project-list {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.75rem;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -10614,20 +10683,21 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-project-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.875rem;
   flex-shrink: 0;
+  padding: 0.25rem 0;
 }
 
 .zendian-homepage .homepage-project-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.625rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .zendian-homepage .homepage-project-icon--purple {
@@ -10663,7 +10733,15 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-project-name-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.5rem;
+}
+
+.zendian-homepage .homepage-project-name-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .zendian-homepage .homepage-project-name {
@@ -10678,15 +10756,11 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 .zendian-homepage .homepage-project-status {
   font-size: 10px;
-  color: #3b82f6;
-  background: #eff6ff;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-}
-
-.theme-dark .zendian-homepage .homepage-project-status {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 0.0625rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
 }
 
 .zendian-homepage .homepage-project-progress {
@@ -10713,14 +10787,11 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-todo-tabs {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  border-bottom: 1px solid #f3f4f6;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-}
-
-.theme-dark .zendian-homepage .homepage-todo-tabs {
-  border-bottom-color: var(--hp-border);
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--hp-divider);
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
 }
 
 .zendian-homepage .homepage-todo-tab {
@@ -10730,8 +10801,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  transition: all 0.15s;
+  gap: 0.375rem;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .zendian-homepage .homepage-todo-tab:hover {
@@ -10741,25 +10812,24 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-todo-tab--active {
   border-bottom-color: var(--primary);
   color: var(--primary);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .zendian-homepage .homepage-todo-tab-count {
   font-size: 10px;
-  padding: 0 0.375rem;
+  padding: 0.0625rem 0.375rem;
   border-radius: 9999px;
+  font-weight: 500;
 }
 
 .zendian-homepage .homepage-todo-tab--active .homepage-todo-tab-count {
   background: var(--primary-light);
+  color: var(--primary);
 }
 
 .zendian-homepage .homepage-todo-tab:not(.homepage-todo-tab--active) .homepage-todo-tab-count {
-  background: #f3f4f6;
-}
-
-.theme-dark .zendian-homepage .homepage-todo-tab:not(.homepage-todo-tab--active) .homepage-todo-tab-count {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hp-divider);
+  color: var(--text-lighter);
 }
 
 /* ── 13. 待办列表项 ─────────────────────────────────────── */
@@ -10767,7 +10837,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-todo-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -10778,25 +10848,26 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  gap: 0.5rem;
 }
 
-.zendian-homepage .homepage-todo-left {
+.zendian-homepage .homepage-todo-item-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   min-width: 0;
   flex: 1;
   overflow: hidden;
 }
 
 .zendian-homepage .homepage-todo-checkbox {
-  width: 1rem;
-  height: 1rem;
-  border-radius: 0.25rem;
-  border: 1px solid #d1d5db;
+  width: 1.0625rem;
+  height: 1.0625rem;
+  border-radius: 0.3125rem;
+  border: 1.5px solid var(--hp-search-border);
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.15s;
+  transition: border-color 0.15s, background 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10813,16 +10884,14 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   font-size: 0.625rem;
 }
 
-.theme-dark .zendian-homepage .homepage-todo-checkbox {
-  border-color: var(--hp-border);
-}
-
 .zendian-homepage .homepage-todo-text {
   font-size: 0.875rem;
   color: #374151;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .theme-dark .zendian-homepage .homepage-todo-text {
@@ -10834,7 +10903,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   color: var(--text-lighter);
 }
 
-.zendian-homepage .homepage-todo-right {
+.zendian-homepage .homepage-todo-item-right {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -10865,18 +10934,27 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-homepage .homepage-todo-tag--work {
-  background: #eff6ff;
+  background: rgba(59, 130, 246, 0.1);
   color: #3b82f6;
+  font-weight: 500;
 }
 
 .zendian-homepage .homepage-todo-tag--study {
-  background: #fef2f2;
+  background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
+  font-weight: 500;
 }
 
 .zendian-homepage .homepage-todo-tag--life {
-  background: #f0fdf4;
+  background: rgba(34, 197, 94, 0.1);
   color: #22c55e;
+  font-weight: 500;
+}
+
+.zendian-homepage .homepage-todo-tag--default {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  font-weight: 500;
 }
 
 /* ── 标签通用 ──────────────────────────────────────────── */
@@ -10912,7 +10990,110 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-sticky-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.625rem;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 便签基础样式 */
+.zendian-homepage .homepage-sticky-note {
+  border-radius: 0.625rem;
+  padding: 0.875rem;
+  box-shadow: var(--shadow-note);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  cursor: default;
+  transition: box-shadow 0.2s ease;
+}
+
+.zendian-homepage .homepage-sticky-note:hover {
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.06);
+}
+
+/* BEM 风格修饰符（与 TS 类名匹配） */
+.zendian-homepage .homepage-sticky-note--yellow {
+  background: #fef9e3;
+  border: 1px solid #fef3c7;
+}
+
+.theme-dark .zendian-homepage .homepage-sticky-note--yellow {
+  background: var(--hp-sticky-yellow);
+  border-color: rgba(254, 243, 199, 0.06);
+}
+
+.zendian-homepage .homepage-sticky-note--blue {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  border: 1px solid #e0e7ff;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.theme-dark .zendian-homepage .homepage-sticky-note--blue {
+  background: linear-gradient(135deg, var(--hp-sticky-blue-start), var(--hp-sticky-blue-end));
+  border-color: rgba(224, 231, 255, 0.06);
+}
+
+.zendian-homepage .homepage-sticky-note--green {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 1px solid #d1fae5;
+  flex: 1;
+}
+
+.theme-dark .zendian-homepage .homepage-sticky-note--green {
+  background: linear-gradient(135deg, var(--hp-sticky-green-start), var(--hp-sticky-green-end));
+  border-color: rgba(209, 250, 229, 0.06);
+}
+
+/* 便签内部元素 */
+.zendian-homepage .homepage-sticky-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.375rem;
+}
+
+.zendian-homepage .homepage-sticky-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.theme-dark .zendian-homepage .homepage-sticky-list {
+  color: var(--text-muted);
+}
+
+.zendian-homepage .homepage-sticky-date {
+  font-size: 0.7rem;
+  color: var(--text-lighter);
+  margin-top: 0.375rem;
+}
+
+.zendian-homepage .homepage-sticky-text {
+  font-size: 0.8rem;
+  color: #4b5563;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.theme-dark .zendian-homepage .homepage-sticky-text {
+  color: var(--text-muted);
+}
+
+.zendian-homepage .homepage-sticky-date-small {
+  font-size: 0.7rem;
+  color: var(--text-lighter);
+  margin-top: auto;
+}
+
+.zendian-homepage .homepage-sticky-bottom-row {
+  display: flex;
+  gap: 0.625rem;
   flex: 1;
   min-height: 0;
 }
@@ -11033,9 +11214,9 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-size: 10px;
-  color: var(--text-muted);
-  padding: 0.25rem 0;
+  font-size: 9px;
+  color: var(--text-lighter);
+  padding: 0.125rem 0;
   flex-shrink: 0;
 }
 
@@ -11044,21 +11225,23 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   display: grid;
   grid-template-rows: repeat(7, 1fr);
   grid-auto-flow: column;
-  gap: 3px;
+  gap: 2px;
   min-height: 0;
 }
 
 .zendian-homepage .homepage-heatmap-cell {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  transition: all 0.3s;
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  transition: transform 0.15s, box-shadow 0.15s;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .zendian-homepage .homepage-heatmap-cell:hover {
-  border: 1px solid #818cf8;
+  transform: scale(1.35);
+  box-shadow: 0 0 0 2px rgba(92, 92, 255, 0.2);
+  border-radius: 2.5px;
 }
 
 .zendian-homepage .homepage-heatmap-cell[data-level="0"] { background: var(--hp-heat-0); }
@@ -11069,14 +11252,18 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 .zendian-homepage .homepage-heatmap-legend {
   margin-top: auto;
-  padding-top: 1rem;
+  padding-top: 0.75rem;
   border-top: 1px solid #f3f4f6;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.375rem;
   font-size: 0.75rem;
   color: var(--text-muted);
   flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-heatmap-legend-total {
+  margin-left: auto;
 }
 
 .theme-dark .zendian-homepage .homepage-heatmap-legend {
@@ -11090,9 +11277,42 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-homepage .homepage-heatmap-legend-cell {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 0.125rem;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 2px;
+}
+
+/* 热力图切换按钮 */
+.zendian-homepage .homepage-heatmap-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--hp-divider);
+  border-radius: 0.5rem;
+  padding: 2px;
+}
+
+.zendian-homepage .homepage-heatmap-toggle-btn {
+  font-size: 0.6875rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  background: transparent;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1.2;
+}
+
+.zendian-homepage .homepage-heatmap-toggle-btn:hover {
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-heatmap-toggle-btn--active {
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* ── 16. 本月数据 ────────────────────────────────────────── */
@@ -11102,11 +11322,12 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .zendian-homepage .homepage-metrics-content,
 .zendian-homepage .homepage-metrics-top {
-  padding: 1.5rem;
+  padding: 1.25rem;
   padding-bottom: 0.5rem;
   flex-shrink: 0;
 }
@@ -11114,7 +11335,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  gap: 0.75rem;
   flex-shrink: 0;
 }
 
@@ -11122,27 +11343,43 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-metrics-quote {
   margin-top: auto;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 0.875rem 0.875rem;
+  background: linear-gradient(135deg, rgba(92, 92, 255, 0.04), rgba(92, 92, 255, 0.08));
+}
+
+.theme-dark .zendian-homepage .homepage-metrics-quote {
+  background: linear-gradient(135deg, rgba(92, 92, 255, 0.04), rgba(92, 92, 255, 0.08));
+}
+
+.zendian-homepage .homepage-metrics-quote-content {
+  padding: 1rem 1.25rem;
+  position: relative;
+  z-index: 2;
 }
 
 .zendian-homepage .homepage-metric-label {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.375rem;
+  letter-spacing: 0.01em;
 }
 
 .zendian-homepage .homepage-metric-value-row {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
 }
 
 .zendian-homepage .homepage-metric-value {
-  font-size: 1.875rem;
+  font-size: 1.375rem;
   font-weight: 700;
   color: var(--text-main);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .zendian-homepage .homepage-metric-unit {
@@ -11190,12 +11427,13 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   margin-top: 1rem;
   flex: 1;
   background: linear-gradient(to right, rgba(238, 239, 255, 0.4), rgba(224, 231, 255, 0.5));
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: relative;
   overflow: hidden;
+  border-radius: 0 0 1rem 1rem;
 }
 
 .theme-dark .zendian-homepage .homepage-metrics-quote-area {
@@ -11203,16 +11441,16 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-homepage .homepage-metrics-quote-text {
-  font-size: 1.125rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-main);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   position: relative;
   z-index: 10;
 }
 
 .zendian-homepage .homepage-metrics-quote-author {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--primary);
   position: relative;
@@ -11220,6 +11458,31 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 /* 装饰 SVG */
+
+.zendian-homepage .homepage-metrics-decor {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14rem;
+  height: 7rem;
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.zendian-homepage .homepage-metrics-decor-icon {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 0.75rem;
+  z-index: 3;
+  color: var(--primary);
+  opacity: 0.6;
+}
+
+.zendian-homepage .homepage-metrics-decor-icon svg {
+  width: 20px;
+  height: 20px;
+}
 
 .zendian-homepage .homepage-metrics-decoration {
   position: absolute;
@@ -11236,7 +11499,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-recent-list {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.625rem;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -11248,29 +11511,43 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   justify-content: space-between;
   cursor: pointer;
   flex-shrink: 0;
+  padding: 0.375rem 0;
+  border-radius: 0.375rem;
+  transition: background 0.15s;
+}
+
+.zendian-homepage .homepage-recent-item:hover {
+  background: rgba(92, 92, 255, 0.04);
 }
 
 .zendian-homepage .homepage-recent-item:hover .homepage-recent-title {
   color: var(--primary);
 }
 
-.zendian-homepage .homepage-recent-left {
+.zendian-homepage .homepage-recent-item-left {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .zendian-homepage .homepage-recent-icon {
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 0.25rem;
+  border-radius: 0.375rem;
   background: #eef2ff;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #6366f1;
   flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-recent-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .theme-dark .zendian-homepage .homepage-recent-icon {
@@ -11291,7 +11568,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   color: var(--text-main);
 }
 
-.zendian-homepage .homepage-recent-right {
+.zendian-homepage .homepage-recent-item-right {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -11361,20 +11638,16 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 .zendian-homepage .homepage-card-footer {
   margin-top: auto;
-  padding-top: 0.75rem;
-  border-top: 1px solid #f3f4f6;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--hp-divider);
   flex-shrink: 0;
-}
-
-.theme-dark .zendian-homepage .homepage-card-footer {
-  border-top-color: var(--hp-border);
 }
 
 .zendian-homepage .homepage-card-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
   cursor: pointer;
   transition: color 0.15s;
@@ -11383,6 +11656,11 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 .zendian-homepage .homepage-card-btn:hover {
   color: var(--primary);
+}
+
+.zendian-homepage .homepage-card-btn--primary {
+  color: var(--primary);
+  font-weight: 500;
 }
 
 /* 空状态 */
@@ -11646,14 +11924,21 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 .zendian-homepage .homepage-project-progress-bar {
   flex: 1;
-  height: 6px;
-  border-radius: 3px;
+  height: 4px;
+  border-radius: 2px;
   overflow: hidden;
   background: var(--hp-progress-bg);
 }
 
+.zendian-homepage .homepage-project-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #7c7cff);
+  border-radius: 2px;
+  transition: width 1s ease-in-out;
+}
+
 .zendian-homepage .homepage-project-progress-text {
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: var(--text-muted);
   min-width: 2.25rem;
@@ -11974,24 +12259,15 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 @media (max-width: 1280px) {
   .zendian-homepage .homepage-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .zendian-homepage .homepage-left,
-  .zendian-homepage .homepage-right {
-    grid-column: span 1;
-  }
-
-  .zendian-homepage .homepage-right {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: repeat(12, 1fr);
   }
 
   .zendian-homepage .homepage-col-4,
+  .zendian-homepage .homepage-col-5,
   .zendian-homepage .homepage-col-6,
+  .zendian-homepage .homepage-col-7,
   .zendian-homepage .homepage-col-8 {
-    grid-column: span 1;
+    grid-column: span 6;
   }
 
   .zendian-homepage .homepage-metrics-grid {
@@ -12005,28 +12281,14 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   }
 
   .zendian-homepage .homepage-col-4,
+  .zendian-homepage .homepage-col-5,
   .zendian-homepage .homepage-col-6,
+  .zendian-homepage .homepage-col-7,
   .zendian-homepage .homepage-col-8 {
     grid-column: span 1;
   }
 
-  .zendian-homepage .homepage-right {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .zendian-homepage .homepage-metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .zendian-homepage .homepage-daily-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .zendian-homepage .homepage-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .zendian-homepage .homepage-recent-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -12052,34 +12314,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
     width: 100%;
   }
 
-  .zendian-homepage .homepage-hero-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .zendian-homepage .homepage-hero-circle-wrapper {
-    display: none;
-  }
-
-  .zendian-homepage .homepage-notes-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .zendian-homepage .homepage-right {
-    grid-template-columns: 1fr;
-  }
-
-  .zendian-homepage .homepage-daily-grid {
+  .zendian-homepage .homepage-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .zendian-homepage .homepage-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .zendian-homepage .homepage-recent-grid {
-    grid-template-columns: 1fr;
   }
 
   .zendian-homepage .homepage-heatmap-grid {
@@ -12087,30 +12323,14 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   }
 
   .zendian-homepage .homepage-heatmap-cell {
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
   }
 }
 
 @media (max-width: 480px) {
-  .zendian-homepage .homepage-daily-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .zendian-homepage .homepage-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .zendian-homepage .homepage-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .zendian-homepage .homepage-project-board {
-    flex-direction: column;
-  }
-
-  .zendian-homepage .homepage-project-column {
-    min-width: unset;
   }
 }
 
