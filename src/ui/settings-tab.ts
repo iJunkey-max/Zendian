@@ -415,6 +415,33 @@ const MENU_CONFIG: TabDef[] = [
       },
     ],
   },
+  {
+    id: "homepage",
+    name: "主页",
+    icon: "🏠",
+    sections: [
+      {
+        id: "homepage-basic", title: "Homepage", titleZh: "主页设置",
+        settings: [
+          toggle("homepage-enabled", "启用主页", (s) => s.homepage.enabled, (s, v) => ({ homepage: { ...s.homepage, enabled: v } }), "将新标签页默认内容替换为主页仪表盘"),
+          text("homepage-username", "用户名", (s) => s.homepage.userName, (s, v) => ({ homepage: { ...s.homepage, userName: v } }), "你的名字", "用于主页问候语显示"),
+          text("homepage-daily-folders", "每日笔记文件夹", (s) => s.homepage.dailyNoteFolders, (s, v) => ({ homepage: { ...s.homepage, dailyNoteFolders: v } }), "日记,学习,会议,阅读,工作,随想", "用逗号分隔的文件夹名称，用于每日笔记分类"),
+        ],
+      },
+      {
+        id: "homepage-modules", title: "Modules", titleZh: "模块开关",
+        settings: [
+          toggle("homepage-weather", "天气模块", (s) => s.homepage.weatherEnabled, (s, v) => ({ homepage: { ...s.homepage, weatherEnabled: v } }), "在主页显示天气信息"),
+          text("homepage-weather-location", "天气位置", (s) => s.homepage.weatherLocation, (s, v) => ({ homepage: { ...s.homepage, weatherLocation: v } }), "城市名或纬度,经度", "例如: Beijing 或 39.9,116.4"),
+          toggle("homepage-project-board", "项目看板", (s) => s.homepage.projectBoardEnabled, (s, v) => ({ homepage: { ...s.homepage, projectBoardEnabled: v } })),
+          toggle("homepage-heatmap", "热力图", (s) => s.homepage.heatmapEnabled, (s, v) => ({ homepage: { ...s.homepage, heatmapEnabled: v } })),
+          toggle("homepage-monthly-stats", "月度统计", (s) => s.homepage.monthlyStatsEnabled, (s, v) => ({ homepage: { ...s.homepage, monthlyStatsEnabled: v } })),
+          toggle("homepage-bookmarks", "书摘", (s) => s.homepage.bookmarksEnabled, (s, v) => ({ homepage: { ...s.homepage, bookmarksEnabled: v } })),
+          slider("homepage-recent-count", "最近笔记数量", (s) => s.homepage.recentNoteCount, (s, v) => ({ homepage: { ...s.homepage, recentNoteCount: v } }), 3, 12, 1, "主页显示的最近笔记卡片数量"),
+        ],
+      },
+    ],
+  },
 ];
 
 // ============================================================

@@ -272,6 +272,30 @@ export interface IconSystemSettings {
   customIcons: Record<string, string>;
 }
 
+/** 主页模块设置 */
+export interface HomepageSettings {
+  /** 是否启用主页替换新标签页 */
+  enabled: boolean;
+  /** 用户名（问候语） */
+  userName: string;
+  /** 天气模块开关 */
+  weatherEnabled: boolean;
+  /** 天气位置（城市名或 lat,lon） */
+  weatherLocation: string;
+  /** 每日笔记分类文件夹（逗号分隔） */
+  dailyNoteFolders: string;
+  /** 项目看板开关 */
+  projectBoardEnabled: boolean;
+  /** 热力图开关 */
+  heatmapEnabled: boolean;
+  /** 月度统计开关 */
+  monthlyStatsEnabled: boolean;
+  /** 书摘开关 */
+  bookmarksEnabled: boolean;
+  /** 最近笔记数量 */
+  recentNoteCount: number;
+}
+
 // ============================================================
 // 顶层设置接口
 // ============================================================
@@ -306,6 +330,7 @@ export interface PluginSettings {
   fileTree: FileTreeSettings;
   iconSystem: IconSystemSettings;
   banner: BannerSettings;
+  homepage: HomepageSettings;
 }
 
 // ============================================================
@@ -531,5 +556,17 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     height: 250,
     style: "fade-bottom",
     position: "center",
+  },
+  homepage: {
+    enabled: true,
+    userName: "",
+    weatherEnabled: false,
+    weatherLocation: "",
+    dailyNoteFolders: "",
+    projectBoardEnabled: true,
+    heatmapEnabled: true,
+    monthlyStatsEnabled: true,
+    bookmarksEnabled: true,
+    recentNoteCount: 6,
   },
 };

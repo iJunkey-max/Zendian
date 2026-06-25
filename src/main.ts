@@ -38,6 +38,9 @@ import { NewTabModule } from "./modules/new-tab.module";
 import { IconSystemModule } from "./modules/icon-system.module";
 import { BannerModule } from "./modules/banner.module";
 
+// Homepage
+import { HomepageView, VIEW_TYPE_HOMEPAGE } from "./homepage/HomepageView";
+
 // UI
 import { ZENdianSettingTab } from "./ui/settings-tab";
 
@@ -89,7 +92,38 @@ export default class ZENdianPlugin extends Plugin {
     // 3. 加载所有模块
     await this.moduleManager.loadAll();
 
-    // 4. 监听主题变更
+    // 4. 注册主页 View
+    this.registerView(
+      VIEW_TYPE_HOMEPAGE,
+      (leaf) => new HomepageView(leaf)
+    );
+
+    // 监听空标签页，替换为主页
+    this.registerEvent(
+      this.app.workspace.on("layout-change", () => {
+        const settings = this.settingsManager.getSettings();
+        if (!settings.homepage.enabled) return;
+
+        const emptyLeaves = this.app.workspace.getLeavesOfType("empty");
+        for (const leaf of emptyLeaves) {
+          leaf.setViewState({ type: VIEW_TYPE_HOMEPAGE, active: true });
+        }
+      })
+    );
+
+    // 侧边栏图标：打开主页
+    this.addRibbonIcon("layout-dashboard", "打开主页", () => {
+      this.activateHomepage();
+    });
+
+    // 命令面板：打开主页
+    this.addCommand({
+      id: "open-homepage",
+      name: "打开主页",
+      callback: () => this.activateHomepage(),
+    });
+
+    // 5. 监听主题变更
     this.registerEvent(
       this.app.workspace.on("css-change", () => {
         const isDark = document.body.classList.contains("theme-dark");
@@ -106,5 +140,21 @@ export default class ZENdianPlugin extends Plugin {
   onunload() {
     this.moduleManager?.unloadAll();
     this.events?.clear();
+  }
+
+  /**
+   * 激活主页视图
+   * 如果已打开则聚焦，否则在主区域新建一个 tab
+   */
+  private activateHomepage(): void {
+    const { workspace } = this.app;
+    const existing = workspace.getLeavesOfType(VIEW_TYPE_HOMEPAGE);
+    if (existing.length > 0) {
+      workspace.revealLeaf(existing[0]);
+      return;
+    }
+    const leaf = workspace.getLeaf(true);
+    leaf.setViewState({ type: VIEW_TYPE_HOMEPAGE, active: true });
+    workspace.revealLeaf(leaf);
   }
 }

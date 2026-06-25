@@ -9987,6 +9987,2134 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 
+/* ============================================================
+   ZENdian Homepage — 主页样式 (Demo 1:1 还原)
+   作用域：.zendian-homepage
+   ============================================================ */
+
+/* ── 色彩变量 ────────────────────────────────────────────── */
+
+.zendian-homepage {
+  /* 主色调 */
+  --primary: #5c5cff;
+  --primary-light: #eeefff;
+
+  /* 布局 */
+  --hp-max-width: 1240px;
+  --hp-gap: 1.5rem;
+  --hp-radius: 1.25rem;
+  --hp-radius-sm: 0.75rem;
+  --hp-radius-xs: 0.5rem;
+  --hp-padding: 1.5rem;
+
+  /* 热力图等级 */
+  --hp-heat-0: #ebedf0;
+  --hp-heat-1: #e0e7ff;
+  --hp-heat-2: #c7d2fe;
+  --hp-heat-3: #a5b4fc;
+  --hp-heat-4: #5c5cff;
+
+  /* 标签色 */
+  --hp-tag-blue-bg: #eff6ff;
+  --hp-tag-blue-text: #3b82f6;
+  --hp-tag-red-bg: #fef2f2;
+  --hp-tag-red-text: #ef4444;
+  --hp-tag-green-bg: #f0fdf4;
+  --hp-tag-green-text: #22c55e;
+
+  padding: 0 !important;
+  overflow: hidden !important;
+  font-family: inherit;
+}
+
+/* ── 亮色主题 ────────────────────────────────────────────── */
+
+.theme-light .zendian-homepage {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --text-main: #1a1d2e;
+  --text-muted: #8e92a4;
+  --text-lighter: #b5b8c5;
+
+  --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.03), 0 4px 12px -2px rgba(0, 0, 0, 0.01);
+  --shadow-note: 0 4px 14px -2px rgba(0, 0, 0, 0.02);
+
+  /* 便签 */
+  --hp-sticky-yellow: #fef9e3;
+  --hp-sticky-blue-start: #eef2ff;
+  --hp-sticky-blue-end: #e0e7ff;
+  --hp-sticky-green-start: #ecfdf5;
+  --hp-sticky-green-end: #d1fae5;
+
+  /* 搜索 */
+  --hp-search-bg: #ffffff;
+  --hp-search-border: #f3f4f6;
+
+  /* 进度 */
+  --hp-progress-bg: #f0f2f5;
+
+  /* 分割线 */
+  --hp-border: rgba(0, 0, 0, 0.05);
+  --hp-divider: #f3f4f6;
+
+  /* 阴影 */
+  --hp-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
+  --hp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ── 暗色主题 ────────────────────────────────────────────── */
+
+.theme-dark .zendian-homepage {
+  --bg: #0f1117;
+  --surface: #1a1d2e;
+  --text-main: #e8eaed;
+  --text-muted: #9aa0b0;
+  --text-lighter: #6b7185;
+
+  --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.2), 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+  --shadow-note: 0 4px 14px -2px rgba(0, 0, 0, 0.15);
+
+  --hp-sticky-yellow: rgba(254, 249, 227, 0.08);
+  --hp-sticky-blue-start: rgba(238, 242, 255, 0.06);
+  --hp-sticky-blue-end: rgba(224, 231, 255, 0.08);
+  --hp-sticky-green-start: rgba(236, 253, 245, 0.06);
+  --hp-sticky-green-end: rgba(209, 250, 229, 0.08);
+
+  --hp-search-bg: #1e2235;
+  --hp-search-border: #2d3348;
+
+  --hp-progress-bg: #2d3348;
+
+  --hp-border: rgba(255, 255, 255, 0.06);
+  --hp-divider: rgba(255, 255, 255, 0.06);
+
+  --hp-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --hp-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.2);
+
+  --hp-heat-0: #1e2235;
+  --hp-heat-1: rgba(99, 102, 241, 0.2);
+  --hp-heat-2: rgba(99, 102, 241, 0.35);
+  --hp-heat-3: rgba(99, 102, 241, 0.5);
+  --hp-heat-4: var(--primary);
+
+  --hp-tag-blue-bg: rgba(59, 130, 246, 0.15);
+  --hp-tag-blue-text: #60a5fa;
+  --hp-tag-red-bg: rgba(239, 68, 68, 0.15);
+  --hp-tag-red-text: #f87171;
+  --hp-tag-green-bg: rgba(34, 197, 94, 0.15);
+  --hp-tag-green-text: #4ade80;
+}
+
+/* ── 1. 容器与背景 ──────────────────────────────────────── */
+
+.zendian-homepage .homepage-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.zendian-homepage .homepage-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background: var(--bg);
+}
+
+/* ── 2. Header ──────────────────────────────────────────── */
+
+.zendian-homepage .homepage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  margin-top: 1rem;
+}
+
+.zendian-homepage .homepage-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.zendian-homepage .homepage-header-right {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
+.zendian-homepage .homepage-header-greeting {
+  font-size: 1.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.zendian-homepage .homepage-header-date,
+.zendian-homepage .homepage-header-quote {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.zendian-homepage .homepage-header-quote {
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+/* ── 3. 搜索框 ──────────────────────────────────────────── */
+
+.zendian-homepage .homepage-search-box {
+  margin-top: 1rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.zendian-homepage .homepage-search-input {
+  background: white;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 9999px;
+  padding-left: 2.25rem;
+  padding-right: 3rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.875rem;
+  width: 16rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.theme-dark .zendian-homepage .homepage-search-input {
+  background: var(--hp-search-bg);
+  border-color: var(--hp-search-border);
+}
+
+.zendian-homepage .homepage-search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(92, 92, 255, 0.1);
+}
+
+.zendian-homepage .homepage-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-lighter);
+  pointer-events: none;
+}
+
+.zendian-homepage .homepage-search-kbd {
+  font-size: 10px;
+  color: var(--text-muted);
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  position: absolute;
+  right: 0.75rem;
+}
+
+.theme-dark .zendian-homepage .homepage-search-kbd {
+  border-color: var(--hp-border);
+}
+
+/* ── 4. 天气卡片 ────────────────────────────────────────── */
+
+.zendian-homepage .homepage-weather-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.theme-dark .zendian-homepage .homepage-weather-card {
+  background: var(--surface);
+  border-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-weather-icon-wrapper {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fefce8;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.theme-dark .zendian-homepage .homepage-weather-icon-wrapper {
+  background: rgba(254, 252, 232, 0.08);
+}
+
+.zendian-homepage .homepage-weather-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.zendian-homepage .homepage-weather-temp {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-weather-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.zendian-homepage .homepage-weather-location {
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text-lighter);
+}
+
+.theme-dark .zendian-homepage .homepage-weather-location {
+  border-left-color: var(--hp-border);
+}
+
+/* ── 5. 网格布局 ────────────────────────────────────────── */
+
+.zendian-homepage .homepage-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.zendian-homepage .homepage-left {
+  grid-column: span 8;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.zendian-homepage .homepage-right {
+  grid-column: span 4;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.zendian-homepage .homepage-col-4 { grid-column: span 4; }
+.zendian-homepage .homepage-col-6 { grid-column: span 6; }
+.zendian-homepage .homepage-col-8 { grid-column: span 8; }
+.zendian-homepage .homepage-col-12 { grid-column: span 12; }
+
+/* ── 6. 卡片通用 ────────────────────────────────────────── */
+
+.zendian-homepage .homepage-card {
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.01);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Row 1: 每日回顾 + 项目 (col-6) */
+.zendian-homepage .homepage-col-6 {
+  height: 280px;
+}
+
+/* Row 2: 待办 + 便签 + 热力图 (col-4) */
+.zendian-homepage .homepage-col-4 {
+  height: 320px;
+}
+
+/* Row 3: 本月数据 (col-8) */
+.zendian-homepage .homepage-col-8 {
+  height: 360px;
+}
+
+/* 内容区域自动填充 */
+.zendian-homepage .homepage-card > *:not(.homepage-card-title-row) {
+  min-height: 0;
+}
+
+/* 可滚动内容区域 */
+.zendian-homepage .homepage-review-body,
+.zendian-homepage .homepage-project-list,
+.zendian-homepage .homepage-todo-list,
+.zendian-homepage .homepage-sticky-grid,
+.zendian-homepage .homepage-heatmap-wrap,
+.zendian-homepage .homepage-metrics-grid,
+.zendian-homepage .homepage-recent-list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 隐藏滚动条 */
+.zendian-homepage .homepage-review-body::-webkit-scrollbar,
+.zendian-homepage .homepage-project-list::-webkit-scrollbar,
+.zendian-homepage .homepage-todo-list::-webkit-scrollbar,
+.zendian-homepage .homepage-sticky-grid::-webkit-scrollbar,
+.zendian-homepage .homepage-heatmap-wrap::-webkit-scrollbar,
+.zendian-homepage .homepage-metrics-grid::-webkit-scrollbar,
+.zendian-homepage .homepage-recent-list::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.zendian-homepage .homepage-review-body::-webkit-scrollbar-thumb,
+.zendian-homepage .homepage-project-list::-webkit-scrollbar-thumb,
+.zendian-homepage .homepage-todo-list::-webkit-scrollbar-thumb,
+.zendian-homepage .homepage-sticky-grid::-webkit-scrollbar-thumb,
+.zendian-homepage .homepage-heatmap-wrap::-webkit-scrollbar-thumb,
+.zendian-homepage .homepage-metrics-grid::-webkit-scrollbar-thumb,
+.zendian-homepage .homepage-recent-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.zendian-homepage .homepage-review-body::-webkit-scrollbar-track,
+.zendian-homepage .homepage-project-list::-webkit-scrollbar-track,
+.zendian-homepage .homepage-todo-list::-webkit-scrollbar-track,
+.zendian-homepage .homepage-sticky-grid::-webkit-scrollbar-track,
+.zendian-homepage .homepage-heatmap-wrap::-webkit-scrollbar-track,
+.zendian-homepage .homepage-metrics-grid::-webkit-scrollbar-track,
+.zendian-homepage .homepage-recent-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-dark .zendian-homepage .homepage-card {
+  background: var(--surface);
+  border-color: var(--hp-border);
+  box-shadow: var(--hp-shadow);
+}
+
+.zendian-homepage .homepage-section,
+.zendian-homepage .homepage-sidebar-section {
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  background: white;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.01);
+  transition: box-shadow 0.25s, transform 0.25s;
+}
+
+.theme-dark .zendian-homepage .homepage-section,
+.theme-dark .zendian-homepage .homepage-sidebar-section {
+  background: var(--surface);
+  border-color: var(--hp-border);
+  box-shadow: var(--hp-shadow);
+}
+
+/* ── 7. 卡片标题 ────────────────────────────────────────── */
+
+.zendian-homepage .homepage-card-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.zendian-homepage .homepage-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-card-link {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.zendian-homepage .homepage-card-link:hover {
+  color: var(--primary);
+}
+
+/* ── 8. 环形进度条 ──────────────────────────────────────── */
+
+.zendian-homepage .homepage-review-body {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 1;
+}
+
+.zendian-homepage .homepage-review-ring-wrapper {
+  position: relative;
+  width: 8rem;
+  height: 8rem;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-review-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.zendian-homepage .homepage-review-ring-bg {
+  fill: none;
+  stroke: #f0f2f5;
+  stroke-width: 8;
+}
+
+.theme-dark .zendian-homepage .homepage-review-ring-bg {
+  stroke: var(--hp-progress-bg);
+}
+
+.zendian-homepage .homepage-review-ring-fill {
+  fill: none;
+  stroke: #5c5cff;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease-out;
+}
+
+.zendian-homepage .homepage-review-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.zendian-homepage .homepage-review-ring-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-review-ring-label {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── 9. 检查列表 ────────────────────────────────────────── */
+
+.zendian-homepage .homepage-review-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.zendian-homepage .homepage-review-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-review-item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.theme-dark .zendian-homepage .homepage-review-item-left {
+  color: var(--text-muted);
+}
+
+.zendian-homepage .homepage-review-item-check {
+  width: 1rem;
+  height: 1rem;
+  color: #22c55e;
+}
+
+.zendian-homepage .homepage-review-check {
+  width: 1rem;
+  height: 1rem;
+  color: #22c55e;
+}
+
+.zendian-homepage .homepage-review-item-pending {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  border: 1px solid #d1d5db;
+}
+
+.theme-dark .zendian-homepage .homepage-review-item-pending {
+  border-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-review-item-value {
+  font-weight: 500;
+  color: var(--text-main);
+  font-size: 0.875rem;
+}
+
+/* ── 10. 引言区 ──────────────────────────────────────────── */
+
+.zendian-homepage .homepage-review-quote {
+  margin-top: auto;
+  background: rgba(238, 239, 255, 0.5);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  flex-shrink: 0;
+}
+
+.theme-dark .zendian-homepage .homepage-review-quote {
+  background: rgba(92, 92, 255, 0.08);
+}
+
+.zendian-homepage .homepage-review-quote-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #3730a3;
+  margin-bottom: 0.5rem;
+}
+
+.theme-dark .zendian-homepage .homepage-review-quote-text {
+  color: #a5b4fc;
+}
+
+.zendian-homepage .homepage-review-quote-author {
+  font-size: 0.75rem;
+  color: #818cf8;
+}
+
+/* ── 11. 项目列表 ────────────────────────────────────────── */
+
+.zendian-homepage .homepage-project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.zendian-homepage .homepage-project-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-project-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.zendian-homepage .homepage-project-icon--purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.zendian-homepage .homepage-project-icon--emerald {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.zendian-homepage .homepage-project-icon--blue {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.theme-dark .zendian-homepage .homepage-project-icon--purple {
+  background: rgba(124, 58, 237, 0.15);
+}
+.theme-dark .zendian-homepage .homepage-project-icon--emerald {
+  background: rgba(16, 185, 129, 0.15);
+}
+.theme-dark .zendian-homepage .homepage-project-icon--blue {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.zendian-homepage .homepage-project-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.zendian-homepage .homepage-project-name-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.zendian-homepage .homepage-project-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.theme-dark .zendian-homepage .homepage-project-name {
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-project-status {
+  font-size: 10px;
+  color: #3b82f6;
+  background: #eff6ff;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.theme-dark .zendian-homepage .homepage-project-status {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.zendian-homepage .homepage-project-progress {
+  height: 0.375rem;
+  width: 100%;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.theme-dark .zendian-homepage .homepage-project-progress {
+  background: var(--hp-progress-bg);
+}
+
+.zendian-homepage .homepage-project-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 9999px;
+  transition: width 1s ease-in-out;
+}
+
+/* ── 12. 待办 Tabs ──────────────────────────────────────── */
+
+.zendian-homepage .homepage-todo-tabs {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.theme-dark .zendian-homepage .homepage-todo-tabs {
+  border-bottom-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-todo-tab {
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.15s;
+}
+
+.zendian-homepage .homepage-todo-tab:hover {
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-todo-tab--active {
+  border-bottom-color: var(--primary);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.zendian-homepage .homepage-todo-tab-count {
+  font-size: 10px;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+}
+
+.zendian-homepage .homepage-todo-tab--active .homepage-todo-tab-count {
+  background: var(--primary-light);
+}
+
+.zendian-homepage .homepage-todo-tab:not(.homepage-todo-tab--active) .homepage-todo-tab-count {
+  background: #f3f4f6;
+}
+
+.theme-dark .zendian-homepage .homepage-todo-tab:not(.homepage-todo-tab--active) .homepage-todo-tab-count {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── 13. 待办列表项 ─────────────────────────────────────── */
+
+.zendian-homepage .homepage-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.zendian-homepage .homepage-todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-todo-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.zendian-homepage .homepage-todo-checkbox {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zendian-homepage .homepage-todo-checkbox:hover {
+  border-color: var(--primary);
+}
+
+.zendian-homepage .homepage-todo-checkbox--done {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  font-size: 0.625rem;
+}
+
+.theme-dark .zendian-homepage .homepage-todo-checkbox {
+  border-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-todo-text {
+  font-size: 0.875rem;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-dark .zendian-homepage .homepage-todo-text {
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-todo-text--done {
+  text-decoration: line-through;
+  color: var(--text-lighter);
+}
+
+.zendian-homepage .homepage-todo-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-todo-tag {
+  font-size: 10px;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  text-align: center;
+  width: 2.25rem;
+}
+
+.zendian-homepage .homepage-todo-date {
+  font-size: 0.75rem;
+  width: 2rem;
+  text-align: right;
+}
+
+.zendian-homepage .homepage-todo-date--urgent {
+  color: #f87171;
+}
+
+.zendian-homepage .homepage-todo-date--normal {
+  color: var(--text-muted);
+}
+
+.zendian-homepage .homepage-todo-tag--work {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.zendian-homepage .homepage-todo-tag--study {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.zendian-homepage .homepage-todo-tag--life {
+  background: #f0fdf4;
+  color: #22c55e;
+}
+
+/* ── 标签通用 ──────────────────────────────────────────── */
+
+.zendian-homepage .homepage-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  width: fit-content;
+  line-height: 1.6;
+}
+
+.zendian-homepage .homepage-tag--blue {
+  background: var(--hp-tag-blue-bg);
+  color: var(--hp-tag-blue-text);
+}
+
+.zendian-homepage .homepage-tag--red {
+  background: var(--hp-tag-red-bg);
+  color: var(--hp-tag-red-text);
+}
+
+.zendian-homepage .homepage-tag--green {
+  background: var(--hp-tag-green-bg);
+  color: var(--hp-tag-green-text);
+}
+
+/* ── 14. 便签 ──────────────────────────────────────────── */
+
+.zendian-homepage .homepage-sticky-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.zendian-homepage .homepage-sticky-yellow {
+  background: #fef9e3;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: var(--shadow-note);
+  border: 1px solid #fef3c7;
+  overflow: hidden;
+}
+
+.theme-dark .zendian-homepage .homepage-sticky-yellow {
+  background: var(--hp-sticky-yellow);
+  border-color: rgba(254, 243, 199, 0.06);
+}
+
+.zendian-homepage .homepage-sticky-pair {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.zendian-homepage .homepage-sticky-blue {
+  flex: 1;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  box-shadow: var(--shadow-note);
+  border: 1px solid #e0e7ff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.theme-dark .zendian-homepage .homepage-sticky-blue {
+  background: linear-gradient(135deg, var(--hp-sticky-blue-start), var(--hp-sticky-blue-end));
+  border-color: rgba(224, 231, 255, 0.06);
+}
+
+.zendian-homepage .homepage-sticky-green {
+  flex: 1;
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  box-shadow: var(--shadow-note);
+  border: 1px solid #d1fae5;
+}
+
+.theme-dark .zendian-homepage .homepage-sticky-green {
+  background: linear-gradient(135deg, var(--hp-sticky-green-start), var(--hp-sticky-green-end));
+  border-color: rgba(209, 250, 229, 0.06);
+}
+
+/* 便签删除按钮 */
+
+.zendian-homepage .homepage-sticky-delete {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: inherit;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+  z-index: 10;
+}
+
+.zendian-homepage .homepage-sticky-note:hover .homepage-sticky-delete {
+  opacity: 0.6;
+}
+
+.zendian-homepage .homepage-sticky-delete:hover {
+  opacity: 1 !important;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ── 15. 热力图 ──────────────────────────────────────────── */
+
+.zendian-homepage .homepage-heatmap-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.zendian-homepage .homepage-heatmap-months {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  padding-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-heatmap-body {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.zendian-homepage .homepage-heatmap-days {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 0.25rem 0;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-heatmap-grid {
+  flex: 1;
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
+  grid-auto-flow: column;
+  gap: 3px;
+  min-height: 0;
+}
+
+.zendian-homepage .homepage-heatmap-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  transition: all 0.3s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-heatmap-cell:hover {
+  border: 1px solid #818cf8;
+}
+
+.zendian-homepage .homepage-heatmap-cell[data-level="0"] { background: var(--hp-heat-0); }
+.zendian-homepage .homepage-heatmap-cell[data-level="1"] { background: var(--hp-heat-1); }
+.zendian-homepage .homepage-heatmap-cell[data-level="2"] { background: var(--hp-heat-2); }
+.zendian-homepage .homepage-heatmap-cell[data-level="3"] { background: var(--hp-heat-3); }
+.zendian-homepage .homepage-heatmap-cell[data-level="4"] { background: var(--hp-heat-4); }
+
+.zendian-homepage .homepage-heatmap-legend {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.theme-dark .zendian-homepage .homepage-heatmap-legend {
+  border-top-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-heatmap-legend-colors {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.zendian-homepage .homepage-heatmap-legend-cell {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.125rem;
+}
+
+/* ── 16. 本月数据 ────────────────────────────────────────── */
+
+.zendian-homepage .homepage-metrics-card {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.zendian-homepage .homepage-metrics-content,
+.zendian-homepage .homepage-metrics-top {
+  padding: 1.5rem;
+  padding-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+/* 底部引言装饰区 */
+.zendian-homepage .homepage-metrics-quote {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-metric-label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.zendian-homepage .homepage-metric-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.zendian-homepage .homepage-metric-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.zendian-homepage .homepage-metric-unit {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.zendian-homepage .homepage-metric-trend {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.zendian-homepage .homepage-metric-trend--up {
+  color: var(--primary);
+}
+
+.zendian-homepage .homepage-metric-trend--green {
+  color: #22c55e;
+}
+
+.zendian-homepage .homepage-metric-trend--orange {
+  color: #f59e0b;
+}
+
+.zendian-homepage .homepage-metric-chart {
+  width: 100%;
+  height: 2rem;
+}
+
+.zendian-homepage .homepage-metric-sparkline {
+  width: 100%;
+  height: 2rem;
+  overflow: visible;
+}
+
+.zendian-homepage .homepage-metric-sparkline svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 底部引言装饰区 */
+
+.zendian-homepage .homepage-metrics-quote-area {
+  margin-top: 1rem;
+  flex: 1;
+  background: linear-gradient(to right, rgba(238, 239, 255, 0.4), rgba(224, 231, 255, 0.5));
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-dark .zendian-homepage .homepage-metrics-quote-area {
+  background: linear-gradient(to right, rgba(92, 92, 255, 0.06), rgba(92, 92, 255, 0.1));
+}
+
+.zendian-homepage .homepage-metrics-quote-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 10;
+}
+
+.zendian-homepage .homepage-metrics-quote-author {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primary);
+  position: relative;
+  z-index: 10;
+}
+
+/* 装饰 SVG */
+
+.zendian-homepage .homepage-metrics-decoration {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16rem;
+  height: 8rem;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* ── 17. 最近笔记 ────────────────────────────────────────── */
+
+.zendian-homepage .homepage-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.zendian-homepage .homepage-recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-recent-item:hover .homepage-recent-title {
+  color: var(--primary);
+}
+
+.zendian-homepage .homepage-recent-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.zendian-homepage .homepage-recent-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.25rem;
+  background: #eef2ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.theme-dark .zendian-homepage .homepage-recent-icon {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.zendian-homepage .homepage-recent-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.theme-dark .zendian-homepage .homepage-recent-title {
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-recent-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-recent-tag {
+  font-size: 10px;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  text-align: center;
+  width: 2.25rem;
+}
+
+.zendian-homepage .homepage-recent-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  width: 4.25rem;
+  text-align: right;
+}
+
+/* ── 附加组件 ──────────────────────────────────────────── */
+
+/* 添加按钮 */
+
+.zendian-homepage .homepage-add-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--hp-radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.15s;
+  background: rgba(92, 92, 255, 0.1);
+  color: var(--primary);
+}
+
+.zendian-homepage .homepage-add-btn:hover {
+  background: rgba(92, 92, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.zendian-homepage .homepage-add-btn-small {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.15s;
+  background: rgba(92, 92, 255, 0.1);
+  color: var(--primary);
+}
+
+.zendian-homepage .homepage-add-btn-small:hover {
+  background: rgba(92, 92, 255, 0.2);
+}
+
+/* 卡片底部 */
+
+.zendian-homepage .homepage-card-footer {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.theme-dark .zendian-homepage .homepage-card-footer {
+  border-top-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+  padding: 0.25rem 0;
+}
+
+.zendian-homepage .homepage-card-btn:hover {
+  color: var(--primary);
+}
+
+/* 空状态 */
+
+.zendian-homepage .homepage-empty-text {
+  font-size: 0.8rem;
+  color: var(--text-lighter);
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+/* 书签 */
+
+.zendian-homepage .homepage-bookmarks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.zendian-homepage .homepage-bookmark-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: var(--hp-radius-xs);
+}
+
+.zendian-homepage .homepage-bookmark-item:hover {
+  background: rgba(92, 92, 255, 0.05);
+}
+
+.zendian-homepage .homepage-bookmark-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--hp-radius-xs);
+  flex-shrink: 0;
+  background: rgba(92, 92, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.zendian-homepage .homepage-bookmark-title {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hero 区域 */
+
+.zendian-homepage .homepage-hero {
+  border-radius: 1.25rem;
+  padding: 2rem;
+  background: white;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(0, 0, 0, 0.01);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-dark .zendian-homepage .homepage-hero {
+  background: var(--surface);
+  border-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.zendian-homepage .homepage-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.zendian-homepage .homepage-hero-greeting {
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.zendian-homepage .homepage-hero-date {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.zendian-homepage .homepage-hero-quote {
+  padding-left: 0.875rem;
+  border-left: 3px solid rgba(92, 92, 255, 0.2);
+  margin-top: 0.75rem;
+}
+
+.zendian-homepage .homepage-hero-quote-text {
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+  line-height: 1.6;
+}
+
+.zendian-homepage .homepage-hero-quote-author {
+  font-size: 0.8rem;
+  color: var(--text-lighter);
+}
+
+/* 旋转圆圈 */
+
+.zendian-homepage .homepage-hero-circle-wrapper {
+  width: 7.5rem;
+  height: 7.5rem;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-hero-circle {
+  width: 100%;
+  height: 100%;
+  animation: homepage-circle-rotate 20s linear infinite;
+}
+
+@keyframes homepage-circle-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.zendian-homepage .homepage-hero-circle-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  pointer-events: none;
+  gap: 0.125rem;
+}
+
+/* 项目看板 */
+
+.zendian-homepage .homepage-project-board {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: thin;
+}
+
+.zendian-homepage .homepage-project-column {
+  flex: 1;
+  min-width: 10rem;
+  padding: 0.875rem;
+  border-radius: var(--hp-radius-sm);
+  background: var(--bg);
+}
+
+.zendian-homepage .homepage-project-col-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-project-col-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-project-col-count {
+  font-size: 0.7rem;
+  color: var(--text-lighter);
+  margin-bottom: 0.75rem;
+}
+
+.zendian-homepage .homepage-project-col-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.zendian-homepage .homepage-project-card {
+  padding: 0.75rem;
+  border-radius: var(--hp-radius-xs);
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.theme-dark .zendian-homepage .homepage-project-card {
+  background: var(--surface);
+  border-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-project-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-note);
+}
+
+.zendian-homepage .homepage-project-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.5;
+}
+
+.zendian-homepage .homepage-project-delete {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-lighter);
+  transition: all 0.15s;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
+.zendian-homepage .homepage-project-item:hover .homepage-project-delete,
+.zendian-homepage .homepage-project-card:hover .homepage-project-delete {
+  opacity: 1;
+}
+
+.zendian-homepage .homepage-project-delete:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.zendian-homepage .homepage-project-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zendian-homepage .homepage-project-progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--hp-progress-bg);
+}
+
+.zendian-homepage .homepage-project-progress-text {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 2.25rem;
+  text-align: right;
+}
+
+/* 笔记区 */
+
+.zendian-homepage .homepage-notes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.zendian-homepage .homepage-quick-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.zendian-homepage .homepage-quick-note-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--hp-radius-xs);
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.zendian-homepage .homepage-quick-note-item:hover {
+  background: rgba(92, 92, 255, 0.05);
+}
+
+.zendian-homepage .homepage-quick-note-color {
+  width: 0.375rem;
+  height: 1.5rem;
+  border-radius: 0.1875rem;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-quick-note-label {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.zendian-homepage .homepage-quick-note-delete {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--text-lighter);
+  transition: all 0.15s;
+  opacity: 0;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-quick-note-item:hover .homepage-quick-note-delete {
+  opacity: 1;
+}
+
+.zendian-homepage .homepage-quick-note-delete:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* 每日笔记卡片 */
+
+.zendian-homepage .homepage-daily-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.zendian-homepage .homepage-daily-card {
+  padding: 1rem;
+  border-radius: var(--hp-radius-sm);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--bg);
+  border: 1px solid transparent;
+}
+
+.zendian-homepage .homepage-daily-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-note);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+.theme-dark .zendian-homepage .homepage-daily-card:hover {
+  border-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-daily-card-icon {
+  font-size: 1.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--hp-radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(92, 92, 255, 0.1);
+}
+
+.zendian-homepage .homepage-daily-card-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.zendian-homepage .homepage-daily-card-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* 月度统计 */
+
+.zendian-homepage .homepage-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.zendian-homepage .homepage-stat-card {
+  padding: 1rem;
+  border-radius: var(--hp-radius-sm);
+  text-align: center;
+  transition: all 0.2s;
+  background: var(--bg);
+  border: 1px solid transparent;
+}
+
+.zendian-homepage .homepage-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-note);
+}
+
+.theme-dark .zendian-homepage .homepage-stat-card:hover {
+  border-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.zendian-homepage .homepage-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* 每日回顾文本 */
+
+.zendian-homepage .homepage-daily-review-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+/* 最近笔记网格 */
+
+.zendian-homepage .homepage-recent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.zendian-homepage .homepage-recent-card {
+  padding: 1rem;
+  border-radius: var(--hp-radius-sm);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  background: var(--bg);
+  border: 1px solid transparent;
+}
+
+.zendian-homepage .homepage-recent-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-note);
+}
+
+.theme-dark .zendian-homepage .homepage-recent-card:hover {
+  border-color: var(--hp-border);
+}
+
+.zendian-homepage .homepage-recent-card-date {
+  font-size: 0.7rem;
+  color: var(--text-lighter);
+}
+
+.zendian-homepage .homepage-recent-card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.zendian-homepage .homepage-recent-card-preview {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.zendian-homepage .homepage-recent-card-tag {
+  font-size: 0.7rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  width: fit-content;
+  font-weight: 500;
+  background: rgba(92, 92, 255, 0.1);
+  color: var(--primary);
+}
+
+/* 导航按钮 */
+
+.zendian-homepage .homepage-nav {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-nav-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--hp-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  color: var(--text-muted);
+}
+
+.zendian-homepage .homepage-nav-btn:hover {
+  background: rgba(92, 92, 255, 0.1);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+/* Logo */
+
+.zendian-homepage .homepage-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+/* ── 动画关键帧 ──────────────────────────────────────────── */
+
+@keyframes hp-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hp-progress-grow {
+  from { width: 0; }
+}
+
+/* 动画工具类 */
+
+.zendian-homepage .homepage-animate-fade-in {
+  animation: hp-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+}
+
+.zendian-homepage .homepage-animate-in {
+  animation: hp-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.zendian-homepage .homepage-delay-1 { animation-delay: 0.05s; }
+.zendian-homepage .homepage-delay-2 { animation-delay: 0.1s; }
+.zendian-homepage .homepage-delay-3 { animation-delay: 0.15s; }
+.zendian-homepage .homepage-delay-4 { animation-delay: 0.2s; }
+.zendian-homepage .homepage-delay-5 { animation-delay: 0.25s; }
+.zendian-homepage .homepage-delay-6 { animation-delay: 0.3s; }
+.zendian-homepage .homepage-delay-7 { animation-delay: 0.35s; }
+.zendian-homepage .homepage-delay-8 { animation-delay: 0.4s; }
+
+/* ── 18. 响应式 ──────────────────────────────────────────── */
+
+@media (max-width: 1280px) {
+  .zendian-homepage .homepage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zendian-homepage .homepage-left,
+  .zendian-homepage .homepage-right {
+    grid-column: span 1;
+  }
+
+  .zendian-homepage .homepage-right {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .zendian-homepage .homepage-col-4,
+  .zendian-homepage .homepage-col-6,
+  .zendian-homepage .homepage-col-8 {
+    grid-column: span 1;
+  }
+
+  .zendian-homepage .homepage-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .zendian-homepage .homepage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zendian-homepage .homepage-col-4,
+  .zendian-homepage .homepage-col-6,
+  .zendian-homepage .homepage-col-8 {
+    grid-column: span 1;
+  }
+
+  .zendian-homepage .homepage-right {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zendian-homepage .homepage-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zendian-homepage .homepage-daily-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zendian-homepage .homepage-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zendian-homepage .homepage-recent-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .zendian-homepage .homepage-content {
+    padding: 1rem 1rem 0;
+  }
+
+  .zendian-homepage .homepage-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .zendian-homepage .homepage-header-right {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .zendian-homepage .homepage-search-input {
+    width: 100%;
+  }
+
+  .zendian-homepage .homepage-hero-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .zendian-homepage .homepage-hero-circle-wrapper {
+    display: none;
+  }
+
+  .zendian-homepage .homepage-notes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zendian-homepage .homepage-right {
+    grid-template-columns: 1fr;
+  }
+
+  .zendian-homepage .homepage-daily-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zendian-homepage .homepage-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zendian-homepage .homepage-recent-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zendian-homepage .homepage-heatmap-grid {
+    gap: 2px;
+  }
+
+  .zendian-homepage .homepage-heatmap-cell {
+    width: 11px;
+    height: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .zendian-homepage .homepage-daily-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zendian-homepage .homepage-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zendian-homepage .homepage-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zendian-homepage .homepage-project-board {
+    flex-direction: column;
+  }
+
+  .zendian-homepage .homepage-project-column {
+    min-width: unset;
+  }
+}
+
+
 /* ZENdian Settings Panel — Horizontal tab layout */
 
 .zendian-settings-wrapper {
