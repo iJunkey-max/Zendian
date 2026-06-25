@@ -19,7 +19,7 @@ export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
 
 /** SVG 图标工具 — 16x16 Lucide 风格 */
 const SVG_ICON = {
-  wave: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10h10"/><path d="M7 14h6"/><path d="M19.5 8c.28 0 .5.22.5.5v7a.5.5 0 0 1-.5.5h-15a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 1 .5-.5h3.5l1.5-2h6l1.5 2h3.5z"/></svg>`,
+  wave: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>`,
   search: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
   sun: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
   mapPin: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
@@ -369,20 +369,20 @@ export class HomepageView extends ItemView {
 
     const heatmapBody = heatmapWrap.createDiv({ cls: "homepage-heatmap-body" });
 
-    // 星期标签
+    // 星期标签 — 间隔显示
     const dayLabels = heatmapBody.createDiv({ cls: "homepage-heatmap-days" });
-    for (const d of ["一", "三", "五", "日"]) {
+    for (const d of ["日", "二", "四", "六"]) {
       dayLabels.createDiv({ cls: "homepage-heatmap-day-label", text: d });
     }
 
-    // 网格容器 — 7行×17列 = 119格（约4个月）
+    // 网格容器 — 14行×15列 = 210格
     const gridEl = heatmapBody.createDiv({ cls: "homepage-heatmap-grid" });
-    for (let i = 0; i < 7 * 17; i++) {
+    for (let i = 0; i < 14 * 15; i++) {
       gridEl.createDiv({ cls: "homepage-heatmap-cell" });
     }
 
-    // 底部图例（横向排列）
-    const legend = card.createDiv({ cls: "homepage-heatmap-legend" });
+    // 图例（放在 wrap 内，紧跟 heatmap-body）
+    const legend = heatmapWrap.createDiv({ cls: "homepage-heatmap-legend" });
     legend.createSpan({ cls: "homepage-heatmap-legend-label", text: "少" });
     for (let i = 0; i <= 4; i++) {
       legend.createDiv({ cls: "homepage-heatmap-cell homepage-heatmap-legend-cell", attr: { "data-level": String(i) } });
@@ -466,9 +466,9 @@ export class HomepageView extends ItemView {
     const decorSvg = decor.createSvg("svg", {
       attr: { viewBox: "0 0 200 100", width: "100%", height: "100%" },
     });
-    decorSvg.createSvg("path", { attr: { d: "M50 100 L100 40 L150 100 Z", fill: "#dce0ff" } });
-    decorSvg.createSvg("path", { attr: { d: "M100 100 L160 20 L200 100 Z", fill: "#b9c2ff" } });
-    decorSvg.createSvg("path", { attr: { d: "M0 100 L60 60 L120 100 Z", fill: "#eeefff" } });
+    decorSvg.createSvg("path", { attr: { d: "M50 100 L100 40 L150 100 Z", fill: "currentColor", opacity: "0.15" } });
+    decorSvg.createSvg("path", { attr: { d: "M100 100 L160 20 L200 100 Z", fill: "currentColor", opacity: "0.25" } });
+    decorSvg.createSvg("path", { attr: { d: "M0 100 L60 60 L120 100 Z", fill: "currentColor", opacity: "0.08" } });
     const decorIcon = decor.createDiv({ cls: "homepage-metrics-decor-icon homepage-icon" });
     decorIcon.innerHTML = SVG_ICON.rocket;
   }
@@ -540,7 +540,7 @@ export class HomepageView extends ItemView {
   // ── 热力图 ────────────────────────────────────────────────
 
   private loadHeatmap(): void {
-    const data = this.statsService.getHeatmapData(119);
+    const data = this.statsService.getHeatmapData(210);
     const cells = this.containerEl.querySelectorAll(".homepage-heatmap-grid .homepage-heatmap-cell");
 
     const maxCount = Math.max(1, ...data.map((d) => d.count));
@@ -564,7 +564,7 @@ export class HomepageView extends ItemView {
       cell.title = `${day.date}: ${day.count} 次修改`;
     });
 
-    // 月份标签
+    // 月份标签 — 间隔显示
     const monthsEl = this.containerEl.querySelector("[data-months]");
     if (monthsEl) {
       monthsEl.empty();
@@ -578,8 +578,9 @@ export class HomepageView extends ItemView {
           monthLabels.push(`${monthNum}月`);
         }
       }
-      for (const label of monthLabels) {
-        monthsEl.createSpan({ cls: "homepage-heatmap-month-label", text: label });
+      // 每隔一个月显示
+      for (let i = 0; i < monthLabels.length; i += 2) {
+        monthsEl.createSpan({ cls: "homepage-heatmap-month-label", text: monthLabels[i] });
       }
     }
 

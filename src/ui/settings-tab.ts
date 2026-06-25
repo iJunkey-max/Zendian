@@ -132,6 +132,12 @@ const FEAT_ICONS = {
     <path d="M12 11v4"/>
     <path d="M10 13h4"/>
   </svg>`,
+  homepage: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+    <rect x="14" y="3" width="7" height="4" rx="1.5"/>
+    <rect x="14" y="10" width="7" height="11" rx="1.5"/>
+    <rect x="3" y="13" width="7" height="8" rx="1.5"/>
+  </svg>`,
 };
 
 interface FeatureItem {
@@ -141,6 +147,7 @@ interface FeatureItem {
 }
 
 const FEATURES: FeatureItem[] = [
+  { icon: FEAT_ICONS.homepage, title: "主页", desc: "数据仪表盘，待办、便签、热力图、项目管理一站式概览" },
   { icon: FEAT_ICONS.autoHide, title: "自动隐藏", desc: "Tab 栏、侧边栏、状态栏等 UI 元素智能隐藏" },
   { icon: FEAT_ICONS.focusMode, title: "专注模式", desc: "降低非当前行透明度，聚焦当前编辑" },
   { icon: FEAT_ICONS.cardLayout, title: "卡片式布局", desc: "圆角卡片提升视觉层次与内容组织" },
@@ -662,7 +669,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
     iconWrap.innerHTML = ABOUT_SVG_LOGO;
     hero.createEl("h1", { text: "ZENdian", cls: "zendian-about-title" });
     const version = (this.plugin as any).manifest?.version ?? "unknown";
-    hero.createEl("span", { text: `v${version}`, cls: "zendian-about-version" });
+    hero.createEl("span", { text: `V${version} BETA`, cls: "zendian-about-version" });
     hero.createEl("p", { text: "Designed by Junkey", cls: "zendian-about-author" });
 
     // ── Description Card ──
