@@ -5,7 +5,7 @@
  */
 
 import { App, type TFile } from "obsidian";
-import type { HeatmapDay, MonthlyStats, RecentNoteItem } from "./types";
+import type { HeatmapDay, MonthlyStats, RecentNoteItem, TodayActivity } from "./types";
 
 export class HomepageStatsService {
   constructor(private app: App) {}
@@ -80,6 +80,29 @@ export class HomepageStatsService {
       activeDays,
       consecutiveDays,
     };
+  }
+
+  /**
+   * 获取今日活跃度（创建和编辑的文件数）
+   */
+  getTodayActivity(): TodayActivity {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const todayEnd = todayStart + 86_400_000;
+
+    const files = this.app.vault.getFiles();
+    let created = 0;
+    let edited = 0;
+
+    for (const file of files) {
+      const ctime = file.stat.ctime;
+      const mtime = file.stat.mtime;
+
+      if (ctime >= todayStart && ctime < todayEnd) created++;
+      if (mtime >= todayStart && mtime < todayEnd) edited++;
+    }
+
+    return { created, edited };
   }
 
   /**

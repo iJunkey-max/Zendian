@@ -138,6 +138,12 @@ export interface MonthlyStats {
   consecutiveDays: number;
 }
 
+/** 今日活跃度 */
+export interface TodayActivity {
+  created: number;
+  edited: number;
+}
+
 /** 热力图数据点 */
 export interface HeatmapDay {
   date: string;

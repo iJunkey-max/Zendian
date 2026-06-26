@@ -39,6 +39,7 @@ const SVG_ICON = {
   rocket: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>`,
   pencil: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`,
   tag: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>`,
+  star: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
 } as const;
 
 function svgIcon(key: keyof typeof SVG_ICON, cls?: string): HTMLSpanElement {
@@ -237,7 +238,7 @@ export class HomepageView extends ItemView {
     // 主体：环形进度条 + 检查列表
     const body = card.createDiv({ cls: "homepage-review-body" });
 
-    // 左侧：环形进度条 (w-32 h-32)
+    // 左侧：环形进度条 — 今日元气值
     const ringWrapper = body.createDiv({ cls: "homepage-review-ring-wrapper" });
     const svg = ringWrapper.createSvg("svg", {
       cls: "homepage-review-ring",
@@ -246,23 +247,23 @@ export class HomepageView extends ItemView {
     // 底圈
     svg.createSvg("circle", {
       cls: "homepage-review-ring-bg",
-      attr: { cx: "50", cy: "50", r: "40", fill: "none", stroke: "#f0f2f5", "stroke-width": "8" },
+      attr: { cx: "50", cy: "50", r: "45", fill: "none", stroke: "#f0f2f5", "stroke-width": "6" },
     });
     // 进度圈
     svg.createSvg("circle", {
       cls: "homepage-review-ring-fill",
       attr: {
-        cx: "50", cy: "50", r: "40", fill: "none",
-        stroke: "#5c5cff", "stroke-width": "8",
+        cx: "50", cy: "50", r: "45", fill: "none",
+        stroke: "#5c5cff", "stroke-width": "6",
         "stroke-linecap": "round",
-        "stroke-dasharray": "251.2",
-        "stroke-dashoffset": "70.336",
+        "stroke-dasharray": "282.6",
+        "stroke-dashoffset": "282.6",
         transform: "rotate(-90 50 50)",
       },
     });
     const ringCenter = ringWrapper.createDiv({ cls: "homepage-review-ring-center" });
-    ringCenter.createDiv({ cls: "homepage-review-ring-value", text: "0%" });
-    ringCenter.createDiv({ cls: "homepage-review-ring-label", text: "今日回顾进度" });
+    ringCenter.createDiv({ cls: "homepage-review-ring-value", text: "0" });
+    ringCenter.createDiv({ cls: "homepage-review-ring-label", text: "今日元气值" });
 
     // 右侧：检查列表
     const checklist = body.createDiv({ cls: "homepage-review-checklist" });
@@ -277,9 +278,10 @@ export class HomepageView extends ItemView {
       const left = row.createDiv({ cls: "homepage-review-item-left" });
       left.appendChild(svgIcon(item.icon));
       left.createSpan({ cls: "homepage-review-item-label", text: item.label });
-      row.createSpan({ cls: "homepage-review-item-value", text: item.value, attr: { "data-review-value": item.key } });
-      const checkIcon = row.createSpan({ cls: "homepage-review-item-check homepage-icon" });
-      checkIcon.innerHTML = SVG_ICON.checkCircle;
+      const right = row.createDiv({ cls: "homepage-review-item-right" });
+      right.createSpan({ cls: "homepage-review-item-value", text: item.value, attr: { "data-review-value": item.key } });
+      const statusIcon = right.createSpan({ cls: "homepage-review-item-status homepage-icon" });
+      statusIcon.innerHTML = SVG_ICON.circle;
     }
 
   }
@@ -936,13 +938,13 @@ export class HomepageView extends ItemView {
     }
 
     const remaining = taskTotal - taskDone;
-    const completionRate = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
+    const readingCount = Math.round(stats.editCount * 0.3);
 
-    // 更新检查列表
+    // 更新检查列表数值
     const updates: Record<string, string> = {
       notes: `记录了 ${stats.noteCount} 条笔记`,
       tasks: `完成了 ${taskDone} 项待办`,
-      reading: `阅读了 ${Math.round(stats.editCount * 0.3)} 篇文章`,
+      reading: `阅读了 ${readingCount} 篇文章`,
       remaining: `剩余 ${remaining} 项待办`,
     };
 
@@ -951,15 +953,48 @@ export class HomepageView extends ItemView {
       if (el) el.textContent = value;
     }
 
-    // 更新环形进度
+    // 根据数据更新状态图标
+    const statusMap: Record<string, boolean> = {
+      notes: stats.noteCount > 0,
+      tasks: taskDone > 0,
+      reading: readingCount > 0,
+      remaining: remaining === 0,
+    };
+    for (const [key, hasData] of Object.entries(statusMap)) {
+      const row = this.containerEl.querySelector(`[data-review="${key}"]`);
+      if (!row) continue;
+      const statusEl = row.querySelector(".homepage-review-item-status") as HTMLElement | null;
+      if (!statusEl) continue;
+      if (hasData) {
+        statusEl.innerHTML = SVG_ICON.checkCircle;
+        statusEl.addClass("is-done");
+        statusEl.removeClass("is-empty");
+      } else {
+        statusEl.innerHTML = SVG_ICON.circle;
+        statusEl.addClass("is-empty");
+        statusEl.removeClass("is-done");
+      }
+    }
+
+    // ── 今日元气值 ──
+    // 基于当日活跃度综合打分 (0-100)
+    const today = this.statsService.getTodayActivity();
+    let energyScore = 0;
+    energyScore += Math.min(today.created * 20, 40);       // 创建笔记：每条 20 分，上限 40
+    energyScore += Math.min(taskDone * 10, 30);            // 完成待办：每项 10 分，上限 30
+    energyScore += Math.min(today.edited * 2, 20);         // 编辑文件：每次 2 分，上限 20
+    energyScore += Math.min(stats.consecutiveDays * 5, 20);// 连续活跃：每天 5 分，上限 20
+    energyScore = Math.min(energyScore, 100);
+
+    // 更新环形
     const ringValueEl = this.containerEl.querySelector(".homepage-review-ring-value");
-    if (ringValueEl) ringValueEl.textContent = `${completionRate}%`;
+    if (ringValueEl) ringValueEl.textContent = `${energyScore}`;
 
     const ringFill = this.containerEl.querySelector(".homepage-review-ring-fill") as SVGCircleElement | null;
     if (ringFill) {
-      const circumference = 2 * Math.PI * 40; // r=40
+      const circumference = 2 * Math.PI * 45; // r=45
       ringFill.setAttribute("stroke-dasharray", `${circumference}`);
-      ringFill.setAttribute("stroke-dashoffset", `${circumference * (1 - completionRate / 100)}`);
+      ringFill.setAttribute("stroke-dashoffset", `${circumference * (1 - energyScore / 100)}`);
     }
   }
 
