@@ -10254,18 +10254,110 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   height: 14px;
 }
 
-.zendian-homepage .homepage-search-kbd {
-  font-size: 10px;
-  color: var(--text-muted);
-  border: 1px solid #e5e7eb;
-  border-radius: 0.25rem;
-  padding: 0.125rem 0.375rem;
+.zendian-homepage .homepage-search-panel {
   position: absolute;
-  right: 0.75rem;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--hp-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+  max-height: 20rem;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
 }
 
-.theme-dark .zendian-homepage .homepage-search-kbd {
-  border-color: var(--hp-border);
+.zendian-homepage .homepage-search-panel.is-visible {
+  display: block;
+  animation: hp-search-panel-in 0.2s ease-out;
+}
+
+@keyframes hp-search-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.zendian-homepage .homepage-search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.zendian-homepage .homepage-search-result-item:hover {
+  background: var(--surface-hover);
+  border-left-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.8);
+}
+
+.zendian-homepage .homepage-search-result-item:first-child {
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.zendian-homepage .homepage-search-result-item:last-child {
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.zendian-homepage .homepage-search-result-item:only-child {
+  border-radius: 0.75rem;
+}
+
+.zendian-homepage .result-icon {
+  flex-shrink: 0;
+  color: var(--text-lighter);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.zendian-homepage .homepage-search-result-item:hover .result-icon {
+  color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.9);
+  transform: translateX(2px);
+}
+
+.zendian-homepage .result-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.zendian-homepage .result-title {
+  color: var(--text-main);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s;
+}
+
+.zendian-homepage .homepage-search-result-item:hover .result-title {
+  color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 1);
+}
+
+.zendian-homepage .result-path {
+  color: var(--text-lighter);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zendian-homepage .homepage-search-empty {
+  padding: 1.5rem 0.75rem;
+  text-align: center;
+  color: var(--text-lighter);
+  font-size: 0.8125rem;
 }
 
 /* ── 4. 天气卡片 ────────────────────────────────────────── */

@@ -14,6 +14,7 @@ import { HomepageWeatherService } from "./HomepageWeatherService";
 import { ProjectModal } from "./ProjectModal";
 import { QuickNoteModal } from "./QuickNoteModal";
 import type { HomepageProject, HomepageQuickNote, RecentNoteItem } from "./types";
+import { Events } from "../core/event-bus";
 
 export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
 
@@ -64,6 +65,7 @@ export class HomepageView extends ItemView {
   private taskService!: HomepageTaskService;
   private weatherService!: HomepageWeatherService;
   private currentTodoTab: TodoTabKey = "all";
+  private unsubSettings: (() => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -125,10 +127,24 @@ export class HomepageView extends ItemView {
     this.startClock();
     this.loadDataAsync();
     this.initAnimations();
+
+    // 监听设置变更，自动刷新天气
+    const eventBus = (this.app as any).plugins?.plugins?.zendian?.eventBus;
+    if (eventBus) {
+      this.unsubSettings = eventBus.on(Events.SETTINGS_CHANGED, (changedKeys: string[]) => {
+        if (changedKeys.includes("homepage")) {
+          this.loadWeather();
+        }
+      });
+    }
   }
 
   async onClose(): Promise<void> {
     this.stopClock();
+    if (this.unsubSettings) {
+      this.unsubSettings();
+      this.unsubSettings = null;
+    }
   }
 
   // ══════════════════════════════════════════════════════════
@@ -158,16 +174,40 @@ export class HomepageView extends ItemView {
       cls: "homepage-search-input",
       attr: { type: "text", placeholder: "搜索笔记..." },
     });
+    const searchPanel = searchBox.createDiv({ cls: "homepage-search-panel" });
+
+    let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+
+    searchInput.addEventListener("input", () => {
+      if (searchDebounce) clearTimeout(searchDebounce);
+      const query = searchInput.value.trim();
+      if (!query) {
+        searchPanel.removeClass("is-visible");
+        searchPanel.empty();
+        return;
+      }
+      searchDebounce = setTimeout(() => this.renderSearchResults(searchPanel, query), 200);
+    });
+
     searchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
+      if (e.key === "Escape") {
+        searchInput.value = "";
+        searchPanel.removeClass("is-visible");
+        searchPanel.empty();
+      } else if (e.key === "Enter") {
         const query = searchInput.value.trim();
         if (query) {
           (this.app as any).internalPlugins?.getPluginById?.("global-search")?.instance?.openGlobalSearch(query);
         }
       }
     });
-    const kbd = searchBox.createEl("kbd", { cls: "homepage-search-kbd", text: "⌘ K" });
 
+    // 点击外部关闭搜索面板
+    this.registerDomEvent(document, "click", (e) => {
+      if (!searchBox.contains(e.target as Node)) {
+        searchPanel.removeClass("is-visible");
+      }
+    });
     // 天气卡片
     const weatherCard = right.createDiv({ cls: "homepage-weather-card" });
     const weatherIconWrap = weatherCard.createDiv({ cls: "homepage-weather-icon-wrap" });
@@ -490,6 +530,43 @@ export class HomepageView extends ItemView {
   }
 
   // ══════════════════════════════════════════════════════════
+  // 搜索结果
+  // ══════════════════════════════════════════════════════════
+
+  private renderSearchResults(panel: HTMLElement, query: string): void {
+    panel.empty();
+    const lowerQuery = query.toLowerCase();
+    const files = this.app.vault
+      .getMarkdownFiles()
+      .filter((f) => {
+        const name = f.basename.toLowerCase();
+        const path = f.path.toLowerCase();
+        return name.includes(lowerQuery) || path.includes(lowerQuery);
+      })
+      .slice(0, 8);
+
+    panel.addClass("is-visible");
+
+    if (files.length === 0) {
+      panel.createDiv({ cls: "homepage-search-empty", text: "未找到匹配笔记" });
+      return;
+    }
+
+    for (const file of files) {
+      const item = panel.createDiv({ cls: "homepage-search-result-item" });
+      const iconSpan = item.createSpan({ cls: "result-icon" });
+      iconSpan.innerHTML = SVG_ICON.fileText;
+      const info = item.createDiv({ cls: "result-info" });
+      info.createSpan({ cls: "result-title", text: file.basename });
+      info.createSpan({ cls: "result-path", text: file.path });
+      item.addEventListener("click", () => {
+        this.app.workspace.openLinkText(file.path, "");
+        panel.removeClass("is-visible");
+      });
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
   // 异步数据加载
   // ══════════════════════════════════════════════════════════
 
@@ -523,12 +600,17 @@ export class HomepageView extends ItemView {
       const weather = await this.weatherService.getWeather(location);
       if (!weather) return;
 
-      const iconEl = this.containerEl.querySelector(".homepage-weather-icon");
+      const iconWrap = this.containerEl.querySelector(".homepage-weather-icon-wrap") as HTMLElement | null;
       const tempEl = this.containerEl.querySelector(".homepage-weather-temp");
       const descEl = this.containerEl.querySelector(".homepage-weather-desc");
       const locTextEl = this.containerEl.querySelector(".homepage-weather-location-text");
 
-      if (iconEl) iconEl.textContent = weather.icon;
+      if (iconWrap) {
+        iconWrap.innerHTML = weather.iconSvg;
+        const isDark = document.body.classList.contains("theme-dark");
+        iconWrap.style.background = isDark ? weather.iconBgDark : weather.iconBgLight;
+        iconWrap.style.color = isDark ? weather.iconColorDark : weather.iconColorLight;
+      }
       if (tempEl) tempEl.textContent = `${weather.temperature}°C`;
       if (descEl) descEl.textContent = weather.description;
       if (locTextEl) locTextEl.textContent = weather.location;

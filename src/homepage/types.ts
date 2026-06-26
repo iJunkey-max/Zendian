@@ -101,6 +101,11 @@ export interface HomepageWeatherData {
   weatherCode: number;
   description: string;
   icon: string;
+  iconSvg: string;
+  iconBgLight: string;
+  iconBgDark: string;
+  iconColorLight: string;
+  iconColorDark: string;
   location: string;
   updatedAt: number;
 }
