@@ -65,20 +65,47 @@ export interface HomepageTaskRadarResult {
 // 主页新增业务类型
 // ============================================================
 
-/** 项目看板状态 */
-export type ProjectStatus = "planning" | "in-progress" | "testing" | "completed";
+/** 项目类型标签（对应 vault 一级文件夹） */
+export type ProjectType = "学习" | "工作" | "创作" | "生活" | "研究";
 
-/** 项目条目 */
+/** 项目类型配色 */
+export const PROJECT_TYPE_COLORS: Record<ProjectType, string> = {
+  "学习": "#3b82f6",
+  "工作": "#f59e0b",
+  "创作": "#8b5cf6",
+  "生活": "#10b981",
+  "研究": "#06b6d4",
+};
+
+/** 项目内最近文件 */
+export interface ProjectRecentFile {
+  name: string;
+  path: string;
+  mtime: number;
+}
+
+/** 项目待办任务 */
+export interface ProjectTask {
+  text: string;
+  completed: boolean;
+  created?: string;
+  due?: string;
+  line: number;
+}
+
+/** 扫描得到的项目条目 */
 export interface HomepageProject {
   id: string;
   name: string;
-  status: ProjectStatus;
+  folderPath: string;
+  type: ProjectType;
   progress: number;
   taskTotal: number;
   taskDone: number;
   description: string;
+  recentFiles: ProjectRecentFile[];
+  pendingTasks: ProjectTask[];
   updatedAt: number;
-  createdAt: number;
 }
 
 /** 快捷便签 */
@@ -154,9 +181,9 @@ export interface HeatmapDay {
  * 主页持久化数据（homepage-data.json）
  *
  * 存储路径：.obsidian/plugins/zendian/homepage-data.json
+ * 注：项目数据来自 vault 文件夹扫描，不在此存储
  */
 export interface HomepageData {
-  projects: HomepageProject[];
   quickNotes: HomepageQuickNote[];
   quotes: HomepageQuote[];
 }

@@ -10075,6 +10075,9 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   --hp-border: rgba(0, 0, 0, 0.06);
   --hp-divider: #eef0f4;
 
+  /* hover */
+  --hp-hover-bg: rgba(0, 0, 0, 0.03);
+
   /* 阴影 */
   --hp-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 6px 24px -2px rgba(0, 0, 0, 0.03);
   --hp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -10106,6 +10109,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
   --hp-border: rgba(255, 255, 255, 0.07);
   --hp-divider: rgba(255, 255, 255, 0.06);
+
+  --hp-hover-bg: rgba(255, 255, 255, 0.04);
 
   --hp-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 28px -4px rgba(0, 0, 0, 0.25);
   --hp-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -10487,8 +10492,12 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.18);
 }
 
-/* Row 1: 每日回顾 + 项目 (col-6) */
+/* Row 1: 每日回顾 + 项目 */
 .zendian-homepage .homepage-col-6 {
+  height: 260px;
+}
+
+.zendian-homepage .homepage-col-5 {
   height: 260px;
 }
 
@@ -10782,58 +10791,51 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 /* ── 11. 项目列表 ────────────────────────────────────────── */
 
+/* ── 项目卡片 ──────────────────────────────────────────────── */
+
 .zendian-homepage .homepage-project-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.125rem;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
 
 .zendian-homepage .homepage-project-item {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.zendian-homepage .homepage-project-item:hover {
+  background: var(--hp-hover-bg);
+}
+
+.zendian-homepage .homepage-project-main {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
-  flex-shrink: 0;
-  padding: 0.25rem 0;
+  gap: 0.625rem;
+  padding: 0.375rem 0.25rem;
+  cursor: pointer;
 }
 
 .zendian-homepage .homepage-project-icon {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.625rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.4375rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-weight: 600;
-  font-size: 0.8125rem;
+  background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.12);
+  color: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
 }
 
-.zendian-homepage .homepage-project-icon--purple {
-  background: #f5f3ff;
-  color: #7c3aed;
-}
-
-.zendian-homepage .homepage-project-icon--emerald {
-  background: #ecfdf5;
-  color: #10b981;
-}
-
-.zendian-homepage .homepage-project-icon--blue {
-  background: #eff6ff;
-  color: #3b82f6;
-}
-
-.theme-dark .zendian-homepage .homepage-project-icon--purple {
-  background: rgba(124, 58, 237, 0.15);
-}
-.theme-dark .zendian-homepage .homepage-project-icon--emerald {
-  background: rgba(16, 185, 129, 0.15);
-}
-.theme-dark .zendian-homepage .homepage-project-icon--blue {
-  background: rgba(59, 130, 246, 0.15);
+.zendian-homepage .homepage-project-icon svg {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .zendian-homepage .homepage-project-info {
@@ -10843,55 +10845,360 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 .zendian-homepage .homepage-project-name-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.zendian-homepage .homepage-project-name-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
+  gap: 0.375rem;
+  margin-bottom: 0.25rem;
 }
 
 .zendian-homepage .homepage-project-name {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .theme-dark .zendian-homepage .homepage-project-name {
   color: var(--text-main);
 }
 
-.zendian-homepage .homepage-project-status {
-  font-size: 10px;
-  color: var(--primary);
-  background: var(--primary-light);
-  padding: 0.0625rem 0.5rem;
-  border-radius: 9999px;
+.zendian-homepage .homepage-project-type-tag {
+  font-size: 0.625rem;
   font-weight: 500;
-}
-
-.zendian-homepage .homepage-project-progress {
-  height: 0.375rem;
-  width: 100%;
-  background: #f3f4f6;
+  padding: 0.0625rem 0.375rem;
   border-radius: 9999px;
-  overflow: hidden;
+  flex-shrink: 0;
 }
 
-.theme-dark .zendian-homepage .homepage-project-progress {
+.zendian-homepage .homepage-project-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zendian-homepage .homepage-project-progress-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  overflow: hidden;
   background: var(--hp-progress-bg);
 }
 
 .zendian-homepage .homepage-project-progress-fill {
   height: 100%;
-  background: var(--primary);
-  border-radius: 9999px;
-  transition: width 1s ease-in-out;
+  border-radius: 2px;
+  transition: width 0.8s ease-in-out;
+  background: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
 }
+
+.zendian-homepage .homepage-project-progress-text {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 2rem;
+  text-align: right;
+}
+
+/* ── 项目详情面板 & 查看全部面板 ────────────────────────── */
+
+.hp-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: hp-overlay-in 0.15s ease-out;
+}
+
+@keyframes hp-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hp-detail-panel,
+.hp-all-panel {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  width: 26rem;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: hp-panel-in 0.2s ease-out;
+  overflow: hidden;
+}
+
+@keyframes hp-panel-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hp-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem 0.75rem 1.25rem;
+  flex-shrink: 0;
+}
+
+.hp-detail-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.12);
+  color: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+}
+
+.hp-detail-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.hp-detail-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hp-detail-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-normal);
+  line-height: 1.3;
+}
+
+.hp-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.hp-detail-type-tag {
+  font-size: 0.625rem;
+  font-weight: 500;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 9999px;
+}
+
+.hp-detail-meta-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.hp-detail-close {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.125rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.hp-detail-close:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.hp-detail-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.hp-detail-progress-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--hp-progress-bg);
+  overflow: hidden;
+}
+
+.hp-detail-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s ease-in-out;
+  background: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+}
+
+.hp-detail-progress-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.hp-detail-desc {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding: 0 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.hp-detail-section {
+  padding: 0 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.hp-detail-section-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-lighter);
+  margin-bottom: 0.375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.hp-detail-task-row,
+.hp-detail-file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3125rem 0;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: background 0.1s;
+}
+
+.hp-detail-task-row:hover,
+.hp-detail-file-row:hover {
+  background: var(--hp-hover-bg);
+}
+
+.hp-detail-task-row .homepage-icon,
+.hp-detail-file-row .homepage-icon {
+  flex-shrink: 0;
+  color: var(--text-lighter);
+}
+
+.hp-detail-task-row .homepage-icon svg,
+.hp-detail-file-row .homepage-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.hp-detail-task-text,
+.hp-detail-file-name {
+  font-size: 0.8125rem;
+  color: var(--text-normal);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hp-detail-task-due,
+.hp-detail-file-time {
+  font-size: 0.6875rem;
+  color: var(--text-lighter);
+  flex-shrink: 0;
+}
+
+.hp-detail-actions {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--hp-divider);
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.hp-detail-open-btn {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--interactive-accent);
+  cursor: pointer;
+  text-decoration: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.hp-detail-open-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* 查看全部面板 */
+
+.hp-all-panel {
+  width: 30rem;
+}
+
+.hp-all-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1.25rem 1rem 1.25rem;
+}
+
+.hp-all-group {
+  margin-bottom: 1rem;
+}
+
+.hp-all-group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.375rem;
+  padding-top: 0.25rem;
+}
+
+.hp-all-group-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hp-all-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.375rem 0.25rem;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: background 0.1s;
+}
+
+.hp-all-row:hover {
+  background: var(--hp-hover-bg);
+}
+
+.hp-all-row-name {
+  flex: 1;
+  font-size: 0.8125rem;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hp-all-row-progress {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
 
 /* ── 12. 待办 Tabs ──────────────────────────────────────── */
 
@@ -11919,137 +12226,6 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   gap: 0.125rem;
 }
 
-/* 项目看板 */
-
-.zendian-homepage .homepage-project-board {
-  display: flex;
-  gap: 0.75rem;
-  overflow-x: auto;
-  padding-bottom: 0.25rem;
-  scrollbar-width: thin;
-}
-
-.zendian-homepage .homepage-project-column {
-  flex: 1;
-  min-width: 10rem;
-  padding: 0.875rem;
-  border-radius: var(--hp-radius-sm);
-  background: var(--bg);
-}
-
-.zendian-homepage .homepage-project-col-header {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  margin-bottom: 0.375rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.zendian-homepage .homepage-project-col-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.zendian-homepage .homepage-project-col-count {
-  font-size: 0.7rem;
-  color: var(--text-lighter);
-  margin-bottom: 0.75rem;
-}
-
-.zendian-homepage .homepage-project-col-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.zendian-homepage .homepage-project-card {
-  padding: 0.75rem;
-  border-radius: var(--hp-radius-xs);
-  cursor: pointer;
-  transition: all 0.2s;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.theme-dark .zendian-homepage .homepage-project-card {
-  background: var(--surface);
-  border-color: var(--hp-border);
-}
-
-.zendian-homepage .homepage-project-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-note);
-}
-
-.zendian-homepage .homepage-project-desc {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  line-height: 1.5;
-}
-
-.zendian-homepage .homepage-project-delete {
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 0.375rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: var(--text-lighter);
-  transition: all 0.15s;
-  flex-shrink: 0;
-  opacity: 0;
-}
-
-.zendian-homepage .homepage-project-item:hover .homepage-project-delete,
-.zendian-homepage .homepage-project-card:hover .homepage-project-delete {
-  opacity: 1;
-}
-
-.zendian-homepage .homepage-project-delete:hover {
-  color: #ef4444 !important;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.zendian-homepage .homepage-project-progress-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.zendian-homepage .homepage-project-progress-bar {
-  flex: 1;
-  height: 4px;
-  border-radius: 2px;
-  overflow: hidden;
-  background: var(--hp-progress-bg);
-}
-
-.zendian-homepage .homepage-project-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary), hsla(var(--accent-h), var(--accent-s), 75%, 1));
-  border-radius: 2px;
-  transition: width 1s ease-in-out;
-}
-
-.zendian-homepage .homepage-project-progress-text {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  min-width: 2.25rem;
-  text-align: right;
-}
-
 /* 笔记区 */
 
 .zendian-homepage .homepage-notes-grid {
@@ -12447,6 +12623,140 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   .zendian-homepage .homepage-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* ── 新建项目弹窗 ────────────────────────────────────────── */
+
+.homepage-project-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: homepage-modal-bg-in 0.15s ease-out;
+}
+
+@keyframes homepage-modal-bg-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.homepage-project-modal {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 20rem;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: homepage-modal-in 0.2s ease-out;
+}
+
+@keyframes homepage-modal-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.homepage-project-modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1.25rem 0;
+  color: var(--text-normal);
+}
+
+.homepage-project-modal-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.homepage-project-modal-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.homepage-project-modal-input,
+.homepage-project-modal-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
+  height: 2.25rem;
+  box-sizing: border-box;
+}
+
+.homepage-project-modal-input:focus,
+.homepage-project-modal-select:focus {
+  border-color: var(--interactive-accent);
+}
+
+.homepage-project-modal-select {
+  appearance: auto;
+  line-height: 1.4;
+}
+
+.homepage-project-modal-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.homepage-project-modal-icon-current {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-normal);
+  flex-shrink: 0;
+}
+
+.homepage-project-modal-icon-current svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.homepage-project-modal-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.homepage-project-modal-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.homepage-project-modal-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.homepage-project-modal-btn--primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: transparent;
+}
+
+.homepage-project-modal-btn--primary:hover {
+  opacity: 0.9;
 }
 
 

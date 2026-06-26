@@ -6,7 +6,7 @@
  */
 
 import { App } from "obsidian";
-import type { HomepageData, HomepageProject, HomepageQuickNote, HomepageQuote, ProjectStatus } from "./types";
+import type { HomepageData, HomepageQuickNote, HomepageQuote } from "./types";
 
 const DATA_FILE = ".obsidian/plugins/zendian/homepage-data.json";
 
@@ -24,7 +24,6 @@ const DEFAULT_QUOTES: HomepageQuote[] = [
 ];
 
 const DEFAULT_DATA: HomepageData = {
-  projects: [],
   quickNotes: [],
   quotes: DEFAULT_QUOTES,
 };
@@ -72,41 +71,6 @@ export class HomepageDataService {
     } catch (e) {
       console.error("[ZENdian] Failed to save homepage data:", e);
     }
-  }
-
-  // ── 项目管理 ──────────────────────────────────────────────
-
-  getProjects(): HomepageProject[] {
-    return this.data.projects;
-  }
-
-  async addProject(name: string, status: ProjectStatus = "planning", description = ""): Promise<HomepageProject> {
-    const project: HomepageProject = {
-      id: this.generateId(),
-      name,
-      status,
-      progress: 0,
-      taskTotal: 0,
-      taskDone: 0,
-      description,
-      updatedAt: Date.now(),
-      createdAt: Date.now(),
-    };
-    this.data.projects.push(project);
-    await this.save();
-    return project;
-  }
-
-  async updateProject(id: string, updates: Partial<Omit<HomepageProject, "id" | "createdAt">>): Promise<void> {
-    const idx = this.data.projects.findIndex((p) => p.id === id);
-    if (idx === -1) return;
-    this.data.projects[idx] = { ...this.data.projects[idx], ...updates, updatedAt: Date.now() };
-    await this.save();
-  }
-
-  async deleteProject(id: string): Promise<void> {
-    this.data.projects = this.data.projects.filter((p) => p.id !== id);
-    await this.save();
   }
 
   // ── 便签管理 ──────────────────────────────────────────────
@@ -158,7 +122,6 @@ export class HomepageDataService {
 
   private mergeWithDefaults(raw: Partial<HomepageData>): HomepageData {
     return {
-      projects: Array.isArray(raw.projects) ? raw.projects : [],
       quickNotes: Array.isArray(raw.quickNotes) ? raw.quickNotes : [],
       quotes: Array.isArray(raw.quotes) && raw.quotes.length > 0 ? raw.quotes : DEFAULT_QUOTES,
     };

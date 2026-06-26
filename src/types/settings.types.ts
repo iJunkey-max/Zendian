@@ -286,6 +286,10 @@ export interface HomepageSettings {
   dailyNoteFolders: string;
   /** 项目看板开关 */
   projectBoardEnabled: boolean;
+  /** 项目类型文件夹（逗号分隔） */
+  projectTypeFolders: string;
+  /** 项目归档文件夹名 */
+  projectArchiveFolder: string;
   /** 热力图开关 */
   heatmapEnabled: boolean;
   /** 月度统计开关 */
@@ -564,6 +568,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     weatherLocation: "",
     dailyNoteFolders: "",
     projectBoardEnabled: true,
+    projectTypeFolders: "10_课程,20_竞赛,30_研究,40_技能,50_生活",
+    projectArchiveFolder: "99_归档",
     heatmapEnabled: true,
     monthlyStatsEnabled: true,
     bookmarksEnabled: true,

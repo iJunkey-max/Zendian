@@ -5,15 +5,17 @@
  * 集成各数据服务，渲染完整主页。
  */
 
-import { ItemView, type WorkspaceLeaf, TFile } from "obsidian";
+import { ItemView, type WorkspaceLeaf, TFile, getIcon, Modal, Setting } from "obsidian";
 import { HomepageStatsService } from "./HomepageStatsService";
 import { HomepageDataService } from "./HomepageDataService";
 import { HomepageBookmarksService } from "./HomepageBookmarksService";
 import { HomepageTaskService } from "./HomepageTaskService";
 import { HomepageWeatherService } from "./HomepageWeatherService";
-import { ProjectModal } from "./ProjectModal";
+import { HomepageProjectScanService } from "./HomepageProjectScanService";
 import { QuickNoteModal } from "./QuickNoteModal";
-import type { HomepageProject, HomepageQuickNote, RecentNoteItem } from "./types";
+import { IconPickerModal } from "../ui/icon-picker-modal";
+import type { HomepageProject, HomepageQuickNote, RecentNoteItem, ProjectType } from "./types";
+import { PROJECT_TYPE_COLORS } from "./types";
 import { Events } from "../core/event-bus";
 
 export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
@@ -58,6 +60,147 @@ const TODO_TABS = [
 
 type TodoTabKey = (typeof TODO_TABS)[number]["key"];
 
+// ── 新建项目 Modal ─────────────────────────────────────────
+
+class ProjectCreateModal extends Modal {
+  private selectedIcon = "lucide-folder";
+  private iconDisplay!: HTMLElement;
+  private scanService: HomepageProjectScanService;
+  private onCreated: () => void;
+
+  constructor(app: App, scanService: HomepageProjectScanService, onCreated: () => void) {
+    super(app);
+    this.scanService = scanService;
+    this.onCreated = onCreated;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const typeFolders = (settings?.homepage?.projectTypeFolders || "").split(",").map((f: string) => f.trim()).filter(Boolean);
+    const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
+
+    const typeOptions = typeFolders.map((folder: string) => {
+      const dotIdx = folder.indexOf(".");
+      const underIdx = folder.indexOf("_");
+      const sepIdx = dotIdx !== -1 ? dotIdx : underIdx;
+      const label = sepIdx !== -1 ? folder.slice(sepIdx + 1) : folder;
+      return { folder, label };
+    });
+
+    contentEl.createEl("h2", { text: "新建项目" });
+
+    // 项目名称
+    new Setting(contentEl)
+      .setName("项目名称")
+      .addText((text) =>
+        text.setPlaceholder("输入项目名称").onChange((v) => (this.nameValue = v))
+      );
+
+    // 项目类型
+    const typeSetting = new Setting(contentEl).setName("项目类型");
+    const select = typeSetting.controlEl.createEl("select");
+    for (const opt of typeOptions) {
+      select.createEl("option", { value: opt.folder, text: opt.label });
+    }
+    this.typeSelect = select;
+
+    // 项目图标
+    const iconSetting = new Setting(contentEl).setName("项目图标");
+    this.iconDisplay = iconSetting.controlEl.createDiv({ cls: "homepage-project-modal-icon-current" });
+    this.refreshIconDisplay();
+    const changeBtn = iconSetting.controlEl.createEl("button", { text: "更换" });
+    changeBtn.addEventListener("click", () => {
+      const installedLibs = settings?.iconSystem?.installedLibraries || [];
+      const picker = new IconPickerModal(this.app, installedLibs, (iconId) => {
+        // 不依赖 picker 内部 close，直接在这里处理
+        if (iconId) {
+          this.selectedIcon = iconId;
+          // 用 innerHTML 直接替换，避免 DOM 归属问题
+          const name = iconId.startsWith("lucide-") ? iconId.slice(7) : iconId;
+          const svg = getIcon(name);
+          if (svg) {
+            this.iconDisplay.innerHTML = svg.outerHTML;
+          }
+        }
+      });
+      picker.open();
+    });
+
+    // 创建按钮
+    new Setting(contentEl).addButton((btn) =>
+      btn
+        .setButtonText("创建")
+        .setCta()
+        .onClick(async () => {
+          await this.createProject(customIcons);
+        })
+    );
+
+    // 自动聚焦
+    setTimeout(() => {
+      const input = contentEl.querySelector("input[type=text]") as HTMLInputElement;
+      if (input) input.focus();
+    }, 50);
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+
+  private nameValue = "";
+  private typeSelect!: HTMLSelectElement;
+
+  private refreshIconDisplay(): void {
+    const iconName = this.selectedIcon.startsWith("lucide-") ? this.selectedIcon.slice(7) : this.selectedIcon;
+    const svg = getIcon(iconName);
+    if (svg) {
+      this.iconDisplay.innerHTML = svg.outerHTML;
+    } else {
+      this.iconDisplay.innerHTML = SVG_ICON.folder;
+    }
+  }
+
+  private async createProject(customIcons: Record<string, string>): Promise<void> {
+    const name = this.nameValue.trim();
+    if (!name) return;
+
+    const typeFolder = this.typeSelect.value;
+    const projectPath = `${typeFolder}/${name}`;
+
+    if (this.app.vault.getAbstractFileByPath(projectPath)) {
+      return;
+    }
+
+    // 创建项目根目录
+    await this.app.vault.createFolder(projectPath);
+
+    // 创建标准子文件夹结构
+    await this.app.vault.createFolder(`${projectPath}/00 控制台`);
+    await this.app.vault.createFolder(`${projectPath}/10 笔记流`);
+    await this.app.vault.createFolder(`${projectPath}/20 工作区`);
+    await this.app.vault.createFolder(`${projectPath}/30 交付物`);
+    await this.app.vault.createFolder(`${projectPath}/90 资源库`);
+    await this.app.vault.createFolder(`${projectPath}/91 附件`);
+
+    // 在控制台创建入口文件
+    await this.app.vault.create(`${projectPath}/00 控制台/Overview.md`, `# ${name}\n\n> 创建于 ${new Date().toLocaleDateString()}\n`);
+    await this.app.vault.create(`${projectPath}/00 控制台/Timeline.md`, `# ${name} - 任务时间线\n\n- [ ] 待规划 @created(${new Date().toISOString().slice(0, 10)})\n`);
+
+    if (this.selectedIcon !== "lucide-folder") {
+      const updatedIcons = { ...customIcons, [projectPath]: this.selectedIcon };
+      const plugin = (this.app as any).plugins?.plugins?.zendian;
+      if (plugin?.settingsManager) {
+        await plugin.settingsManager.update("iconSystem", { customIcons: updatedIcons });
+      }
+    }
+
+    this.close();
+    this.scanService.markDirty();
+    this.onCreated();
+  }
+}
+
 export class HomepageView extends ItemView {
   private clockTimer: number | null = null;
   private statsService!: HomepageStatsService;
@@ -65,6 +208,7 @@ export class HomepageView extends ItemView {
   private bookmarksService!: HomepageBookmarksService;
   private taskService!: HomepageTaskService;
   private weatherService!: HomepageWeatherService;
+  private projectScanService!: HomepageProjectScanService;
   private currentTodoTab: TodoTabKey = "all";
   private unsubSettings: (() => void) | null = null;
 
@@ -91,8 +235,15 @@ export class HomepageView extends ItemView {
     this.bookmarksService = new HomepageBookmarksService(this.app);
     this.taskService = new HomepageTaskService(this.app);
     this.weatherService = new HomepageWeatherService();
+    this.projectScanService = new HomepageProjectScanService(this.app);
 
     await this.dataService.load();
+
+    // 监听 vault 文件变化，增量更新项目扫描
+    this.registerEvent(this.app.vault.on("create", () => this.onProjectVaultChange()));
+    this.registerEvent(this.app.vault.on("modify", () => this.onProjectVaultChange()));
+    this.registerEvent(this.app.vault.on("delete", () => this.onProjectVaultChange()));
+    this.registerEvent(this.app.vault.on("rename", () => this.onProjectVaultChange()));
 
     const container = this.containerEl.children[1];
     container.empty();
@@ -286,7 +437,7 @@ export class HomepageView extends ItemView {
 
   }
 
-  // ── 进行中的项目 (col-span-6) ─────────────────────────────
+  // ── 进行中的项目 (col-span-5) ─────────────────────────────
 
   private renderProjects(parent: HTMLElement): void {
     const card = parent.createDiv({ cls: "homepage-card homepage-col-5", attr: { "data-section": "projects" } });
@@ -298,8 +449,9 @@ export class HomepageView extends ItemView {
     titleLeft.createSpan({ text: "进行中的项目" });
     const titleRight = titleRow.createDiv({ cls: "homepage-card-title-actions" });
     const newLink = titleRight.createEl("a", { cls: "homepage-card-link", text: "新建项目" });
-    newLink.addEventListener("click", () => this.openProjectModal());
-    titleRight.createEl("a", { cls: "homepage-card-link", text: "查看全部" });
+    newLink.addEventListener("click", () => this.openProjectCreateModal());
+    const viewAll = titleRight.createEl("a", { cls: "homepage-card-link", text: "查看全部" });
+    viewAll.addEventListener("click", () => this.showAllProjects());
 
     // 项目列表
     card.createDiv({ cls: "homepage-project-list" });
@@ -722,77 +874,263 @@ export class HomepageView extends ItemView {
 
   // ── 项目 ──────────────────────────────────────────────────
 
-  private loadProjects(): void {
-    const projects = this.dataService.getProjects();
+  private async loadProjects(): Promise<void> {
     const list = this.containerEl.querySelector('[data-section="projects"] .homepage-project-list');
     if (!list) return;
 
     list.empty();
 
-    const activeProjects = projects.filter((p) => p.status !== "completed");
-    if (activeProjects.length === 0) {
+    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const typeFolders = settings?.homepage?.projectTypeFolders || "10.学习,20.工作,30.创作,40.生活,50.研究";
+    const archiveFolder = settings?.homepage?.projectArchiveFolder || "99.归档";
+
+    const projects = await this.projectScanService.getProjects(typeFolders, archiveFolder);
+
+    if (projects.length === 0) {
       list.createDiv({ cls: "homepage-empty-text", text: "暂无进行中的项目" });
       return;
     }
 
-    for (const project of activeProjects) {
+    for (const project of projects) {
       this.renderProjectItem(list, project);
     }
   }
 
   private renderProjectItem(parent: HTMLElement, project: HomepageProject): void {
-    const item = parent.createDiv({ cls: "homepage-project-item" });
+    const tagColor = PROJECT_TYPE_COLORS[project.type] || "#3b82f6";
 
-    // 图标
-    const iconColors: Record<string, string> = {
-      "planning": "#3b82f6",
-      "in-progress": "#f59e0b",
-      "testing": "#8b5cf6",
-    };
-    const color = iconColors[project.status] || "#10b981";
-    item.createDiv({
-      cls: "homepage-project-icon",
-      attr: { style: `background: ${color}15; color: ${color}` },
-      text: project.name.charAt(0).toUpperCase(),
-    });
+    const item = parent.createDiv({ cls: "homepage-project-item", attr: { "data-project-id": project.id } });
+    const main = item.createDiv({ cls: "homepage-project-main" });
+
+    // 图标（使用主题色）
+    const iconEl = main.createDiv({ cls: "homepage-project-icon" });
+    this.renderProjectIcon(iconEl, project.folderPath);
 
     // 信息
-    const info = item.createDiv({ cls: "homepage-project-info" });
+    const info = main.createDiv({ cls: "homepage-project-info" });
     const nameRow = info.createDiv({ cls: "homepage-project-name-row" });
     nameRow.createSpan({ cls: "homepage-project-name", text: project.name });
-
-    const nameRight = nameRow.createDiv({ cls: "homepage-project-name-right" });
-    nameRight.createSpan({ cls: "homepage-project-status", text: "进行中" });
-    nameRight.createSpan({ cls: "homepage-project-progress-text", text: `${project.progress}%` });
-
-    // 进度条
-    const bar = info.createDiv({ cls: "homepage-project-progress-bar" });
-    bar.createDiv({
-      cls: "homepage-project-progress-fill",
-      attr: { style: `width: ${project.progress}%` },
+    nameRow.createSpan({
+      cls: "homepage-project-type-tag",
+      text: project.type,
+      attr: { style: `background: ${tagColor}18; color: ${tagColor}` },
     });
 
-    // 删除按钮
-    const deleteBtn = item.createDiv({ cls: "homepage-project-delete", text: "×" });
-    deleteBtn.title = "删除项目";
-    deleteBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      await this.dataService.deleteProject(project.id);
-      this.loadProjects();
-    });
+    // 进度条（使用主题色）
+    const progressRow = info.createDiv({ cls: "homepage-project-progress-row" });
+    const bar = progressRow.createDiv({ cls: "homepage-project-progress-bar" });
+    bar.createDiv({ cls: "homepage-project-progress-fill", attr: { style: `width: ${project.progress}%` } });
+    progressRow.createSpan({ cls: "homepage-project-progress-text", text: `${project.progress}%` });
 
-    item.addEventListener("click", () => this.openProjectModal(project));
+    // 点击 → 弹出详情面板
+    main.addEventListener("click", () => this.openProjectDetailPanel(project));
   }
 
-  private openProjectModal(existing?: HomepageProject): void {
-    new ProjectModal(this.app, async (data) => {
-      if (existing) {
-        await this.dataService.updateProject(existing.id, data);
-      } else {
-        await this.dataService.addProject(data.name, data.status, data.description);
+  // ── 图标集成 ──────────────────────────────────────────────
+
+  /**
+   * 渲染项目图标：优先使用图标系统赋予的自定义图标，否则用默认 folder 图标
+   */
+  private renderProjectIcon(el: HTMLElement, folderPath: string): void {
+    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
+    const iconId = customIcons[folderPath];
+
+    if (iconId && iconId.startsWith("lucide-")) {
+      const name = iconId.replace("lucide-", "");
+      const svg = getIcon(name);
+      if (svg) {
+        el.innerHTML = "";
+        el.appendChild(svg);
+        return;
       }
-      this.loadProjects();
-    }, existing).open();
+    }
+
+    // 降级：默认 folder 图标
+    el.innerHTML = SVG_ICON.folder;
+  }
+
+  /**
+   * 获取项目图标 SVG 元素（供弹窗使用）
+   */
+  private getProjectIconSvg(folderPath: string): SVGElement | null {
+    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
+    const iconId = customIcons[folderPath];
+    if (iconId && iconId.startsWith("lucide-")) {
+      return getIcon(iconId.replace("lucide-", ""));
+    }
+    return null;
+  }
+
+  // ── 项目详情面板 ──────────────────────────────────────────
+
+  private openProjectDetailPanel(project: HomepageProject): void {
+    const tagColor = PROJECT_TYPE_COLORS[project.type] || "#3b82f6";
+
+    const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay" });
+    const panel = overlay.createDiv({ cls: "hp-detail-panel" });
+
+    // 头部
+    const header = panel.createDiv({ cls: "hp-detail-header" });
+    const iconWrap = header.createDiv({ cls: "hp-detail-icon" });
+    this.renderProjectIcon(iconWrap, project.folderPath);
+    const headerInfo = header.createDiv({ cls: "hp-detail-header-info" });
+    headerInfo.createEl("h2", { text: project.name, cls: "hp-detail-title" });
+    const metaRow = headerInfo.createDiv({ cls: "hp-detail-meta" });
+    metaRow.createSpan({ cls: "hp-detail-type-tag", text: project.type, attr: { style: `background: ${tagColor}18; color: ${tagColor}` } });
+    metaRow.createSpan({ cls: "hp-detail-meta-text", text: `${project.taskDone}/${project.taskTotal} 任务完成` });
+
+    // 关闭按钮
+    const closeBtn = header.createDiv({ cls: "hp-detail-close", text: "×" });
+    closeBtn.addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+
+    // 进度条
+    const progressSection = panel.createDiv({ cls: "hp-detail-progress" });
+    const barBg = progressSection.createDiv({ cls: "hp-detail-progress-bar" });
+    barBg.createDiv({ cls: "hp-detail-progress-fill", attr: { style: `width: ${project.progress}%` } });
+    progressSection.createSpan({ cls: "hp-detail-progress-text", text: `${project.progress}%` });
+
+    // 描述
+    if (project.description) {
+      panel.createDiv({ cls: "hp-detail-desc", text: project.description });
+    }
+
+    // 待完成任务
+    if (project.pendingTasks.length > 0) {
+      const section = panel.createDiv({ cls: "hp-detail-section" });
+      section.createDiv({ cls: "hp-detail-section-title", text: "待完成任务" });
+      for (const task of project.pendingTasks) {
+        const row = section.createDiv({ cls: "hp-detail-task-row" });
+        const ri = row.createSpan({ cls: "homepage-icon" }); ri.innerHTML = SVG_ICON.circle;
+        row.createSpan({ cls: "hp-detail-task-text", text: task.text });
+        if (task.due) row.createSpan({ cls: "hp-detail-task-due", text: task.due });
+        row.addEventListener("click", () => {
+          overlay.remove();
+          this.openFileAndScroll(project.folderPath + "/00 控制台/Timeline.md", task.line);
+        });
+      }
+    }
+
+    // 最近编辑
+    if (project.recentFiles.length > 0) {
+      const section = panel.createDiv({ cls: "hp-detail-section" });
+      section.createDiv({ cls: "hp-detail-section-title", text: "最近编辑" });
+      for (const file of project.recentFiles) {
+        const row = section.createDiv({ cls: "hp-detail-file-row" });
+        const fi = row.createSpan({ cls: "homepage-icon" }); fi.innerHTML = SVG_ICON.fileText;
+        row.createSpan({ cls: "hp-detail-file-name", text: file.name });
+        row.createSpan({ cls: "hp-detail-file-time", text: this.formatRelativeTime(file.mtime) });
+        row.addEventListener("click", () => { overlay.remove(); this.openFile(file.path); });
+      }
+    }
+
+    // 底部操作
+    const actions = panel.createDiv({ cls: "hp-detail-actions" });
+    const openBtn = actions.createEl("a", { cls: "hp-detail-open-btn", text: "打开项目" });
+    openBtn.addEventListener("click", () => { overlay.remove(); this.openProjectInNewTab(project.folderPath); });
+
+    setTimeout(() => closeBtn.focus(), 50);
+  }
+
+  // ── 查看全部面板 ──────────────────────────────────────────
+
+  private async showAllProjects(): Promise<void> {
+    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const typeFolders = settings?.homepage?.projectTypeFolders || "";
+    const archiveFolder = settings?.homepage?.projectArchiveFolder || "99_归档";
+    const projects = await this.projectScanService.getProjects(typeFolders, archiveFolder);
+
+    const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay" });
+    const panel = overlay.createDiv({ cls: "hp-all-panel" });
+
+    // 头部
+    const header = panel.createDiv({ cls: "hp-detail-header" });
+    header.createEl("h2", { text: "全部项目", cls: "hp-detail-title" });
+    const closeBtn = header.createDiv({ cls: "hp-detail-close", text: "×" });
+    closeBtn.addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+
+    // 按类型分组
+    const grouped = new Map<string, HomepageProject[]>();
+    for (const p of projects) {
+      if (!grouped.has(p.type)) grouped.set(p.type, []);
+      grouped.get(p.type)!.push(p);
+    }
+
+    const body = panel.createDiv({ cls: "hp-all-body" });
+    for (const [type, items] of grouped) {
+      const tagColor = PROJECT_TYPE_COLORS[type as ProjectType] || "#3b82f6";
+      const group = body.createDiv({ cls: "hp-all-group" });
+      const groupHead = group.createDiv({ cls: "hp-all-group-head" });
+      groupHead.createSpan({ cls: "hp-all-group-dot", attr: { style: `background: ${tagColor}` } });
+      groupHead.createSpan({ text: `${type}（${items.length}）` });
+
+      for (const p of items) {
+        const row = group.createDiv({ cls: "hp-all-row" });
+        const iconEl = row.createDiv({ cls: "homepage-project-icon" });
+        this.renderProjectIcon(iconEl, p.folderPath);
+        row.createSpan({ cls: "hp-all-row-name", text: p.name });
+        row.createSpan({ cls: "hp-all-row-progress", text: `${p.progress}%` });
+        row.addEventListener("click", () => { overlay.remove(); this.openProjectDetailPanel(p); });
+      }
+    }
+
+    if (projects.length === 0) {
+      body.createDiv({ cls: "homepage-empty-text", text: "暂无项目" });
+    }
+  }
+
+  // ── 新建项目弹窗 ──────────────────────────────────────────
+
+  private openProjectCreateModal(): void {
+    new ProjectCreateModal(this.app, this.projectScanService, () => this.loadProjects()).open();
+  }
+
+  // ── 工具方法 ──────────────────────────────────────────────
+
+  private async openProjectInNewTab(folderPath: string): Promise<void> {
+    const filePath = `${folderPath}/00 控制台/Overview.md`;
+    const file = this.app.vault.getAbstractFileByPath(filePath);
+    if (file instanceof TFile) {
+      const leaf = this.app.workspace.getLeaf("tab");
+      await leaf.openFile(file);
+    }
+  }
+
+  private async openFileAndScroll(path: string, line: number): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (file instanceof TFile) {
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+      const editor = (this.app.workspace as any).activeEditor?.editor;
+      if (editor) {
+        editor.setCursor({ line, ch: 0 });
+        editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: 0 } }, true);
+      }
+    }
+  }
+
+  private formatRelativeTime(mtime: number): string {
+    const now = Date.now();
+    const diffMs = now - mtime;
+    const diffMin = Math.floor(diffMs / 60_000);
+    const diffHour = Math.floor(diffMs / 3_600_000);
+    const diffDay = Math.floor(diffMs / 86_400_000);
+
+    if (diffMin < 1) return "刚刚";
+    if (diffMin < 60) return `${diffMin} 分钟前`;
+    if (diffHour < 24) return `${diffHour} 小时前`;
+    if (diffDay < 7) return `${diffDay} 天前`;
+
+    const d = new Date(mtime);
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  }
+
+  private onProjectVaultChange(): void {
+    this.projectScanService.markDirty();
+    this.loadProjects();
   }
 
   // ── 待办 ──────────────────────────────────────────────────
