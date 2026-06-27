@@ -1146,6 +1146,17 @@
   background: var(--background-modifier-hover);
 }
 
+.hp-detail-create-home {
+  background: transparent !important;
+  border: 1px dashed var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.hp-detail-create-home:hover {
+  border-color: var(--text-muted);
+  color: var(--text-normal);
+}
+
 /* 查看全部面板 */
 
 .hp-all-panel {
@@ -2768,4 +2779,701 @@
 
 .homepage-project-modal-btn--primary:hover {
   opacity: 0.9;
+}
+
+/* ============================================================
+   ProjectConsoleView — 项目控制台样式 v3（仪表盘风格）
+   作用域：.zc-root
+   ============================================================ */
+
+/* ── 呼吸背景动画 ────────────────────────────── */
+
+@keyframes zc-breathe {
+  0%, 100% { opacity: 1; transform: scale(1) translate(0, 0); }
+  33% { opacity: 0.8; transform: scale(1.08) translate(15px, -10px); }
+  66% { opacity: 0.6; transform: scale(0.95) translate(-10px, 15px); }
+}
+
+@keyframes zc-breathe-2 {
+  0%, 100% { opacity: 0.7; transform: scale(1) translate(0, 0); }
+  40% { opacity: 1; transform: scale(1.1) translate(-20px, 10px); }
+  70% { opacity: 0.5; transform: scale(0.92) translate(10px, -15px); }
+}
+
+@keyframes zc-breathe-3 {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.15); }
+}
+
+@keyframes zc-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 根容器 ──────────────────────────────────── */
+
+.zc-root {
+  --zc-w: 920px;
+  --zc-r: 14px;
+  --zc-r-sm: 10px;
+  --zc-accent: var(--interactive-accent, hsl(var(--accent-h), var(--accent-s), var(--accent-l)));
+  --zc-accent-h: var(--accent-h);
+  --zc-accent-s: var(--accent-s);
+  --zc-accent-l: var(--accent-l);
+
+  position: relative;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  font-family: inherit;
+  background: var(--background-primary);
+}
+
+/* ── 呼吸背景层 ──────────────────────────────── */
+
+.zc-root .zc-breath-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.zc-root .zc-breath-bg::before,
+.zc-root .zc-breath-bg::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+/* 亮色模式 — 低饱和度柔和色块 */
+.theme-light .zc-root .zc-breath-bg::before {
+  width: 600px;
+  height: 600px;
+  top: -15%;
+  right: -8%;
+  background: hsla(var(--zc-accent-h), 60%, 85%, 0.5);
+  filter: blur(100px);
+  animation: zc-breathe 12s ease-in-out infinite;
+}
+
+.theme-light .zc-root .zc-breath-bg::after {
+  width: 500px;
+  height: 500px;
+  bottom: -5%;
+  left: -10%;
+  background: hsla(calc(var(--zc-accent-h) + 40), 50%, 88%, 0.4);
+  filter: blur(120px);
+  animation: zc-breathe-2 15s ease-in-out infinite;
+}
+
+/* 暗色模式 — 高饱和度发光色块 */
+.theme-dark .zc-root .zc-breath-bg::before {
+  width: 550px;
+  height: 550px;
+  top: -12%;
+  right: -6%;
+  background: hsla(var(--zc-accent-h), var(--zc-accent-s), 35%, 0.25);
+  filter: blur(100px);
+  animation: zc-breathe 12s ease-in-out infinite;
+}
+
+.theme-dark .zc-root .zc-breath-bg::after {
+  width: 450px;
+  height: 450px;
+  bottom: -3%;
+  left: -8%;
+  background: hsla(calc(var(--zc-accent-h) + 40), var(--zc-accent-s), 30%, 0.2);
+  filter: blur(120px);
+  animation: zc-breathe-2 15s ease-in-out infinite;
+}
+
+/* 第三个色块 — 用 box-shadow 模拟，不需要额外元素 */
+.theme-light .zc-root .zc-breath-bg {
+  background: radial-gradient(
+    ellipse 400px 400px at 30% 60%,
+    hsla(calc(var(--zc-accent-h) + 80), 40%, 90%, 0.35),
+    transparent
+  );
+}
+
+.theme-dark .zc-root .zc-breath-bg {
+  background: radial-gradient(
+    ellipse 400px 400px at 30% 60%,
+    hsla(calc(var(--zc-accent-h) + 80), var(--zc-accent-s), 25%, 0.15),
+    transparent
+  );
+}
+
+/* ── 内容包装器 ──────────────────────────────── */
+
+.zc-root .zc-wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: var(--zc-w);
+  margin: 0 auto;
+  padding: 40px 36px 80px;
+}
+
+.zc-root .zc-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.zc-root .zc-icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+/* ── 错误 ────────────────────────────────────── */
+
+.zc-root .zc-error {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 120px 0;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+/* ── Hero 头部 ───────────────────────────────── */
+
+.zc-root .zc-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 28px;
+  animation: zc-fade-in 0.4s ease-out;
+}
+
+.zc-root .zc-hero-icon {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: var(--zc-accent);
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 8px 24px hsla(var(--zc-accent-h), var(--zc-accent-s), var(--zc-accent-l), 0.3);
+}
+
+.zc-root .zc-hero-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.zc-root .zc-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.zc-root .zc-hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  line-height: 1.2;
+  color: var(--text-normal);
+  letter-spacing: -0.02em;
+}
+
+.zc-root .zc-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.zc-root .zc-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: hsla(var(--zc-accent-h), var(--zc-accent-s), var(--zc-accent-l), 0.12);
+  color: var(--zc-accent);
+}
+
+.zc-root .zc-hero-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.zc-root .zc-hero-desc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-top: 6px;
+  cursor: text;
+  padding: 4px 0;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.zc-root .zc-hero-desc:hover {
+  background: var(--background-modifier-hover);
+}
+
+.zc-root .zc-hero-desc-text {
+  flex: 1;
+}
+
+.zc-root .zc-hero-desc-placeholder {
+  flex: 1;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.zc-root .zc-hero-desc-edit {
+  color: var(--text-faint);
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.zc-root .zc-hero-desc:hover .zc-hero-desc-edit {
+  opacity: 1;
+}
+
+.zc-root .zc-hero-desc-input {
+  flex: 1;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: 1px solid var(--interactive-accent);
+  border-radius: 6px;
+  padding: 4px 8px;
+  outline: none;
+  box-shadow: 0 0 0 2px hsla(var(--zc-accent-h), var(--zc-accent-s), var(--zc-accent-l), 0.2);
+}
+
+/* ── 统计卡片行 ──────────────────────────────── */
+
+.zc-root .zc-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+  animation: zc-fade-in 0.4s ease-out 0.1s both;
+}
+
+.zc-root .zc-stat-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--zc-r);
+  padding: 20px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.zc-root .zc-stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--zc-accent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.zc-root .zc-stat-card:hover::before {
+  opacity: 1;
+}
+
+.zc-root .zc-stat-card:hover {
+  border-color: hsla(var(--zc-accent-h), var(--zc-accent-s), var(--zc-accent-l), 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.theme-dark .zc-root .zc-stat-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.zc-root .zc-stat-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: hsla(var(--zc-accent-h), var(--zc-accent-s), var(--zc-accent-l), 0.1);
+  color: var(--zc-accent);
+  margin-bottom: 14px;
+}
+
+.zc-root .zc-stat-body {
+  margin-bottom: 6px;
+}
+
+.zc-root .zc-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-normal);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 4px;
+}
+
+.zc-root .zc-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.zc-root .zc-stat-sub {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* ── 内容区块 ────────────────────────────────── */
+
+.zc-root .zc-section {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--zc-r);
+  overflow: hidden;
+  margin-bottom: 28px;
+  animation: zc-fade-in 0.4s ease-out 0.2s both;
+}
+
+/* ── Tab 栏 ──────────────────────────────────── */
+
+.zc-root .zc-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.zc-root .zc-tab {
+  padding: 14px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.zc-root .zc-tab:hover {
+  color: var(--text-normal);
+}
+
+.zc-root .zc-tab.is-active {
+  color: var(--zc-accent);
+  border-bottom-color: var(--zc-accent);
+  font-weight: 600;
+}
+
+/* ── 列表通用 ────────────────────────────────── */
+
+/* ── 可滚动区域 ──────────────────────────────── */
+
+.zc-root .zc-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.zc-root .zc-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.zc-root .zc-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.zc-root .zc-scroll::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 999px;
+}
+
+.zc-root .zc-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+/* ── 列表通用 ────────────────────────────────── */
+
+.zc-root .zc-list {
+  padding: 6px;
+}
+
+.zc-root .zc-divider {
+  height: 1px;
+  background: var(--background-modifier-border);
+  margin: 4px 10px;
+}
+
+/* ── 行（任务/文件/交付物）──────────────────── */
+
+.zc-root .zc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.zc-root .zc-row:hover {
+  background: var(--background-modifier-hover);
+}
+
+.zc-root .zc-row.is-done {
+  opacity: 0.5;
+}
+
+.zc-root .zc-row.is-done .zc-row-text {
+  text-decoration: line-through;
+}
+
+.zc-root .zc-row.clickable {
+  cursor: pointer;
+}
+
+.zc-root .zc-check {
+  cursor: pointer;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.zc-root .zc-check:hover {
+  color: var(--zc-accent);
+}
+
+.zc-root .zc-row.is-done .zc-check {
+  color: var(--zc-accent);
+}
+
+.zc-root .zc-row-text {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-normal);
+  min-width: 0;
+}
+
+.zc-root .zc-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zc-root .zc-row-sub {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.zc-root .zc-row-time {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.zc-root .zc-row-icon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: hsla(var(--zc-accent-h), var(--zc-accent-s), var(--zc-accent-l), 0.08);
+  color: var(--zc-accent);
+  flex-shrink: 0;
+}
+
+.zc-root .zc-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--background-modifier-border);
+}
+
+.zc-root .zc-del {
+  cursor: pointer;
+  color: var(--text-faint);
+  opacity: 0;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.zc-root .zc-row:hover .zc-del {
+  opacity: 1;
+}
+
+.zc-root .zc-del:hover {
+  color: var(--text-error);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* ── 添加按钮 ────────────────────────────────── */
+
+.zc-root .zc-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.15s;
+  border: 1px dashed var(--background-modifier-border);
+}
+
+.zc-root .zc-add-btn:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+  border-color: var(--text-muted);
+}
+
+/* ── 状态徽章 ────────────────────────────────── */
+
+.zc-root .zc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.zc-root .zc-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.zc-root .zc-badge-pending .zc-badge-dot { background: var(--text-muted); }
+.zc-root .zc-badge-in-progress .zc-badge-dot { background: var(--zc-accent); box-shadow: 0 0 6px hsla(var(--zc-accent-h), var(--zc-accent-s), var(--zc-accent-l), 0.4); }
+.zc-root .zc-badge-done .zc-badge-dot { background: #22c55e; }
+
+/* ── 空状态 ──────────────────────────────────── */
+
+.zc-root .zc-empty {
+  text-align: center;
+  padding: 48px 20px;
+}
+
+.zc-root .zc-empty-icon {
+  color: var(--text-faint);
+  margin-bottom: 12px;
+}
+
+.zc-root .zc-empty-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.zc-root .zc-empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-normal);
+  margin-bottom: 4px;
+}
+
+.zc-root .zc-empty-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── 底部网格 ────────────────────────────────── */
+
+.zc-root .zc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  animation: zc-fade-in 0.4s ease-out 0.3s both;
+}
+
+.zc-root .zc-grid-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--zc-r-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zc-root .zc-grid-card:hover {
+  border-color: hsla(var(--zc-accent-h), var(--zc-accent-s), var(--zc-accent-l), 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.theme-dark .zc-root .zc-grid-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.zc-root .zc-grid-icon {
+  color: var(--zc-accent);
+  flex-shrink: 0;
+}
+
+.zc-root .zc-grid-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.zc-root .zc-grid-arrow {
+  color: var(--text-faint);
+  transition: transform 0.2s;
+}
+
+.zc-root .zc-grid-card:hover .zc-grid-arrow {
+  transform: translateX(3px);
+  color: var(--zc-accent);
+}
+
+/* ── 响应式 ──────────────────────────────────── */
+
+@media (max-width: 700px) {
+  .zc-root .zc-stats { grid-template-columns: repeat(2, 1fr); }
+  .zc-root .zc-grid { grid-template-columns: repeat(2, 1fr); }
+  .zc-root .zc-hero { flex-direction: column; text-align: center; }
+  .zc-root .zc-hero-meta { justify-content: center; }
+  .zc-root .zc-wrapper { padding: 24px 16px 60px; }
 }

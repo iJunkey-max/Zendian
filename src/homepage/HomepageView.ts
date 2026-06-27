@@ -5,7 +5,7 @@
  * 集成各数据服务，渲染完整主页。
  */
 
-import { ItemView, type WorkspaceLeaf, TFile, getIcon, Modal, Setting } from "obsidian";
+import { ItemView, type WorkspaceLeaf, TFile, TFolder, getIcon, Modal, Setting } from "obsidian";
 import { HomepageStatsService } from "./HomepageStatsService";
 import { HomepageDataService } from "./HomepageDataService";
 import { HomepageBookmarksService } from "./HomepageBookmarksService";
@@ -13,6 +13,7 @@ import { HomepageTaskService } from "./HomepageTaskService";
 import { HomepageWeatherService } from "./HomepageWeatherService";
 import { HomepageProjectScanService } from "./HomepageProjectScanService";
 import { QuickNoteModal } from "./QuickNoteModal";
+import { createDefaultConsoleData } from "./ProjectConsoleView";
 import { IconPickerModal } from "../ui/icon-picker-modal";
 import type { HomepageProject, HomepageQuickNote, RecentNoteItem, ProjectType } from "./types";
 import { PROJECT_TYPE_COLORS } from "./types";
@@ -97,6 +98,13 @@ class ProjectCreateModal extends Modal {
         text.setPlaceholder("输入项目名称").onChange((v) => (this.nameValue = v))
       );
 
+    // 项目简介
+    new Setting(contentEl)
+      .setName("项目简介")
+      .addText((text) =>
+        text.setPlaceholder("一句话描述项目（可选）").onChange((v) => (this.descValue = v))
+      );
+
     // 项目类型
     const typeSetting = new Setting(contentEl).setName("项目类型");
     const select = typeSetting.controlEl.createEl("select");
@@ -149,6 +157,7 @@ class ProjectCreateModal extends Modal {
   }
 
   private nameValue = "";
+  private descValue = "";
   private typeSelect!: HTMLSelectElement;
 
   private refreshIconDisplay(): void {
@@ -187,6 +196,14 @@ class ProjectCreateModal extends Modal {
     await this.app.vault.create(`${projectPath}/00 控制台/Overview.md`, `# ${name}\n\n> 创建于 ${new Date().toLocaleDateString()}\n`);
     await this.app.vault.create(`${projectPath}/00 控制台/Timeline.md`, `# ${name} - 任务时间线\n\n- [ ] 待规划 @created(${new Date().toISOString().slice(0, 10)})\n`);
 
+    // 创建 .home 控制台文件
+    const projectType = this.extractTypeFromFolder(typeFolder);
+    const consoleData = createDefaultConsoleData(name, this.selectedIcon, projectType, this.descValue.trim());
+    await this.app.vault.create(
+      `${projectPath}/00 控制台/${name}.home`,
+      JSON.stringify(consoleData, null, 2)
+    );
+
     if (this.selectedIcon !== "lucide-folder") {
       const updatedIcons = { ...customIcons, [projectPath]: this.selectedIcon };
       const plugin = (this.app as any).plugins?.plugins?.zendian;
@@ -198,6 +215,15 @@ class ProjectCreateModal extends Modal {
     this.close();
     this.scanService.markDirty();
     this.onCreated();
+  }
+
+  /** 从类型文件夹名提取项目类型 */
+  private extractTypeFromFolder(folderName: string): ProjectType {
+    const dotIdx = folderName.indexOf(".");
+    if (dotIdx !== -1) return folderName.slice(dotIdx + 1) as ProjectType;
+    const underIdx = folderName.indexOf("_");
+    if (underIdx !== -1) return folderName.slice(underIdx + 1) as ProjectType;
+    return "学习";
   }
 }
 
@@ -1031,6 +1057,15 @@ export class HomepageView extends ItemView {
     const openBtn = actions.createEl("a", { cls: "hp-detail-open-btn", text: "打开项目" });
     openBtn.addEventListener("click", () => { overlay.remove(); this.openProjectInNewTab(project.folderPath); });
 
+    // 如果没有 .home 文件，显示「创建控制台」按钮
+    if (!this.hasHomeFile(project.folderPath)) {
+      const createBtn = actions.createEl("a", { cls: "hp-detail-open-btn hp-detail-create-home", text: "创建控制台" });
+      createBtn.addEventListener("click", async () => {
+        await this.createHomeFile(project);
+        overlay.remove();
+      });
+    }
+
     setTimeout(() => closeBtn.focus(), 50);
   }
 
@@ -1091,12 +1126,52 @@ export class HomepageView extends ItemView {
   // ── 工具方法 ──────────────────────────────────────────────
 
   private async openProjectInNewTab(folderPath: string): Promise<void> {
-    const filePath = `${folderPath}/00 控制台/Overview.md`;
+    // 优先打开 .home 文件（触发 ProjectConsoleView）
+    const consolePath = `${folderPath}/00 控制台`;
+    const consoleFolder = this.app.vault.getAbstractFileByPath(consolePath);
+    if (consoleFolder instanceof TFolder) {
+      for (const child of consoleFolder.children) {
+        if (child instanceof TFile && child.extension === "home") {
+          const leaf = this.app.workspace.getLeaf("tab");
+          await leaf.openFile(child);
+          return;
+        }
+      }
+    }
+
+    // 降级：打开 Overview.md
+    const filePath = `${consolePath}/Overview.md`;
     const file = this.app.vault.getAbstractFileByPath(filePath);
     if (file instanceof TFile) {
       const leaf = this.app.workspace.getLeaf("tab");
       await leaf.openFile(file);
     }
+  }
+
+  /** 检查项目是否有 .home 文件 */
+  private hasHomeFile(folderPath: string): boolean {
+    const consolePath = `${folderPath}/00 控制台`;
+    const folder = this.app.vault.getAbstractFileByPath(consolePath);
+    if (!(folder instanceof TFolder)) return false;
+    return folder.children.some((c) => c instanceof TFile && c.extension === "home");
+  }
+
+  /** 为项目创建 .home 文件 */
+  private async createHomeFile(project: HomepageProject): Promise<void> {
+    const consolePath = `${project.folderPath}/00 控制台`;
+    // 确保目录存在
+    if (!(this.app.vault.getAbstractFileByPath(consolePath) instanceof TFolder)) {
+      await this.app.vault.createFolder(consolePath);
+    }
+    const data = createDefaultConsoleData(project.name, "lucide-folder", project.type, project.description);
+    // 把已有任务注入
+    for (const t of project.pendingTasks) {
+      data.tasks.push({ text: t.text, completed: t.completed, created: t.created, due: t.due });
+    }
+    const filePath = `${consolePath}/${project.name}.home`;
+    await this.app.vault.create(filePath, JSON.stringify(data, null, 2));
+    this.projectScanService.markDirty();
+    this.loadProjects();
   }
 
   private async openFileAndScroll(path: string, line: number): Promise<void> {
