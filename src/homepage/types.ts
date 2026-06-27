@@ -177,6 +177,36 @@ export interface HeatmapDay {
   count: number;
 }
 
+// ============================================================
+// 项目控制台（.home 文件）类型
+// ============================================================
+
+/** .home 文件数据结构 */
+export interface ProjectConsoleData {
+  name: string;
+  icon: string;
+  description: string;
+  type: ProjectType;
+  createdAt: string;          // YYYY-MM-DD
+  tasks: ProjectConsoleTask[];
+  deliverables: ProjectConsoleDeliverable[];
+}
+
+/** 控制台任务 */
+export interface ProjectConsoleTask {
+  text: string;
+  completed: boolean;
+  created?: string;           // YYYY-MM-DD
+  due?: string;               // YYYY-MM-DD
+}
+
+/** 控制台交付物 */
+export interface ProjectConsoleDeliverable {
+  name: string;
+  path: string;               // 相对于项目根目录
+  status: "pending" | "in-progress" | "done";
+}
+
 /**
  * 主页持久化数据（homepage-data.json）
  *

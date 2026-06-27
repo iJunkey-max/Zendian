@@ -40,6 +40,7 @@ import { BannerModule } from "./modules/banner.module";
 
 // Homepage
 import { HomepageView, VIEW_TYPE_HOMEPAGE } from "./homepage/HomepageView";
+import { ProjectConsoleView, VIEW_TYPE_PROJECT_CONSOLE } from "./homepage/ProjectConsoleView";
 
 // UI
 import { ZENdianSettingTab } from "./ui/settings-tab";
@@ -97,6 +98,13 @@ export default class ZENdianPlugin extends Plugin {
       VIEW_TYPE_HOMEPAGE,
       (leaf) => new HomepageView(leaf)
     );
+
+    // 注册项目控制台 View（.home 文件）
+    this.registerView(
+      VIEW_TYPE_PROJECT_CONSOLE,
+      (leaf) => new ProjectConsoleView(leaf)
+    );
+    this.registerExtensions(["home"], VIEW_TYPE_PROJECT_CONSOLE);
 
     // 监听空标签页，替换为主页
     this.registerEvent(

@@ -11,6 +11,7 @@ import type {
   ProjectType,
   ProjectRecentFile,
   ProjectTask,
+  ProjectConsoleData,
 } from "./types";
 
 const TASK_REGEX = /^- \[([ x])\] (.+)$/;
@@ -108,17 +109,41 @@ export class HomepageProjectScanService {
 
   /**
    * 扫描单个项目文件夹
+   *
+   * 优先从 .home 文件读取数据，降级到 Overview.md + Timeline.md
    */
   private async scanProject(folder: TFolder, type: ProjectType): Promise<HomepageProject | null> {
     const folderPath = folder.path;
     const name = folder.name;
     const consolePath = `${folderPath}/00 控制台`;
 
-    // 从 00 控制台/Overview.md 读取描述
-    const description = await this.readFirstParagraph(consolePath, "Overview.md");
+    // 优先从 .home 文件读取
+    const homeData = await this.readHomeFile(consolePath, name);
 
-    // 从 00 控制台/Timeline.md 读取任务进度
-    const { taskTotal, taskDone, progress, pendingTasks } = await this.parseTimeline(consolePath);
+    let description: string;
+    let taskTotal: number;
+    let taskDone: number;
+    let progress: number;
+    let pendingTasks: ProjectTask[];
+
+    if (homeData) {
+      // 从 .home 文件获取数据
+      description = homeData.description || "";
+      taskTotal = homeData.tasks.length;
+      taskDone = homeData.tasks.filter((t) => t.completed).length;
+      progress = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
+      pendingTasks = homeData.tasks
+        .filter((t) => !t.completed)
+        .map((t, i) => ({ text: t.text, completed: false, created: t.created, due: t.due, line: i }));
+    } else {
+      // 降级：从 Overview.md + Timeline.md 读取
+      description = await this.readFirstParagraph(consolePath, "Overview.md");
+      const parsed = await this.parseTimeline(consolePath);
+      taskTotal = parsed.taskTotal;
+      taskDone = parsed.taskDone;
+      progress = parsed.progress;
+      pendingTasks = parsed.pendingTasks;
+    }
 
     // 获取最近编辑的文件
     const recentFiles = this.getRecentFiles(folder, 5);
@@ -138,6 +163,52 @@ export class HomepageProjectScanService {
       pendingTasks,
       updatedAt,
     };
+  }
+
+  /**
+   * 在 00 控制台/ 中查找 .home 文件并解析
+   */
+  private async readHomeFile(consolePath: string, projectName: string): Promise<ProjectConsoleData | null> {
+    // 优先查找与项目同名的 .home 文件
+    const candidates = [
+      `${consolePath}/${projectName}.home`,
+      `${consolePath}/控制台.home`,
+    ];
+
+    for (const filePath of candidates) {
+      const file = this.app.vault.getAbstractFileByPath(filePath);
+      if (file instanceof TFile) {
+        try {
+          const content = await this.app.vault.read(file);
+          const data = JSON.parse(content) as ProjectConsoleData;
+          if (data && typeof data.name === "string") {
+            return data;
+          }
+        } catch {
+          // JSON 解析失败，跳过
+        }
+      }
+    }
+
+    // 扫描 00 控制台/ 下所有 .home 文件
+    const consoleFolder = this.app.vault.getAbstractFileByPath(consolePath);
+    if (consoleFolder instanceof TFolder) {
+      for (const child of consoleFolder.children) {
+        if (child instanceof TFile && child.extension === "home") {
+          try {
+            const content = await this.app.vault.read(child);
+            const data = JSON.parse(content) as ProjectConsoleData;
+            if (data && typeof data.name === "string") {
+              return data;
+            }
+          } catch {
+            // JSON 解析失败，跳过
+          }
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
