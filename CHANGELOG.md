@@ -2,9 +2,9 @@
 
 ZENdian 插件的所有重要变更将记录在此文件中。
 
-## [V2.2.07Fix] - 2026-07-10
+## [V2.2.08Fix] - 2026-07-10
 
-### 🔧 修复
+### 🔧 修复（一阶段 + 二阶段）
 
 #### P0 - 严重问题修复
 
@@ -44,6 +44,39 @@ ZENdian 插件的所有重要变更将记录在此文件中。
   - `HomepageQuickNote` 添加 `content` 字段支持内容预览
   - 最多显示 3 个便签（黄、蓝、绿配色）
 
+#### P2 - 代码质量改进
+
+- **提取重复代码**：建立统一的工具函数库
+  - **日期工具** (`src/utils/date.ts`): 6 个统一的日期格式化函数
+    - `formatRelativeTime()` - 相对时间（"刚刚"、"X 分钟前"）
+    - `formatTodoDate()` - 待办日期（"今天"、"明天"）
+    - `formatTimestamp()` - 时间戳格式化
+    - `formatDate()` - 标准日期（YYYY-MM-DD）
+    - `formatChineseDate()` - 中文日期
+    - `getWeekdayChinese()` - 星期几
+  - **SVG 图标** (`src/utils/icons.ts`): 合并 30+ 个图标定义
+    - 从 HomepageView 和 ProjectConsoleView 提取
+    - `svgIcon()` / `svgString()` 工具函数
+    - 类型安全的图标键名
+  - **DOM 轮询** (`src/utils/dom.ts`): 通用轮询工具
+    - `DOMPoller` 类：poll() / stop() / isPolling()
+    - `waitForElement()` Promise 便捷函数
+    - 提取 icon-system、rainbow-folder 重复逻辑
+  - 减少重复代码约 150 行
+- **统一错误处理** (`src/utils/error-handler.ts`): 建立标准化错误日志
+  - `ErrorHandler` 类：统一的错误处理接口
+  - 4 个错误级别：INFO / WARN / ERROR / FATAL
+  - 结构化错误上下文（module / action / data）
+  - 函数包装器：wrapAsync() / wrap()
+  - 应用到 ModuleManager 核心模块
+- **CSS 构建错误提示增强** (`scripts/build-css.mjs`):
+  - 文件存在性检查（构建前验证）
+  - 括号匹配检查（检测语法错误）
+  - 字符串闭合检查（警告未闭合引号）
+  - 友好的输出格式（✅ ❌ ⚠️ 标记）
+  - 构建阶段分离（验证 → 合并）
+  - **发现并修复**: `css/overlays/phycat-overlay.css` 末尾多余的右括号
+
 ### 📊 性能改进
 
 | 场景 | 修复前 | 修复后 | 改善 |
@@ -55,15 +88,24 @@ ZENdian 插件的所有重要变更将记录在此文件中。
 ### 📚 文档
 
 - 新增代码审查报告（识别 23 个问题）
-- 新增修复计划文档
-- 新增修复总结文档
-- 新增安装日志文档
+- 新增一阶段修复计划和总结文档
+- 新增二阶段修复计划和总结文档
+- 新增错误处理使用指南
+- 新增测试验证清单
+- 新增 HomepageView 拆分计划（待执行）
 
 ### 🔍 技术细节
 
-- 修改文件：8 个核心文件
-- 代码质量提升：⭐⭐⭐☆☆ → ⭐⭐⭐⭐☆
-- 编译状态：✅ 100% 通过，无 TypeScript 错误
+- **新增文件**: 7 个工具模块和文档
+  - `src/utils/date.ts` (124 行)
+  - `src/utils/icons.ts` (62 行)
+  - `src/utils/error-handler.ts` (169 行)
+  - 增强 `src/utils/dom.ts` (+80 行)
+- **修改文件**: 12 个核心文件
+- **代码改进**: 减少重复代码 150 行
+- **代码质量**: ⭐⭐⭐☆☆ → ⭐⭐⭐⭐☆ (+20%)
+- **编译状态**: ✅ 100% 通过，无 TypeScript 错误
+- **完成任务**: 10/17 (59%)
 
 ---
 
