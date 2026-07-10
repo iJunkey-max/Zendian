@@ -9,6 +9,7 @@ import type { PluginSettings } from "../types/settings.types";
 import type { EventBus } from "./event-bus";
 import type { SettingsManager } from "./settings-manager";
 import { Events } from "./event-bus";
+import { ErrorHandler } from "../utils/error-handler";
 
 export class ModuleManager {
   private modules = new Map<string, IFeatureModule>();
@@ -45,7 +46,11 @@ export class ModuleManager {
   /** 注册模块（插件启动时调用） */
   register(module: IFeatureModule): void {
     if (this.modules.has(module.id)) {
-      console.warn(`[ZENdian] Module "${module.id}" already registered, skipping.`);
+      ErrorHandler.warn("Module already registered, skipping", {
+        module: "ModuleManager",
+        action: "register",
+        data: { id: module.id, name: module.name }
+      });
       return;
     }
     this.modules.set(module.id, module);
@@ -55,7 +60,11 @@ export class ModuleManager {
   async loadModule(id: string): Promise<void> {
     const mod = this.modules.get(id);
     if (!mod) {
-      console.warn(`[ZENdian] Module "${id}" not found.`);
+      ErrorHandler.warn("Module not found", {
+        module: "ModuleManager",
+        action: "loadModule",
+        data: { id }
+      });
       return;
     }
     if (this.loaded.has(id)) return;
@@ -64,7 +73,11 @@ export class ModuleManager {
       await mod.load(this.ctx);
       this.loaded.add(id);
     } catch (err) {
-      console.error(`[ZENdian] Failed to load module "${id}":`, err);
+      ErrorHandler.error(`Failed to load module: ${mod.name}`, err as Error, {
+        module: "ModuleManager",
+        action: "loadModule",
+        data: { id, name: mod.name }
+      });
     }
   }
 
@@ -76,7 +89,11 @@ export class ModuleManager {
     try {
       mod.unload();
     } catch (err) {
-      console.error(`[ZENdian] Failed to unload module "${id}":`, err);
+      ErrorHandler.error(`Failed to unload module: ${mod.name}`, err as Error, {
+        module: "ModuleManager",
+        action: "unloadModule",
+        data: { id, name: mod.name }
+      });
     }
     this.loaded.delete(id);
   }
