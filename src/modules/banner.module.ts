@@ -1,38 +1,48 @@
 import { TFile, WorkspaceLeaf } from 'obsidian';
+import type { IFeatureModule, ModuleContext } from '../types/module.types';
+import type { PluginSettings } from '../types/settings.types';
 
-export class BannerModule {
-    id = "banner";
-    name = "页眉图片";
-    ctx: any;
-    eventRefs: any[] = [];
-    pollTimer: any = null;
+export class BannerModule implements IFeatureModule {
+    readonly id = "banner";
+    readonly name = "页眉图片";
+    private ctx!: ModuleContext;
+    private eventRefs: any[] = [];
+    private pollTimer: ReturnType<typeof setInterval> | null = null;
     private failedUrls: Set<string> = new Set();
+    private needsUpdate = false;
 
-    async load(ctx: any) {
+    async load(ctx: ModuleContext): Promise<void> {
         this.ctx = ctx;
         if (!ctx.getSettings().banner.enabled) return;
 
-        // 绑定环境事件
+        // 绑定环境事件（标记为需要更新，而不是立即渲染）
         this.eventRefs.push(
-            ctx.app.workspace.on('file-open', () => this.renderAllBanners()),
-            ctx.app.workspace.on('layout-change', () => this.renderAllBanners()),
+            ctx.app.workspace.on('file-open', () => {
+                this.needsUpdate = true;
+            }),
+            ctx.app.workspace.on('layout-change', () => {
+                this.needsUpdate = true;
+            }),
             ctx.app.metadataCache.on('changed', (file: TFile) => {
                 const activeFile = this.ctx.app.workspace.getActiveFile();
                 if (file === activeFile) {
-                    setTimeout(() => this.renderAllBanners(), 150);
+                    this.needsUpdate = true;
                 }
             })
         );
 
-        // 心跳守护：暴力且最有效的抗阅读模式销毁机制
+        // 优化轮询：降低频率到 5 秒，并添加脏检查
         this.pollTimer = setInterval(() => {
-            this.renderAllBanners();
-        }, 1000);
+            if (this.needsUpdate) {
+                this.renderAllBanners();
+                this.needsUpdate = false;
+            }
+        }, 5000); // 1秒 → 5秒
 
         this.renderAllBanners();
     }
 
-    unload() {
+    unload(): void {
         this.eventRefs.forEach(ref => this.ctx.app.workspace.offref(ref));
         this.eventRefs = [];
         if (this.pollTimer) {
@@ -41,20 +51,19 @@ export class BannerModule {
         }
         this.failedUrls.clear();
         this.cleanup();
-        this.ctx = null;
     }
 
-    onSettingsChanged(changedKeys: string[], settings: any) {
+    onSettingsChanged(changedKeys: string[], settings: PluginSettings): void {
         if (changedKeys.includes("banner")) {
             if (settings.banner.enabled) {
-                this.renderAllBanners();
+                this.needsUpdate = true;
             } else {
                 this.cleanup();
             }
         }
     }
 
-    renderAllBanners() {
+    private renderAllBanners(): void {
         if (!this.ctx) return;
         const settings = this.ctx.getSettings().banner;
         if (!settings.enabled) return;
@@ -76,7 +85,7 @@ export class BannerModule {
         });
     }
 
-    resolveUrl(url: string, file: TFile) {
+    private resolveUrl(url: string, file: TFile): string {
         if (/^https?:\/\//i.test(url)) return url;
         const cleanStr = url.replace(/^\[\[|\]\]$/g, "");
         const dest = this.ctx.app.metadataCache.getFirstLinkpathDest(cleanStr, file.path);
@@ -86,7 +95,7 @@ export class BannerModule {
         return url;
     }
 
-    injectBanner(leaf: WorkspaceLeaf, imgUrl: string, settings: any) {
+    private injectBanner(leaf: WorkspaceLeaf, imgUrl: string, settings: PluginSettings["banner"]): void {
         if (this.failedUrls.has(imgUrl)) {
             this.removeBannerFromLeaf(leaf);
             return;
@@ -138,7 +147,7 @@ export class BannerModule {
         scroller.prepend(wrapper);
     }
 
-    removeBannerFromLeaf(leaf: WorkspaceLeaf) {
+    private removeBannerFromLeaf(leaf: WorkspaceLeaf): void {
         const container = leaf.view.containerEl.closest(".workspace-leaf-content");
         if (container) {
             container.removeAttribute("data-zendian-banner");
@@ -149,7 +158,7 @@ export class BannerModule {
         }
     }
 
-    cleanup() {
+    private cleanup(): void {
         document.querySelectorAll(".zendian-banner-wrapper").forEach(el => el.remove());
         document.querySelectorAll("[data-zendian-banner]").forEach(el => {
             el.removeAttribute("data-zendian-banner");

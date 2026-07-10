@@ -114,6 +114,7 @@ export interface HomepageQuickNote {
   label: string;
   path: string;
   color: string;
+  content?: string;
 }
 
 /** 每日格言 */

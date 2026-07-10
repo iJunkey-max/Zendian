@@ -79,12 +79,13 @@ export class HomepageDataService {
     return this.data.quickNotes;
   }
 
-  async addQuickNote(label: string, path: string, color: string): Promise<HomepageQuickNote> {
+  async addQuickNote(label: string, path: string, color: string, content?: string): Promise<HomepageQuickNote> {
     const note: HomepageQuickNote = {
       id: this.generateId(),
       label,
       path,
       color,
+      content,
     };
     this.data.quickNotes.push(note);
     await this.save();

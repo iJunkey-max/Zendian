@@ -369,6 +369,11 @@ export class IconSystemModule implements IFeatureModule {
     const data = new Uint8Array(buffer);
     const adapter = this.ctx.app.vault.adapter;
 
+    // 安全限制
+    const MAX_FILE_SIZE = 512 * 1024; // 512KB per file
+    const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total
+    let totalSize = 0;
+
     // 确保目录存在
     const dirPath = `${PLUGIN_DIR}/icons/${libraryName}`;
     try { await adapter.mkdir(dirPath); } catch { /* 可能已存在 */ }
@@ -377,16 +382,48 @@ export class IconSystemModule implements IFeatureModule {
     const entries = await this.parseZipEntries(data);
 
     for (const entry of entries) {
-      // 只处理 .svg 文件，跳过目录
+      // 安全检查 1: 只处理 .svg 文件，跳过目录
       if (!entry.name.endsWith(".svg") || entry.isDirectory) continue;
+
+      // 安全检查 2: 防止路径穿越攻击
+      if (entry.name.includes("..") || entry.name.includes("\\")) {
+        console.warn(`[ZENdian] Suspicious path in zip: ${entry.name}`);
+        continue;
+      }
 
       // 取最后一级文件名，忽略 zip 内的子目录结构
       const parts = entry.name.split("/");
       const fileName = parts[parts.length - 1];
-      if (!fileName) continue;
+
+      // 安全检查 3: 验证文件名合法性
+      if (!fileName || !/^[\w\-\.]+\.svg$/i.test(fileName)) {
+        console.warn(`[ZENdian] Invalid filename: ${fileName}`);
+        continue;
+      }
+
+      // 安全检查 4: 单文件大小限制
+      if (entry.data.length > MAX_FILE_SIZE) {
+        console.warn(`[ZENdian] File too large (${entry.data.length} bytes): ${fileName}`);
+        continue;
+      }
+
+      // 安全检查 5: 总大小限制
+      totalSize += entry.data.length;
+      if (totalSize > MAX_TOTAL_SIZE) {
+        console.error(`[ZENdian] ZIP archive exceeds maximum allowed size (${MAX_TOTAL_SIZE} bytes)`);
+        throw new Error("ZIP archive too large");
+      }
 
       const svgData = entry.data;
       const svgText = new TextDecoder().decode(svgData);
+
+      // 安全检查 6: 基本 SVG 内容验证
+      const trimmed = svgText.trim();
+      if (!trimmed.toLowerCase().startsWith("<svg") || !trimmed.toLowerCase().includes("</svg>")) {
+        console.warn(`[ZENdian] Invalid SVG content: ${fileName}`);
+        continue;
+      }
+
       const filePath = `${dirPath}/${fileName}`;
 
       try {

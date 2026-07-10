@@ -59,24 +59,29 @@ function extractTypeLabel(folderName: string): ProjectType {
 
 export class HomepageProjectScanService {
   private cache = new Map<string, HomepageProject>();
-  private dirty = true;
+  private lastScanTime = 0;
+  private readonly CACHE_TTL = 30000; // 30秒缓存有效期
 
   constructor(private app: App) {}
 
   markDirty(): void {
-    this.dirty = true;
+    // 重置时间戳，触发下次扫描，但保留缓存数据
+    this.lastScanTime = 0;
   }
 
   invalidate(folderPath: string): void {
+    // 只删除指定项目的缓存，不触发全量重扫
     this.cache.delete(folderPath);
-    this.dirty = true;
   }
 
   /**
-   * 获取所有活跃项目（带缓存）
+   * 获取所有活跃项目（带智能缓存）
    */
   async getProjects(typeFolders: string, archiveFolder: string): Promise<HomepageProject[]> {
-    if (!this.dirty && this.cache.size > 0) {
+    const now = Date.now();
+
+    // 如果缓存未过期，直接返回
+    if (this.cache.size > 0 && (now - this.lastScanTime) < this.CACHE_TTL) {
       return Array.from(this.cache.values()).sort((a, b) => b.updatedAt - a.updatedAt);
     }
 
@@ -95,16 +100,46 @@ export class HomepageProjectScanService {
         // 跳过归档文件夹（支持 99.归档 和 99_归档）
         if (child.name === archiveFolder || child.name.startsWith("99")) continue;
 
-        const project = await this.scanProject(child, typeLabel);
-        if (project) {
-          projects.push(project);
-          this.cache.set(project.id, project);
+        // 增量更新：检查缓存是否有效
+        const cached = this.cache.get(child.path);
+        const folderMtime = this.getFolderMtime(child);
+
+        if (cached && cached.updatedAt >= folderMtime) {
+          // 使用缓存（文件夹没有更新）
+          projects.push(cached);
+        } else {
+          // 重新扫描（文件夹有更新或首次扫描）
+          const project = await this.scanProject(child, typeLabel);
+          if (project) {
+            projects.push(project);
+            this.cache.set(project.id, project);
+          }
         }
       }
     }
 
-    this.dirty = false;
+    this.lastScanTime = now;
     return projects.sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  /**
+   * 获取文件夹的最新修改时间
+   */
+  private getFolderMtime(folder: TFolder): number {
+    let maxMtime = 0;
+    for (const child of folder.children) {
+      if (child instanceof TFile) {
+        maxMtime = Math.max(maxMtime, child.stat.mtime);
+      } else if (child instanceof TFolder) {
+        // 只检查直接子文件夹的第一层文件
+        for (const subChild of child.children) {
+          if (subChild instanceof TFile) {
+            maxMtime = Math.max(maxMtime, subChild.stat.mtime);
+          }
+        }
+      }
+    }
+    return maxMtime;
   }
 
   /**

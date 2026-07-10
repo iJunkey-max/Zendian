@@ -530,44 +530,8 @@ export class HomepageView extends ItemView {
     const addLink = titleRow.createEl("a", { cls: "homepage-card-link", text: "新建便签" });
     addLink.addEventListener("click", () => this.openQuickNoteModal());
 
-    // 便签容器 — 固定3个便签布局
-    const container = card.createDiv({ cls: "homepage-sticky-grid" });
-
-    // 黄色大便签
-    const yellow = container.createDiv({
-      cls: "homepage-sticky-note homepage-sticky-note--yellow",
-      attr: { "data-sticky": "0" },
-    });
-    yellow.createDiv({ cls: "homepage-sticky-label", attr: { "data-sticky-label": "0" }, text: "下周的分享主题：" });
-    const yellowList = yellow.createEl("ul", { cls: "homepage-sticky-list", attr: { "data-sticky-list": "0" } });
-    yellowList.createEl("li", { text: "如何构建高效的知识体系" });
-    yellowList.createEl("li", { text: "工具：Obsidian + AI" });
-    const yellowDate = yellow.createDiv({ cls: "homepage-sticky-date", attr: { "data-sticky-date": "0" } });
-    const yellowDateIcon = yellowDate.createSpan({ cls: "homepage-icon" });
-    yellowDateIcon.innerHTML = SVG_ICON.calendar;
-    yellowDate.createSpan({ text: " 5月28日" });
-
-    // 蓝绿并排
-    const bottomRow = container.createDiv({ cls: "homepage-sticky-bottom-row" });
-
-    // 蓝色便签
-    const blue = bottomRow.createDiv({
-      cls: "homepage-sticky-note homepage-sticky-note--blue",
-      attr: { "data-sticky": "1" },
-    });
-    blue.createDiv({ cls: "homepage-sticky-label", attr: { "data-sticky-label": "1" }, text: "灵感记录" });
-    blue.createEl("p", { cls: "homepage-sticky-text", attr: { "data-sticky-text": "1" }, text: "把复杂的事情变得简单。" });
-    const blueDate = blue.createEl("p", { cls: "homepage-sticky-date-small", attr: { "data-sticky-date": "1" }, text: "— 2024-05-20" });
-
-    // 绿色便签
-    const green = bottomRow.createDiv({
-      cls: "homepage-sticky-note homepage-sticky-note--green",
-      attr: { "data-sticky": "2" },
-    });
-    green.createDiv({ cls: "homepage-sticky-label", attr: { "data-sticky-label": "2" }, text: "待办提醒：" });
-    const greenList = green.createEl("ul", { cls: "homepage-sticky-list", attr: { "data-sticky-list": "2" } });
-    greenList.createEl("li", { text: "续费域名" });
-    greenList.createEl("li", { text: "更新简历" });
+    // 便签容器
+    card.createDiv({ cls: "homepage-sticky-grid" });
   }
 
   // ── 热力图 (col-span-4) ───────────────────────────────────
@@ -1305,27 +1269,58 @@ export class HomepageView extends ItemView {
 
   private loadStickyNotes(): void {
     const notes = this.dataService.getQuickNotes();
+    const container = this.containerEl.querySelector('[data-section="sticky-notes"] .homepage-sticky-grid');
+    if (!container) return;
 
-    // 将用户数据加载到固定的3个便签中（如果有的话）
-    for (let i = 0; i < Math.min(notes.length, 3); i++) {
-      const note = notes[i];
+    container.empty();
 
-      // 更新标签
-      const labelEl = this.containerEl.querySelector(`[data-sticky-label="${i}"]`);
-      if (labelEl && note.label) labelEl.textContent = note.label;
-
-      // 使整个便签可点击打开文件
-      const noteEl = this.containerEl.querySelector(`[data-sticky="${i}"]`) as HTMLElement | null;
-      if (noteEl && note.path) {
-        noteEl.addEventListener("click", () => this.openFile(note.path));
-        noteEl.style.cursor = "pointer";
-      }
+    if (notes.length === 0) {
+      const empty = container.createDiv({ cls: "homepage-sticky-empty" });
+      empty.createDiv({ cls: "homepage-empty-text", text: "暂无便签" });
+      empty.createDiv({ cls: "homepage-empty-hint", text: "点击「新建便签」创建第一条" });
+      return;
     }
+
+    // 最多显示 3 个便签
+    const displayNotes = notes.slice(0, 3);
+    const colors = ["yellow", "blue", "green"];
+
+    displayNotes.forEach((note, i) => {
+      const noteEl = container.createDiv({
+        cls: `homepage-sticky-note homepage-sticky-note--${colors[i % 3]}`,
+      });
+
+      noteEl.createDiv({ cls: "homepage-sticky-label", text: note.label || "无标题" });
+
+      if (note.content) {
+        noteEl.createDiv({ cls: "homepage-sticky-text", text: note.content });
+      }
+
+      // 点击打开文件
+      if (note.path) {
+        noteEl.style.cursor = "pointer";
+        noteEl.addEventListener("click", (e) => {
+          // 如果点击的是删除按钮，不触发打开
+          if ((e.target as HTMLElement).classList.contains("homepage-sticky-delete")) {
+            return;
+          }
+          this.openFile(note.path);
+        });
+      }
+
+      // 右上角删除按钮
+      const delBtn = noteEl.createDiv({ cls: "homepage-sticky-delete", text: "×" });
+      delBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        await this.dataService.deleteQuickNote(note.id);
+        this.loadStickyNotes();
+      });
+    });
   }
 
   private openQuickNoteModal(existing?: HomepageQuickNote): void {
     new QuickNoteModal(this.app, async (data) => {
-      await this.dataService.addQuickNote(data.label, data.path, data.color);
+      await this.dataService.addQuickNote(data.label, data.path, data.color, data.content);
       this.loadStickyNotes();
     }, existing).open();
   }

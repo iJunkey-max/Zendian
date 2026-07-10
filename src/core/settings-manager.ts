@@ -88,13 +88,19 @@ export class SettingsManager {
     const settings = structuredClone(DEFAULT_SETTINGS);
 
     // 如果已经是新格式，与默认值深度合并后返回
+    // 确保新版本新增的字段有默认值
     if (oldData.autoHide && typeof oldData.autoHide === "object") {
       for (const key of Object.keys(settings) as Array<keyof PluginSettings>) {
-        if (key in oldData && typeof oldData[key] === "object" && oldData[key] !== null && !Array.isArray(oldData[key])) {
-          settings[key] = { ...settings[key], ...oldData[key] } as any;
-        } else if (key in oldData) {
-          (settings as any)[key] = oldData[key];
+        if (key in oldData) {
+          if (typeof oldData[key] === "object" && oldData[key] !== null && !Array.isArray(oldData[key])) {
+            // 对象类型：深度合并（默认值 + 用户数据）
+            settings[key] = { ...settings[key], ...oldData[key] } as any;
+          } else {
+            // 基本类型或数组：直接赋值
+            (settings as any)[key] = oldData[key];
+          }
         }
+        // 如果 oldData 中没有某个 key，保留 DEFAULT_SETTINGS 的默认值
       }
       return settings;
     }

@@ -30,8 +30,10 @@ export type H1Style = Omit<HeadingStyle, "spacingStart" | "spacingEnd">;
 /** 页内标题设置 */
 export interface InlineTitleStyle {
   dividerRemove: boolean;
+  font: string;
   size: string;
   weight: number;
+  textTransform: string;
 }
 
 /** 代码块主题 */
@@ -146,7 +148,13 @@ export interface BlockquoteSettings {
 /** 标注模块设置 */
 export interface CalloutSettings {
   style: CalloutStyle;
+  borderWidth: string;
   borderOpacity: number;
+  padding: string;
+  titlePadding: string;
+  titleSize: string;
+  contentPadding: string;
+  contentRadius: string;
 }
 
 /** 列表与表格模块设置 */
@@ -155,6 +163,7 @@ export interface ListTableSettings {
   listSpacing: string;
   ulMarkerRestore: boolean;
   disableAlternativeCheckboxes: boolean;
+  checkboxRadius: string;
   tableWidthMode: TableWidthMode;
   tableWidth: number;
   tableHeaderBgLight: string;
@@ -168,6 +177,7 @@ export interface LinkSettings {
   decorationThickness: string;
   externalDecoration: string;
   externalDecorationHover: string;
+  externalFilter: string;
 }
 
 /** 图片模块设置 */
@@ -180,6 +190,9 @@ export interface ImageSettings {
 /** 嵌入文档模块设置 */
 export interface EmbedSettings {
   seamless: boolean;
+  padding: string;
+  borderRadius: string;
+  fontStyle: string;
   maxHeight: string;
 }
 
@@ -192,6 +205,8 @@ export interface CheckboxSettings {
 export interface RainbowFolderSettings {
   enabled: boolean;
   opacity: number;
+  colors: string[];
+  iconSize: number;
 }
 
 /** 新标签页模块设置 */
@@ -419,8 +434,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     },
     inlineTitle: {
       dividerRemove: false,
+      font: "",
       size: "1.5em",
       weight: 700,
+      textTransform: "",
     },
     collapseIconRestore: false,
     indicatorOff: false,
@@ -459,13 +476,20 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   },
   callout: {
     style: "customize",
+    borderWidth: "0px",
     borderOpacity: 0.25,
+    padding: "",
+    titlePadding: "",
+    titleSize: "",
+    contentPadding: "",
+    contentRadius: "",
   },
   listTable: {
     listIndent: "2.25em",
     listSpacing: "0.075em",
     ulMarkerRestore: false,
     disableAlternativeCheckboxes: false,
+    checkboxRadius: "6px",
     tableWidthMode: "default",
     tableWidth: 88,
     tableHeaderBgLight: "",
@@ -477,6 +501,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     decorationThickness: "auto",
     externalDecoration: "underline",
     externalDecorationHover: "underline",
+    externalFilter: "none",
   },
   image: {
     centerAlign: false,
@@ -485,6 +510,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   },
   embed: {
     seamless: false,
+    padding: "",
+    borderRadius: "",
+    fontStyle: "",
     maxHeight: "",
   },
   checkbox: {
@@ -493,6 +521,17 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   rainbowFolder: {
     enabled: false,
     opacity: 0.4,
+    colors: [
+      "var(--color-red)",
+      "var(--color-orange)",
+      "var(--color-yellow)",
+      "var(--color-green)",
+      "var(--color-cyan)",
+      "var(--color-blue)",
+      "var(--color-purple)",
+      "var(--color-pink)",
+    ],
+    iconSize: 16,
   },
   newTab: {
     buttonStyle: "default",
