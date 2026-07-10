@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -m 'docs: 添加 V2.2.07Fix 更新日志 *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
