@@ -4,7 +4,7 @@
  * 提供热力图、月度统计、最近笔记等数据
  */
 
-import { App, type TFile } from "obsidian";
+import { App, TFile } from "obsidian";
 import type { HeatmapDay, MonthlyStats, RecentNoteItem, TodayActivity } from "./types";
 
 export class HomepageStatsService {

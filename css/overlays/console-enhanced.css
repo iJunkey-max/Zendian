@@ -1,0 +1,719 @@
+/* ============================================================
+   ProjectConsoleView — 项目控制台增强样式
+
+   使用设计系统变量，优化视觉效果和交互体验
+   ============================================================ */
+
+/* ═══════════════════════════════════════════════════════════
+   1. 根容器优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root {
+  /* 使用设计系统变量 */
+  --zc-bg: var(--zd-bg-primary);
+  --zc-bg-secondary: var(--zd-bg-secondary);
+  --zc-text: var(--zd-text-primary);
+  --zc-text-secondary: var(--zd-text-secondary);
+  --zc-text-tertiary: var(--zd-text-tertiary);
+  --zc-border: var(--zd-border-default);
+  --zc-border-hover: var(--zd-border-hover);
+  --zc-shadow: var(--zd-shadow-sm);
+  --zc-shadow-hover: var(--zd-shadow-md);
+
+  /* 主题色 */
+  --zc-accent: var(--zd-primary);
+  --zc-accent-light: var(--zd-primary-light);
+  --zc-accent-alpha: var(--zd-primary-alpha);
+
+  /* 圆角 */
+  --zc-radius: var(--zd-radius-lg);
+  --zc-radius-sm: var(--zd-radius-md);
+  --zc-radius-xs: var(--zd-radius-sm);
+
+  /* 间距 */
+  --zc-space-1: var(--zd-space-1);
+  --zc-space-2: var(--zd-space-2);
+  --zc-space-3: var(--zd-space-3);
+  --zc-space-4: var(--zd-space-4);
+  --zc-space-6: var(--zd-space-6);
+  --zc-space-8: var(--zd-space-8);
+
+  /* 过渡 */
+  --zc-transition: var(--zd-transition-fast);
+  --zc-transition-normal: var(--zd-transition-normal);
+
+  background: var(--zc-bg);
+  color: var(--zc-text);
+  font-family: var(--zd-font-sans);
+  font-size: var(--zd-text-base);
+  line-height: var(--zd-leading-normal);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   2. Hero 区域优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--zc-space-6);
+  padding: var(--zc-space-8);
+  background: var(--zc-bg-secondary);
+  border-radius: var(--zc-radius);
+  border: 1px solid var(--zc-border);
+  margin-bottom: var(--zc-space-6);
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-hero:hover {
+  border-color: var(--zc-border-hover);
+  box-shadow: var(--zc-shadow);
+}
+
+.zc-root .zc-hero-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--zc-accent-alpha);
+  border-radius: var(--zd-radius-xl);
+  color: var(--zc-accent);
+  flex-shrink: 0;
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-hero-icon:hover {
+  transform: scale(1.05);
+  background: var(--zc-accent-light);
+}
+
+.zc-root .zc-hero-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.zc-root .zc-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.zc-root .zc-hero-title {
+  font-size: var(--zd-text-3xl);
+  font-weight: var(--zd-font-bold);
+  color: var(--zc-text);
+  margin: 0 0 var(--zd-space-2);
+  line-height: var(--zd-leading-tight);
+  letter-spacing: var(--zd-tracking-tight);
+}
+
+.zc-root .zc-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--zd-space-3);
+  flex-wrap: wrap;
+}
+
+.zc-root .zc-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--zd-space-1) var(--zd-space-3);
+  font-size: var(--zd-text-sm);
+  font-weight: var(--zd-font-semibold);
+  background: var(--zc-accent-alpha);
+  color: var(--zc-accent);
+  border-radius: var(--zd-radius-full);
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-hero-tag:hover {
+  background: var(--zc-accent-light);
+}
+
+.zc-root .zc-hero-date {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--zd-space-1);
+  font-size: var(--zd-text-sm);
+  color: var(--zc-text-tertiary);
+}
+
+.zc-root .zc-hero-desc {
+  display: flex;
+  align-items: center;
+  gap: var(--zd-space-2);
+  padding: var(--zd-space-2) var(--zd-space-3);
+  margin-top: var(--zd-space-3);
+  font-size: var(--zd-text-md);
+  color: var(--zc-text-secondary);
+  background: var(--zc-bg);
+  border-radius: var(--zc-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-hero-desc:hover {
+  border-color: var(--zc-border);
+  background: var(--zc-bg-secondary);
+}
+
+.zc-root .zc-hero-desc-input {
+  flex: 1;
+  padding: var(--zd-space-2);
+  font-size: var(--zd-text-md);
+  font-family: inherit;
+  color: var(--zc-text);
+  background: var(--zc-bg);
+  border: 1px solid var(--zc-border);
+  border-radius: var(--zc-radius-sm);
+  outline: none;
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-hero-desc-input:focus {
+  border-color: var(--zc-accent);
+  box-shadow: 0 0 0 2px var(--zc-accent-alpha);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3. 统计卡片优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--zd-space-4);
+  margin-bottom: var(--zd-space-6);
+}
+
+.zc-root .zc-stat-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--zd-space-5);
+  background: var(--zc-bg-secondary);
+  border: 1px solid var(--zc-border);
+  border-radius: var(--zc-radius);
+  transition: var(--zc-transition);
+  cursor: default;
+}
+
+.zc-root .zc-stat-card:hover {
+  border-color: var(--zc-border-hover);
+  box-shadow: var(--zc-shadow);
+  transform: translateY(-2px);
+}
+
+.zc-root .zc-stat-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--zc-accent-alpha);
+  border-radius: var(--zd-radius-lg);
+  color: var(--zc-accent);
+  margin-bottom: var(--zd-space-3);
+}
+
+.zc-root .zc-stat-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.zc-root .zc-stat-value {
+  font-size: var(--zd-text-3xl);
+  font-weight: var(--zd-font-bold);
+  color: var(--zc-text);
+  line-height: var(--zd-leading-none);
+  margin-bottom: var(--zd-space-1);
+}
+
+.zc-root .zc-stat-label {
+  font-size: var(--zd-text-sm);
+  font-weight: var(--zd-font-medium);
+  color: var(--zc-text-secondary);
+  margin-bottom: var(--zd-space-1);
+}
+
+.zc-root .zc-stat-sub {
+  font-size: var(--zd-text-xs);
+  color: var(--zc-text-tertiary);
+}
+
+/* 健康度卡片特殊样式 */
+.zc-root .zc-stat-health {
+  border-left: 3px solid transparent;
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-stat-health:hover {
+  border-left-width: 4px;
+}
+
+.zc-root .zc-stat-health[data-status="excellent"] {
+  border-left-color: var(--zd-success);
+}
+
+.zc-root .zc-stat-health[data-status="good"] {
+  border-left-color: var(--zd-info);
+}
+
+.zc-root .zc-stat-health[data-status="fair"] {
+  border-left-color: var(--zd-warning);
+}
+
+.zc-root .zc-stat-health[data-status="poor"] {
+  border-left-color: var(--zd-error);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   4. 标签栏优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-tabs {
+  display: flex;
+  gap: var(--zd-space-1);
+  padding: var(--zd-space-1);
+  background: var(--zc-bg-secondary);
+  border-radius: var(--zc-radius);
+  border: 1px solid var(--zc-border);
+  margin-bottom: var(--zd-space-4);
+  overflow-x: auto;
+}
+
+.zc-root .zc-tab {
+  padding: var(--zd-space-2) var(--zd-space-4);
+  font-size: var(--zd-text-sm);
+  font-weight: var(--zd-font-medium);
+  color: var(--zc-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--zc-radius-sm);
+  cursor: pointer;
+  transition: var(--zc-transition);
+  white-space: nowrap;
+}
+
+.zc-root .zc-tab:hover {
+  color: var(--zc-text);
+  background: var(--zc-bg);
+}
+
+.zc-root .zc-tab.is-active {
+  color: var(--zc-accent);
+  background: var(--zc-bg);
+  border-color: var(--zc-border);
+  box-shadow: var(--zd-shadow-xs);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   5. 列表行优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--zd-space-3);
+  padding: var(--zd-space-3) var(--zd-space-4);
+  background: var(--zc-bg);
+  border: 1px solid transparent;
+  border-radius: var(--zc-radius-sm);
+  transition: var(--zc-transition);
+  cursor: pointer;
+}
+
+.zc-root .zc-row:hover {
+  background: var(--zc-bg-secondary);
+  border-color: var(--zc-border);
+}
+
+.zc-root .zc-row.is-done {
+  opacity: 0.6;
+}
+
+.zc-root .zc-row.is-done .zc-row-text {
+  text-decoration: line-through;
+  color: var(--zc-text-tertiary);
+}
+
+.zc-root .zc-check {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--zc-text-tertiary);
+  flex-shrink: 0;
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-check:hover {
+  color: var(--zc-accent);
+}
+
+.zc-root .zc-row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.zc-root .zc-row-first-line {
+  display: flex;
+  align-items: center;
+  gap: var(--zd-space-2);
+}
+
+.zc-root .zc-row-text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--zd-text-md);
+  color: var(--zc-text);
+  line-height: var(--zd-leading-normal);
+}
+
+.zc-root .zc-row-second-line {
+  display: flex;
+  align-items: center;
+  gap: var(--zd-space-2);
+  margin-top: var(--zd-space-1);
+}
+
+.zc-root .zc-del {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--zc-text-tertiary);
+  border-radius: var(--zc-radius-sm);
+  opacity: 0;
+  transition: var(--zc-transition);
+  flex-shrink: 0;
+}
+
+.zc-root .zc-row:hover .zc-del {
+  opacity: 1;
+}
+
+.zc-root .zc-del:hover {
+  color: var(--zd-error);
+  background: var(--zd-error-light);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   6. 优先级和标签优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-priority {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--zd-space-1) var(--zd-space-2);
+  font-size: var(--zd-text-xs);
+  font-weight: var(--zd-font-semibold);
+  border-radius: var(--zd-radius-full);
+  letter-spacing: var(--zd-tracking-wide);
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-priority-P0 {
+  background: var(--zd-error-light);
+  color: var(--zd-priority-p0);
+}
+
+.zc-root .zc-priority-P1 {
+  background: var(--zd-warning-light);
+  color: var(--zd-priority-p1);
+}
+
+.zc-root .zc-priority-P2 {
+  background: var(--zd-info-light);
+  color: var(--zd-priority-p2);
+}
+
+.zc-root .zc-priority-P3 {
+  background: var(--zd-bg-tertiary);
+  color: var(--zd-priority-p3);
+}
+
+.zc-root .zc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--zd-space-1);
+}
+
+.zc-root .zc-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--zd-space-1) var(--zd-space-2);
+  font-size: var(--zd-text-xs);
+  font-weight: var(--zd-font-medium);
+  background: var(--zc-accent-alpha);
+  color: var(--zc-accent);
+  border-radius: var(--zd-radius-full);
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-tag:hover {
+  background: var(--zc-accent-light);
+}
+
+.zc-root .zc-due {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--zd-space-1);
+  padding: var(--zd-space-1) var(--zd-space-2);
+  font-size: var(--zd-text-xs);
+  color: var(--zc-text-tertiary);
+  background: var(--zc-bg-secondary);
+  border-radius: var(--zd-radius-full);
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-due svg {
+  width: 12px;
+  height: 12px;
+}
+
+.zc-root .zc-due-overdue {
+  color: var(--zd-error) !important;
+  background: var(--zd-error-light) !important;
+  font-weight: var(--zd-font-semibold);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   7. 按钮优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--zd-space-2);
+  padding: var(--zd-space-3) var(--zd-space-4);
+  margin-top: var(--zd-space-4);
+  font-size: var(--zd-text-sm);
+  font-weight: var(--zd-font-medium);
+  color: var(--zc-text-secondary);
+  background: var(--zc-bg-secondary);
+  border: 1px dashed var(--zc-border);
+  border-radius: var(--zc-radius-sm);
+  cursor: pointer;
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-add-btn:hover {
+  color: var(--zc-accent);
+  background: var(--zc-accent-alpha);
+  border-color: var(--zc-accent);
+  border-style: solid;
+}
+
+.zc-root .zc-add-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   8. 徽章优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--zd-space-1);
+  padding: var(--zd-space-1) var(--zd-space-2);
+  font-size: var(--zd-text-xs);
+  font-weight: var(--zd-font-medium);
+  border-radius: var(--zd-radius-full);
+}
+
+.zc-root .zc-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--zd-radius-full);
+}
+
+.zc-root .zc-badge-pending {
+  color: var(--zc-text-tertiary);
+}
+
+.zc-root .zc-badge-pending .zc-badge-dot {
+  background: var(--zc-text-tertiary);
+}
+
+.zc-root .zc-badge-in-progress {
+  color: var(--zd-info);
+}
+
+.zc-root .zc-badge-in-progress .zc-badge-dot {
+  background: var(--zd-info);
+  box-shadow: 0 0 6px var(--zd-info);
+}
+
+.zc-root .zc-badge-done {
+  color: var(--zd-success);
+}
+
+.zc-root .zc-badge-done .zc-badge-dot {
+  background: var(--zd-success);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   9. 快捷操作网格优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--zd-space-3);
+  margin-top: var(--zd-space-6);
+}
+
+.zc-root .zc-grid-card {
+  display: flex;
+  align-items: center;
+  gap: var(--zd-space-3);
+  padding: var(--zd-space-4);
+  background: var(--zc-bg-secondary);
+  border: 1px solid var(--zc-border);
+  border-radius: var(--zc-radius);
+  cursor: pointer;
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-grid-card:hover {
+  background: var(--zc-accent-alpha);
+  border-color: var(--zc-accent);
+  transform: translateY(-2px);
+  box-shadow: var(--zc-shadow);
+}
+
+.zc-root .zc-grid-icon {
+  color: var(--zc-accent);
+  flex-shrink: 0;
+}
+
+.zc-root .zc-grid-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.zc-root .zc-grid-label {
+  flex: 1;
+  font-size: var(--zd-text-sm);
+  font-weight: var(--zd-font-medium);
+  color: var(--zc-text);
+}
+
+.zc-root .zc-grid-arrow {
+  color: var(--zc-text-tertiary);
+  transition: var(--zc-transition);
+}
+
+.zc-root .zc-grid-arrow svg {
+  width: 14px;
+  height: 14px;
+}
+
+.zc-root .zc-grid-card:hover .zc-grid-arrow {
+  color: var(--zc-accent);
+  transform: translateX(2px);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   10. 空状态优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-empty {
+  text-align: center;
+  padding: var(--zd-space-12) var(--zd-space-6);
+}
+
+.zc-root .zc-empty-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--zd-space-4);
+  color: var(--zc-text-tertiary);
+  opacity: 0.5;
+}
+
+.zc-root .zc-empty-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.zc-root .zc-empty-title {
+  font-size: var(--zd-text-lg);
+  font-weight: var(--zd-font-semibold);
+  color: var(--zc-text-secondary);
+  margin-bottom: var(--zd-space-2);
+}
+
+.zc-root .zc-empty-sub {
+  font-size: var(--zd-text-sm);
+  color: var(--zc-text-tertiary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   11. 分割线优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-divider {
+  height: 1px;
+  background: var(--zc-border);
+  margin: var(--zd-space-3) 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   12. 错误状态优化
+   ═══════════════════════════════════════════════════════════ */
+
+.zc-root .zc-error {
+  text-align: center;
+  padding: var(--zd-space-12) var(--zd-space-6);
+  color: var(--zd-error);
+  font-size: var(--zd-text-md);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   13. 响应式优化
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .zc-root .zc-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: var(--zd-space-6);
+  }
+
+  .zc-root .zc-hero-meta {
+    justify-content: center;
+  }
+
+  .zc-root .zc-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zc-root .zc-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zc-root .zc-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .zc-root .zc-tab {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .zc-root .zc-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .zc-root .zc-grid {
+    grid-template-columns: 1fr;
+  }
+}

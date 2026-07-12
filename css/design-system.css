@@ -1,0 +1,490 @@
+/* ============================================================
+   ZENdian Design System — 统一设计语言
+
+   设计原则：
+   1. 一致性 — 所有组件使用统一的设计 Token
+   2. 可维护性 — 集中管理颜色、间距、圆角等
+   3. 主题友好 — 支持深色/浅色模式切换
+   4. 响应式 — 适配不同屏幕尺寸
+   ============================================================ */
+
+/* ═══════════════════════════════════════════════════════════
+   1. 颜色系统
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* 主色调 — 跟随 Obsidian 主题色 */
+  --zd-primary: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+  --zd-primary-light: hsl(var(--accent-h), var(--accent-s), 95%);
+  --zd-primary-dark: hsl(var(--accent-h), var(--accent-s), 40%);
+  --zd-primary-alpha: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.1);
+
+  /* 语义颜色 */
+  --zd-success: #10b981;
+  --zd-success-light: rgba(16, 185, 129, 0.1);
+  --zd-warning: #f59e0b;
+  --zd-warning-light: rgba(245, 158, 11, 0.1);
+  --zd-error: #ef4444;
+  --zd-error-light: rgba(239, 68, 68, 0.1);
+  --zd-info: #3b82f6;
+  --zd-info-light: rgba(59, 130, 246, 0.1);
+
+  /* 优先级颜色 */
+  --zd-priority-p0: #ef4444;
+  --zd-priority-p1: #f59e0b;
+  --zd-priority-p2: #3b82f6;
+  --zd-priority-p3: #6b7280;
+
+  /* 状态颜色 */
+  --zd-status-active: #10b981;
+  --zd-status-paused: #f59e0b;
+  --zd-status-completed: #3b82f6;
+  --zd-status-archived: #6b7280;
+}
+
+/* 亮色主题 */
+.theme-light {
+  /* 背景色 */
+  --zd-bg-primary: #ffffff;
+  --zd-bg-secondary: #f9fafb;
+  --zd-bg-tertiary: #f3f4f6;
+  --zd-bg-hover: rgba(0, 0, 0, 0.04);
+  --zd-bg-active: rgba(0, 0, 0, 0.06);
+
+  /* 文本颜色 */
+  --zd-text-primary: #111827;
+  --zd-text-secondary: #4b5563;
+  --zd-text-tertiary: #9ca3af;
+  --zd-text-inverse: #ffffff;
+
+  /* 边框颜色 */
+  --zd-border-default: #e5e7eb;
+  --zd-border-hover: #d1d5db;
+  --zd-border-focus: var(--zd-primary);
+
+  /* 阴影 */
+  --zd-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --zd-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --zd-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --zd-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --zd-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* 分割线 */
+  --zd-divider: #f3f4f6;
+}
+
+/* 深色主题 */
+.theme-dark {
+  /* 背景色 */
+  --zd-bg-primary: #111827;
+  --zd-bg-secondary: #1f2937;
+  --zd-bg-tertiary: #374151;
+  --zd-bg-hover: rgba(255, 255, 255, 0.06);
+  --zd-bg-active: rgba(255, 255, 255, 0.1);
+
+  /* 文本颜色 */
+  --zd-text-primary: #f9fafb;
+  --zd-text-secondary: #d1d5db;
+  --zd-text-tertiary: #9ca3af;
+  --zd-text-inverse: #111827;
+
+  /* 边框颜色 */
+  --zd-border-default: #374151;
+  --zd-border-hover: #4b5563;
+  --zd-border-focus: var(--zd-primary);
+
+  /* 阴影 */
+  --zd-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --zd-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --zd-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --zd-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --zd-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+
+  /* 分割线 */
+  --zd-divider: #374151;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   2. 间距系统 (4px 基础单位)
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --zd-space-1: 4px;
+  --zd-space-2: 8px;
+  --zd-space-3: 12px;
+  --zd-space-4: 16px;
+  --zd-space-5: 20px;
+  --zd-space-6: 24px;
+  --zd-space-8: 32px;
+  --zd-space-10: 40px;
+  --zd-space-12: 48px;
+  --zd-space-16: 64px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3. 圆角系统
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --zd-radius-none: 0;
+  --zd-radius-sm: 4px;
+  --zd-radius-md: 8px;
+  --zd-radius-lg: 12px;
+  --zd-radius-xl: 16px;
+  --zd-radius-2xl: 24px;
+  --zd-radius-full: 9999px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   4. 字体系统
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* 字体族 */
+  --zd-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --zd-font-mono: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+
+  /* 字体大小 */
+  --zd-text-xs: 11px;
+  --zd-text-sm: 12px;
+  --zd-text-base: 13px;
+  --zd-text-md: 14px;
+  --zd-text-lg: 16px;
+  --zd-text-xl: 18px;
+  --zd-text-2xl: 20px;
+  --zd-text-3xl: 24px;
+  --zd-text-4xl: 30px;
+
+  /* 字体粗细 */
+  --zd-font-normal: 400;
+  --zd-font-medium: 500;
+  --zd-font-semibold: 600;
+  --zd-font-bold: 700;
+
+  /* 行高 */
+  --zd-leading-none: 1;
+  --zd-leading-tight: 1.25;
+  --zd-leading-snug: 1.375;
+  --zd-leading-normal: 1.5;
+  --zd-leading-relaxed: 1.625;
+
+  /* 字间距 */
+  --zd-tracking-tighter: -0.05em;
+  --zd-tracking-tight: -0.025em;
+  --zd-tracking-normal: 0;
+  --zd-tracking-wide: 0.025em;
+  --zd-tracking-wider: 0.05em;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   5. 过渡动画
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* 时长 */
+  --zd-duration-75: 75ms;
+  --zd-duration-100: 100ms;
+  --zd-duration-150: 150ms;
+  --zd-duration-200: 200ms;
+  --zd-duration-300: 300ms;
+  --zd-duration-500: 500ms;
+
+  /* 缓动函数 */
+  --zd-ease-linear: linear;
+  --zd-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --zd-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --zd-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* 组合 */
+  --zd-transition-fast: all var(--zd-duration-150) var(--zd-ease-out);
+  --zd-transition-normal: all var(--zd-duration-200) var(--zd-ease-in-out);
+  --zd-transition-slow: all var(--zd-duration-300) var(--zd-ease-in-out);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   6. Z-Index 层级
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --zd-z-base: 0;
+  --zd-z-dropdown: 100;
+  --zd-z-sticky: 200;
+  --zd-z-overlay: 300;
+  --zd-z-modal: 400;
+  --zd-z-popover: 500;
+  --zd-z-toast: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   7. 断点（仅用于文档，实际使用 media query）
+   ═══════════════════════════════════════════════════════════ */
+
+/*
+  sm: 640px
+  md: 768px
+  lg: 1024px
+  xl: 1280px
+  2xl: 1536px
+*/
+
+/* ═══════════════════════════════════════════════════════════
+   8. 基础组件样式
+   ═══════════════════════════════════════════════════════════ */
+
+/* 通用容器 */
+.zd-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--zd-space-6);
+}
+
+/* 卡片 */
+.zd-card {
+  background: var(--zd-bg-primary);
+  border: 1px solid var(--zd-border-default);
+  border-radius: var(--zd-radius-lg);
+  box-shadow: var(--zd-shadow-sm);
+  transition: var(--zd-transition-fast);
+}
+
+.zd-card:hover {
+  box-shadow: var(--zd-shadow-md);
+  border-color: var(--zd-border-hover);
+}
+
+/* 按钮基础 */
+.zd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--zd-space-2);
+  padding: var(--zd-space-2) var(--zd-space-4);
+  font-size: var(--zd-text-base);
+  font-weight: var(--zd-font-medium);
+  line-height: var(--zd-leading-none);
+  border-radius: var(--zd-radius-md);
+  cursor: pointer;
+  transition: var(--zd-transition-fast);
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.zd-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--zd-primary-alpha);
+}
+
+/* 输入框基础 */
+.zd-input {
+  width: 100%;
+  padding: var(--zd-space-2) var(--zd-space-3);
+  font-size: var(--zd-text-base);
+  line-height: var(--zd-leading-normal);
+  background: var(--zd-bg-primary);
+  border: 1px solid var(--zd-border-default);
+  border-radius: var(--zd-radius-md);
+  color: var(--zd-text-primary);
+  transition: var(--zd-transition-fast);
+  outline: none;
+}
+
+.zd-input:hover {
+  border-color: var(--zd-border-hover);
+}
+
+.zd-input:focus {
+  border-color: var(--zd-border-focus);
+  box-shadow: 0 0 0 2px var(--zd-primary-alpha);
+}
+
+.zd-input::placeholder {
+  color: var(--zd-text-tertiary);
+}
+
+/* 标签 */
+.zd-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--zd-space-1) var(--zd-space-2);
+  font-size: var(--zd-text-xs);
+  font-weight: var(--zd-font-medium);
+  line-height: var(--zd-leading-none);
+  border-radius: var(--zd-radius-full);
+  white-space: nowrap;
+}
+
+/* 分割线 */
+.zd-divider {
+  height: 1px;
+  background: var(--zd-divider);
+  margin: var(--zd-space-4) 0;
+}
+
+/* 滚动条 */
+.zd-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.zd-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.zd-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--zd-border-default);
+  border-radius: var(--zd-radius-full);
+}
+
+.zd-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--zd-border-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   9. 动画关键帧
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes zd-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zd-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyzd-fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zd-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zd-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes zd-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes zd-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes zd-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   10. 工具类
+   ═══════════════════════════════════════════════════════════ */
+
+/* 动画 */
+.zd-animate-fade-in {
+  animation: zd-fade-in var(--zd-duration-200) var(--zd-ease-out);
+}
+
+.zd-animate-fade-in-up {
+  animation: zd-fade-in-up var(--zd-duration-300) var(--zd-ease-out);
+}
+
+.zd-animate-scale-in {
+  animation: zd-scale-in var(--zd-duration-200) var(--zd-ease-out);
+}
+
+.zd-animate-spin {
+  animation: zd-spin 1s linear infinite;
+}
+
+.zd-animate-pulse {
+  animation: zd-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 文本截断 */
+.zd-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zd-line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.zd-line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 隐藏 */
+.zd-hidden {
+  display: none;
+}
+
+.zd-invisible {
+  visibility: hidden;
+}
+
+.zd-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

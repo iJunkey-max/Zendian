@@ -1,4 +1,4 @@
-import { App, type TFile } from "obsidian";
+import { App, TFile } from "obsidian";
 import type { HomepageBookmarkEntry, HomepageDailyNoteSettings, HomepageDailyNoteSummary } from "./types";
 
 type InternalPluginsLike = {
@@ -109,7 +109,8 @@ export class HomepageBookmarksAdapter {
 
     const children = this.getChildren(raw);
     const title = this.getTitle(raw);
-    const path = getString(raw.path ?? raw.filePath ?? raw.file?.path);
+    const nestedFile = isRecord(raw.file) ? raw.file : undefined;
+    const path = getString(raw.path ?? raw.filePath ?? nestedFile?.path);
     const url = getString(raw.url ?? raw.href);
     const type = this.getType(raw, path, url);
 

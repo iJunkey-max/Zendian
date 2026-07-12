@@ -1,0 +1,263 @@
+/* ══════════════════════════════════════════════════════════
+   便签编辑器弹窗样式
+   ══════════════════════════════════════════════════════════ */
+
+.quicknote-editor-modal {
+  width: 90vw;
+  max-width: 1200px;
+  height: 80vh;
+  padding: 0;
+}
+
+.quicknote-editor-modal .modal-content {
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 标题栏 */
+.quicknote-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.quicknote-editor-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.quicknote-editor-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quicknote-editor-status-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: var(--background-modifier-border);
+  transition: all 0.2s ease;
+}
+
+.quicknote-editor-status-text.is-saved {
+  color: var(--text-success);
+  background: var(--background-modifier-success);
+}
+
+.quicknote-editor-status-text.is-saving {
+  color: var(--text-accent);
+  background: var(--background-modifier-border);
+}
+
+.quicknote-editor-status-text.is-error {
+  color: var(--text-error);
+  background: var(--background-modifier-error);
+}
+
+/* 分栏容器 */
+.quicknote-editor-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--background-modifier-border);
+  overflow: hidden;
+}
+
+/* 编辑器区域 */
+.quicknote-editor-pane,
+.quicknote-preview-pane {
+  display: flex;
+  flex-direction: column;
+  background: var(--background-primary);
+  overflow: hidden;
+}
+
+.quicknote-editor-label {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.quicknote-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--font-monospace);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-normal);
+  background: var(--background-primary);
+}
+
+.quicknote-textarea::placeholder {
+  color: var(--text-faint);
+}
+
+/* 预览区域 */
+.quicknote-preview {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-normal);
+}
+
+.quicknote-preview::-webkit-scrollbar {
+  width: 8px;
+}
+
+.quicknote-preview::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+.quicknote-preview::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+.quicknote-preview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
+/* 预览区域的 Markdown 样式 */
+.quicknote-preview h1,
+.quicknote-preview h2,
+.quicknote-preview h3,
+.quicknote-preview h4,
+.quicknote-preview h5,
+.quicknote-preview h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.quicknote-preview h1 {
+  font-size: 1.6em;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 0.3em;
+}
+
+.quicknote-preview h2 {
+  font-size: 1.4em;
+}
+
+.quicknote-preview h3 {
+  font-size: 1.2em;
+}
+
+.quicknote-preview p {
+  margin-bottom: 1em;
+}
+
+.quicknote-preview ul,
+.quicknote-preview ol {
+  margin-bottom: 1em;
+  padding-left: 2em;
+}
+
+.quicknote-preview li {
+  margin-bottom: 0.5em;
+}
+
+.quicknote-preview code {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  background: var(--background-modifier-border);
+  color: var(--text-accent);
+}
+
+.quicknote-preview pre {
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--background-secondary);
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+
+.quicknote-preview pre code {
+  padding: 0;
+  background: none;
+  color: var(--text-normal);
+}
+
+.quicknote-preview blockquote {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--text-accent);
+  color: var(--text-muted);
+}
+
+.quicknote-preview a {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+
+.quicknote-preview a:hover {
+  text-decoration: underline;
+}
+
+.quicknote-preview strong {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.quicknote-preview em {
+  font-style: italic;
+}
+
+.quicknote-preview hr {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* 底部提示栏 */
+.quicknote-editor-footer {
+  padding: 12px 24px;
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.quicknote-editor-hint {
+  color: var(--text-faint);
+}
+
+/* 响应式：窄屏下改为上下布局 */
+@media (max-width: 768px) {
+  .quicknote-editor-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}

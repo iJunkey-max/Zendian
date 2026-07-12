@@ -1,4 +1,4 @@
-import { App, type TFile } from "obsidian";
+import { App, TFile } from "obsidian";
 import type { HomepageTaskItem, HomepageTaskRadarResult, HomepageTaskRadarSettings } from "./types";
 
 function normalizePath(path: string): string {

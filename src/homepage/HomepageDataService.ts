@@ -97,6 +97,22 @@ export class HomepageDataService {
     await this.save();
   }
 
+  async updateQuickNoteContent(id: string, content: string): Promise<void> {
+    const note = this.data.quickNotes.find((n) => n.id === id);
+    if (note) {
+      note.content = content;
+      await this.save();
+    }
+  }
+
+  async updateQuickNote(id: string, updates: Partial<Omit<HomepageQuickNote, "id">>): Promise<void> {
+    const note = this.data.quickNotes.find((n) => n.id === id);
+    if (note) {
+      Object.assign(note, updates);
+      await this.save();
+    }
+  }
+
   // ── 格言 ─────────────────────────────────────────────────
 
   getQuotes(): HomepageQuote[] {

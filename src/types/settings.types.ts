@@ -14,6 +14,7 @@
 /** 标题样式设置 */
 export interface HeadingStyle {
   divider: boolean;
+  font: string;
   weight: number;
   textTransform: string;
   colorScheme: "default" | "accent";
@@ -375,6 +376,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   headings: {
     h1: {
       divider: false,
+      font: "",
       weight: 700,
       textTransform: "",
       colorScheme: "default",
@@ -383,6 +385,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     },
     h2: {
       divider: false,
+      font: "",
       weight: 675,
       textTransform: "",
       colorScheme: "default",
@@ -394,6 +397,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     },
     h3: {
       divider: false,
+      font: "",
       weight: 650,
       textTransform: "",
       colorScheme: "default",
@@ -404,6 +408,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     },
     h4: {
       divider: false,
+      font: "",
       weight: 625,
       textTransform: "",
       colorScheme: "default",
@@ -414,6 +419,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     },
     h5: {
       divider: false,
+      font: "",
       weight: 600,
       textTransform: "",
       colorScheme: "default",
@@ -424,6 +430,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     },
     h6: {
       divider: false,
+      font: "",
       weight: 575,
       textTransform: "",
       colorScheme: "default",

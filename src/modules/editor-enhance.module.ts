@@ -11,7 +11,7 @@ import { ViewPlugin, type EditorView, type ViewUpdate } from "@codemirror/view";
 
 // ── 打字机滚动 ViewPlugin ──
 
-function createTypewriterPlugin(): ViewPlugin<null> {
+function createTypewriterPlugin() {
   return ViewPlugin.fromClass(
     class {
       constructor(_view: EditorView) {}
@@ -55,7 +55,7 @@ export class EditorEnhanceModule implements IFeatureModule {
 
   private classes = new ClassTracker(document.body);
   private ctx: ModuleContext | null = null;
-  private typewriterPlugin: ViewPlugin<null> | null = null;
+  private typewriterPlugin: ReturnType<typeof createTypewriterPlugin> | null = null;
 
   async load(ctx: ModuleContext): Promise<void> {
     this.ctx = ctx;

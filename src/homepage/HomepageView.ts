@@ -5,21 +5,37 @@
  * 集成各数据服务，渲染完整主页。
  */
 
-import { ItemView, type WorkspaceLeaf, TFile, TFolder, getIcon, Modal, Setting } from "obsidian";
+import { ItemView, type WorkspaceLeaf, type App, TFile, TFolder, getIcon, Modal, Setting, Notice } from "obsidian";
 import { HomepageStatsService } from "./HomepageStatsService";
 import { HomepageDataService } from "./HomepageDataService";
 import { HomepageBookmarksService } from "./HomepageBookmarksService";
 import { HomepageTaskService } from "./HomepageTaskService";
 import { HomepageWeatherService } from "./HomepageWeatherService";
 import { HomepageProjectScanService } from "./HomepageProjectScanService";
+import { ActivityLogService } from "../services/ActivityLogService";
 import { QuickNoteModal } from "./QuickNoteModal";
 import { createDefaultConsoleData } from "./ProjectConsoleView";
 import { IconPickerModal } from "../ui/icon-picker-modal";
 import type { HomepageProject, HomepageQuickNote, RecentNoteItem, ProjectType } from "./types";
 import { PROJECT_TYPE_COLORS } from "./types";
 import { Events } from "../core/event-bus";
+import type { EventBus } from "../core/event-bus";
+import type { SettingsManager } from "../core/settings-manager";
+import { renderProjectFilterBar, updateProjectCount, DEFAULT_FILTER, type ProjectFilter } from "./components/ProjectFilterBar";
+import { applyFilterAndSort } from "./utils/ProjectFilterUtils";
+import { ProjectTimelineService, type TimelineEvent, type ProjectStats } from "./services/ProjectTimelineService";
+import type { Task } from "../services/TaskSyncService";
+import type { TaskSyncService } from "../services/TaskSyncService";
+import type { TaskPriority as StorageTaskPriority } from "../services/TaskSyncService";
 
 export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
+
+export interface HomepageDependencies {
+  settingsManager: SettingsManager;
+  events: EventBus;
+  activityLogService: ActivityLogService;
+  taskSyncService: TaskSyncService;
+}
 
 /** SVG 图标工具 — 16x16 Lucide 风格 */
 const SVG_ICON = {
@@ -69,7 +85,12 @@ class ProjectCreateModal extends Modal {
   private scanService: HomepageProjectScanService;
   private onCreated: () => void;
 
-  constructor(app: App, scanService: HomepageProjectScanService, onCreated: () => void) {
+  constructor(
+    app: App,
+    scanService: HomepageProjectScanService,
+    onCreated: () => void,
+    private settingsManager: SettingsManager,
+  ) {
     super(app);
     this.scanService = scanService;
     this.onCreated = onCreated;
@@ -77,7 +98,7 @@ class ProjectCreateModal extends Modal {
 
   onOpen(): void {
     const { contentEl } = this;
-    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const settings = this.settingsManager.getSettings();
     const typeFolders = (settings?.homepage?.projectTypeFolders || "").split(",").map((f: string) => f.trim()).filter(Boolean);
     const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
 
@@ -206,10 +227,7 @@ class ProjectCreateModal extends Modal {
 
     if (this.selectedIcon !== "lucide-folder") {
       const updatedIcons = { ...customIcons, [projectPath]: this.selectedIcon };
-      const plugin = (this.app as any).plugins?.plugins?.zendian;
-      if (plugin?.settingsManager) {
-        await plugin.settingsManager.update("iconSystem", { customIcons: updatedIcons });
-      }
+      await this.settingsManager.update("iconSystem", { customIcons: updatedIcons });
     }
 
     this.close();
@@ -227,19 +245,79 @@ class ProjectCreateModal extends Modal {
   }
 }
 
+class HomepageTaskCreateModal extends Modal {
+  private projectPath = "";
+  private text = "";
+  private due = "";
+  private priority: StorageTaskPriority = "medium";
+
+  constructor(
+    app: App,
+    private projects: HomepageProject[],
+    private onSubmit: (projectPath: string, text: string, due: string, priority: StorageTaskPriority) => Promise<void>,
+  ) {
+    super(app);
+    this.projectPath = projects[0]?.folderPath || "";
+  }
+
+  onOpen(): void {
+    this.contentEl.empty();
+    this.contentEl.createEl("h2", { text: "添加待办" });
+
+    new Setting(this.contentEl).setName("项目").addDropdown((dropdown) => {
+      for (const project of this.projects) dropdown.addOption(project.folderPath, project.name);
+      dropdown.setValue(this.projectPath).onChange((value) => { this.projectPath = value; });
+    });
+    new Setting(this.contentEl).setName("任务内容").addText((input) => {
+      input.setPlaceholder("输入任务描述").onChange((value) => { this.text = value.trim(); });
+    });
+    new Setting(this.contentEl).setName("截止日期").addText((input) => {
+      input.setPlaceholder("YYYY-MM-DD（可选）").onChange((value) => { this.due = value.trim(); });
+    });
+    new Setting(this.contentEl).setName("优先级").addDropdown((dropdown) => {
+      dropdown
+        .addOption("urgent", "紧急（P0）")
+        .addOption("high", "重要（P1）")
+        .addOption("medium", "普通（P2）")
+        .addOption("low", "低优（P3）")
+        .setValue(this.priority)
+        .onChange((value) => { this.priority = value as StorageTaskPriority; });
+    });
+    new Setting(this.contentEl).addButton((button) => {
+      button.setButtonText("添加").setCta().onClick(async () => {
+        if (!this.projectPath || !this.text) {
+          new Notice("请选择项目并填写任务内容");
+          return;
+        }
+        await this.onSubmit(this.projectPath, this.text, this.due, this.priority);
+        this.close();
+      });
+    });
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
 export class HomepageView extends ItemView {
   private clockTimer: number | null = null;
   private statsService!: HomepageStatsService;
   private dataService!: HomepageDataService;
   private bookmarksService!: HomepageBookmarksService;
   private taskService!: HomepageTaskService;
+  private timelineService!: ProjectTimelineService;
   private weatherService!: HomepageWeatherService;
   private projectScanService!: HomepageProjectScanService;
+  private activityLogService!: ActivityLogService;
   private currentTodoTab: TodoTabKey = "all";
+  private currentProjectFilter: ProjectFilter = DEFAULT_FILTER;
+  private allProjects: HomepageProject[] = [];
   private unsubSettings: (() => void) | null = null;
 
-  constructor(leaf: WorkspaceLeaf) {
+  constructor(leaf: WorkspaceLeaf, private dependencies: HomepageDependencies) {
     super(leaf);
+    this.activityLogService = dependencies.activityLogService;
   }
 
   getViewType(): string {
@@ -262,6 +340,7 @@ export class HomepageView extends ItemView {
     this.taskService = new HomepageTaskService(this.app);
     this.weatherService = new HomepageWeatherService();
     this.projectScanService = new HomepageProjectScanService(this.app);
+    this.timelineService = new ProjectTimelineService(this.app);
 
     await this.dataService.load();
 
@@ -271,50 +350,45 @@ export class HomepageView extends ItemView {
     this.registerEvent(this.app.vault.on("delete", () => this.onProjectVaultChange()));
     this.registerEvent(this.app.vault.on("rename", () => this.onProjectVaultChange()));
 
-    const container = this.containerEl.children[1];
+    this.renderDashboard();
+
+    // 监听设置变更，自动刷新天气
+    this.unsubSettings = this.dependencies.events.on(Events.SETTINGS_CHANGED, (changedKeys: string[]) => {
+      if (changedKeys.includes("homepage")) this.renderDashboard();
+    });
+  }
+
+  private renderDashboard(): void {
+    this.stopClock();
+    const settings = this.dependencies.settingsManager.getSettings().homepage;
+    const container = this.containerEl.children[1] as HTMLElement | undefined;
+    if (!container) return;
+
     container.empty();
     container.addClass("zendian-homepage");
-
     const wrapper = container.createDiv({ cls: "homepage-wrapper" });
     wrapper.createDiv({ cls: "homepage-bg" });
     const content = wrapper.createDiv({ cls: "homepage-content" });
-
-    // 内容容器（max-w-1240, 居中, padding）
     const main = content.createDiv({ cls: "homepage-container" });
 
-    // ── 顶部 Header ──
     this.renderHeader(main);
+    if (!settings.weatherEnabled) {
+      main.querySelector(".homepage-weather-card")?.remove();
+    }
 
-    // ── 12列网格主体 ──
     const grid = main.createDiv({ cls: "homepage-grid" });
-
-    // Row 1: 每日回顾(6) + 进行中的项目(6)
     this.renderDailyReview(grid);
-    this.renderProjects(grid);
-
-    // Row 2: 待办(4) + 便签(4) + 热力图(4)
+    if (settings.projectBoardEnabled) this.renderProjects(grid);
     this.renderTodo(grid);
     this.renderStickyNotes(grid);
-    this.renderHeatmap(grid);
-
-    // Row 3: 本月数据(8) + 最近笔记(4)
-    this.renderMonthlyStats(grid);
+    if (settings.bookmarksEnabled) this.renderBookmarks(grid);
+    if (settings.heatmapEnabled) this.renderHeatmap(grid);
+    if (settings.monthlyStatsEnabled) this.renderMonthlyStats(grid);
     this.renderRecentNotes(grid);
 
-    // ── 启动 ──
     this.startClock();
-    this.loadDataAsync();
+    void this.loadDataAsync();
     this.initAnimations();
-
-    // 监听设置变更，自动刷新天气
-    const eventBus = (this.app as any).plugins?.plugins?.zendian?.eventBus;
-    if (eventBus) {
-      this.unsubSettings = eventBus.on(Events.SETTINGS_CHANGED, (changedKeys: string[]) => {
-        if (changedKeys.includes("homepage")) {
-          this.loadWeather();
-        }
-      });
-    }
   }
 
   async onClose(): Promise<void> {
@@ -410,7 +484,6 @@ export class HomepageView extends ItemView {
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
     titleLeft.appendChild(svgIcon("calendar"));
     titleLeft.createSpan({ text: "每日回顾" });
-    titleRow.createEl("a", { cls: "homepage-card-link", text: "查看全部" });
 
     // 主体：环形进度条 + 检查列表
     const body = card.createDiv({ cls: "homepage-review-body" });
@@ -494,6 +567,7 @@ export class HomepageView extends ItemView {
     titleLeft.appendChild(svgIcon("checkSquare"));
     titleLeft.createSpan({ text: "待办" });
     const addLink = titleRow.createEl("a", { cls: "homepage-card-link", text: "添加待办" });
+    addLink.addEventListener("click", () => this.openTaskCreateModal());
 
     // Tabs
     const tabs = card.createDiv({ cls: "homepage-todo-tabs" });
@@ -532,6 +606,36 @@ export class HomepageView extends ItemView {
 
     // 便签容器
     card.createDiv({ cls: "homepage-sticky-grid" });
+  }
+
+  private renderBookmarks(parent: HTMLElement): void {
+    const card = parent.createDiv({ cls: "homepage-card homepage-col-4", attr: { "data-section": "bookmarks" } });
+    const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
+    const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
+    titleLeft.appendChild(svgIcon("star"));
+    titleLeft.createSpan({ text: "书签" });
+    card.createDiv({ cls: "homepage-recent-list homepage-bookmark-list" });
+  }
+
+  private async loadBookmarks(): Promise<void> {
+    const list = this.containerEl.querySelector('[data-section="bookmarks"] .homepage-bookmark-list');
+    if (!(list instanceof HTMLElement)) return;
+
+    const bookmarks = await this.bookmarksService.getBookmarks(6);
+    list.empty();
+    if (!bookmarks.length) {
+      list.createDiv({ cls: "homepage-empty-text", text: "暂无书签" });
+      return;
+    }
+
+    for (const bookmark of bookmarks) {
+      const item = list.createDiv({ cls: "homepage-recent-item" });
+      const left = item.createDiv({ cls: "homepage-recent-item-left" });
+      const icon = left.createDiv({ cls: "homepage-recent-icon" });
+      icon.innerHTML = bookmark.type === "folder" ? SVG_ICON.folder : SVG_ICON.star;
+      left.createSpan({ cls: "homepage-recent-title", text: bookmark.title });
+      item.addEventListener("click", () => { void this.bookmarksService.openBookmark(bookmark); });
+    }
   }
 
   // ── 热力图 (col-span-4) ───────────────────────────────────
@@ -667,7 +771,6 @@ export class HomepageView extends ItemView {
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
     titleLeft.appendChild(svgIcon("fileText"));
     titleLeft.createSpan({ text: "最近笔记" });
-    titleRow.createEl("a", { cls: "homepage-card-link", text: "查看全部" });
 
     // 笔记列表
     card.createDiv({ cls: "homepage-recent-list" });
@@ -716,16 +819,19 @@ export class HomepageView extends ItemView {
 
   private async loadDataAsync(): Promise<void> {
     try {
-      await Promise.all([
-        this.loadWeather(),
-        this.loadHeatmap(),
-        this.loadMonthlyStats(),
-        this.loadRecentNotes(),
-        this.loadProjects(),
+      const settings = this.dependencies.settingsManager.getSettings().homepage;
+      const loaders: Array<Promise<unknown> | void> = [
         this.loadTodos(),
         this.loadStickyNotes(),
         this.loadDailyReviewStats(),
-      ]);
+        this.loadRecentNotes(),
+      ];
+      if (settings.weatherEnabled) loaders.push(this.loadWeather());
+      if (settings.heatmapEnabled) loaders.push(this.loadHeatmap());
+      if (settings.monthlyStatsEnabled) loaders.push(this.loadMonthlyStats());
+      if (settings.projectBoardEnabled) loaders.push(this.loadProjects());
+      if (settings.bookmarksEnabled) loaders.push(this.loadBookmarks());
+      await Promise.all(loaders);
     } catch (e) {
       console.error("[ZENdian Homepage] Data loading error:", e);
     }
@@ -735,7 +841,7 @@ export class HomepageView extends ItemView {
 
   private async loadWeather(): Promise<void> {
     try {
-      const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+      const settings = this.dependencies.settingsManager.getSettings();
       const location = settings?.homepage?.weatherLocation;
       const enabled = settings?.homepage?.weatherEnabled;
 
@@ -836,7 +942,8 @@ export class HomepageView extends ItemView {
   // ── 最近笔记 ──────────────────────────────────────────────
 
   private async loadRecentNotes(): Promise<void> {
-    const notes = this.statsService.getRecentNotes(5);
+    const count = this.dependencies.settingsManager.getSettings().homepage.recentNoteCount;
+    const notes = this.statsService.getRecentNotes(count);
     const list = this.containerEl.querySelector('[data-section="recent-notes"] .homepage-recent-list');
     if (!list) return;
 
@@ -865,24 +972,60 @@ export class HomepageView extends ItemView {
   // ── 项目 ──────────────────────────────────────────────────
 
   private async loadProjects(): Promise<void> {
+    const section = this.containerEl.querySelector('[data-section="projects"]');
+    if (!section) return;
+
+    const settings = this.dependencies.settingsManager.getSettings();
+    const typeFolders = settings?.homepage?.projectTypeFolders || "10.学习,20.工作,30.创作,40.生活,50.研究";
+    const archiveFolder = settings?.homepage?.projectArchiveFolder || "99.归档";
+
+    // 加载所有项目
+    this.allProjects = await this.projectScanService.getProjects(typeFolders, archiveFolder);
+
+    // 渲染筛选器（首次加载时）
+    let filterContainer = section.querySelector('.homepage-project-filter-bar') as HTMLElement;
+    if (!filterContainer) {
+      const header = section.querySelector('.homepage-section-header');
+      if (header) {
+        filterContainer = document.createElement('div');
+        filterContainer.className = 'homepage-project-filter-bar';
+        header.after(filterContainer);
+      }
+    }
+
+    if (filterContainer) {
+      renderProjectFilterBar(filterContainer, this.currentProjectFilter, (newFilter) => {
+        this.currentProjectFilter = newFilter;
+        this.renderFilteredProjects();
+      });
+    }
+
+    // 渲染项目列表
+    this.renderFilteredProjects();
+  }
+
+  private renderFilteredProjects(): void {
     const list = this.containerEl.querySelector('[data-section="projects"] .homepage-project-list');
     if (!list) return;
 
     list.empty();
 
-    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
-    const typeFolders = settings?.homepage?.projectTypeFolders || "10.学习,20.工作,30.创作,40.生活,50.研究";
-    const archiveFolder = settings?.homepage?.projectArchiveFolder || "99.归档";
+    // 应用筛选和排序
+    const filtered = applyFilterAndSort(this.allProjects, this.currentProjectFilter);
 
-    const projects = await this.projectScanService.getProjects(typeFolders, archiveFolder);
+    // 更新计数
+    const section = this.containerEl.querySelector('[data-section="projects"]');
+    if (section) {
+      updateProjectCount(section as HTMLElement, filtered.length, this.allProjects.length);
+    }
 
-    if (projects.length === 0) {
-      list.createDiv({ cls: "homepage-empty-text", text: "暂无进行中的项目" });
+    if (filtered.length === 0) {
+      list.createDiv({ cls: "homepage-empty-text", text: "暂无符合条件的项目" });
       return;
     }
 
-    for (const project of projects) {
-      this.renderProjectItem(list, project);
+    for (const project of filtered) {
+      this.renderProjectItem(list as HTMLElement, project);
     }
   }
 
@@ -922,7 +1065,7 @@ export class HomepageView extends ItemView {
    * 渲染项目图标：优先使用图标系统赋予的自定义图标，否则用默认 folder 图标
    */
   private renderProjectIcon(el: HTMLElement, folderPath: string): void {
-    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const settings = this.dependencies.settingsManager.getSettings();
     const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
     const iconId = customIcons[folderPath];
 
@@ -944,7 +1087,7 @@ export class HomepageView extends ItemView {
    * 获取项目图标 SVG 元素（供弹窗使用）
    */
   private getProjectIconSvg(folderPath: string): SVGElement | null {
-    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const settings = this.dependencies.settingsManager.getSettings();
     const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
     const iconId = customIcons[folderPath];
     if (iconId && iconId.startsWith("lucide-")) {
@@ -955,11 +1098,15 @@ export class HomepageView extends ItemView {
 
   // ── 项目详情面板 ──────────────────────────────────────────
 
-  private openProjectDetailPanel(project: HomepageProject): void {
+  private async openProjectDetailPanel(project: HomepageProject): Promise<void> {
     const tagColor = PROJECT_TYPE_COLORS[project.type] || "#3b82f6";
 
+    // 异步加载统计和时间轴数据
+    const statsPromise = this.timelineService.getProjectStats(project.folderPath);
+    const timelinePromise = this.timelineService.getProjectTimeline(project.folderPath);
+
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay" });
-    const panel = overlay.createDiv({ cls: "hp-detail-panel" });
+    const panel = overlay.createDiv({ cls: "hp-detail-panel hp-detail-panel-enhanced" });
 
     // 头部
     const header = panel.createDiv({ cls: "hp-detail-header" });
@@ -976,22 +1123,34 @@ export class HomepageView extends ItemView {
     closeBtn.addEventListener("click", () => overlay.remove());
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
 
+    // 内容区域（可滚动）
+    const body = panel.createDiv({ cls: "hp-detail-body" });
+
     // 进度条
-    const progressSection = panel.createDiv({ cls: "hp-detail-progress" });
+    const progressSection = body.createDiv({ cls: "hp-detail-progress" });
     const barBg = progressSection.createDiv({ cls: "hp-detail-progress-bar" });
     barBg.createDiv({ cls: "hp-detail-progress-fill", attr: { style: `width: ${project.progress}%` } });
     progressSection.createSpan({ cls: "hp-detail-progress-text", text: `${project.progress}%` });
 
     // 描述
     if (project.description) {
-      panel.createDiv({ cls: "hp-detail-desc", text: project.description });
+      body.createDiv({ cls: "hp-detail-desc", text: project.description });
     }
+
+    // 统计卡片（异步加载）
+    const statsContainer = body.createDiv({ cls: "hp-detail-stats" });
+    statsContainer.createDiv({ cls: "hp-detail-stats-loading", text: "加载统计数据..." });
+
+    statsPromise.then((stats) => {
+      statsContainer.empty();
+      this.renderProjectStats(statsContainer, stats);
+    });
 
     // 待完成任务
     if (project.pendingTasks.length > 0) {
-      const section = panel.createDiv({ cls: "hp-detail-section" });
+      const section = body.createDiv({ cls: "hp-detail-section" });
       section.createDiv({ cls: "hp-detail-section-title", text: "待完成任务" });
-      for (const task of project.pendingTasks) {
+      for (const task of project.pendingTasks.slice(0, 5)) {
         const row = section.createDiv({ cls: "hp-detail-task-row" });
         const ri = row.createSpan({ cls: "homepage-icon" }); ri.innerHTML = SVG_ICON.circle;
         row.createSpan({ cls: "hp-detail-task-text", text: task.text });
@@ -1003,11 +1162,26 @@ export class HomepageView extends ItemView {
       }
     }
 
+    // 项目时间轴（异步加载）
+    const timelineContainer = body.createDiv({ cls: "hp-detail-section" });
+    const timelineTitle = timelineContainer.createDiv({ cls: "hp-detail-section-title", text: "项目时间轴" });
+    const timelineContent = timelineContainer.createDiv({ cls: "hp-detail-timeline" });
+    timelineContent.createDiv({ cls: "hp-detail-stats-loading", text: "加载时间轴..." });
+
+    timelinePromise.then((events) => {
+      timelineContent.empty();
+      if (events.length === 0) {
+        timelineContent.createDiv({ cls: "homepage-empty-text", text: "暂无历史记录" });
+      } else {
+        this.renderTimeline(timelineContent, events, overlay);
+      }
+    });
+
     // 最近编辑
     if (project.recentFiles.length > 0) {
-      const section = panel.createDiv({ cls: "hp-detail-section" });
+      const section = body.createDiv({ cls: "hp-detail-section" });
       section.createDiv({ cls: "hp-detail-section-title", text: "最近编辑" });
-      for (const file of project.recentFiles) {
+      for (const file of project.recentFiles.slice(0, 5)) {
         const row = section.createDiv({ cls: "hp-detail-file-row" });
         const fi = row.createSpan({ cls: "homepage-icon" }); fi.innerHTML = SVG_ICON.fileText;
         row.createSpan({ cls: "hp-detail-file-name", text: file.name });
@@ -1033,10 +1207,71 @@ export class HomepageView extends ItemView {
     setTimeout(() => closeBtn.focus(), 50);
   }
 
+  /**
+   * 渲染项目统计卡片
+   */
+  private renderProjectStats(container: HTMLElement, stats: ProjectStats): void {
+    const grid = container.createDiv({ cls: "hp-detail-stats-grid" });
+
+    const items = [
+      { label: "文件", value: stats.totalFiles.toString(), icon: "fileText" },
+      { label: "笔记", value: stats.totalNotes.toString(), icon: "bookOpen" },
+      { label: "任务", value: `${stats.completedTasks}/${stats.totalTasks}`, icon: "checkSquare" },
+      { label: "字数", value: this.formatNumber(stats.totalWords), icon: "pencil" },
+      { label: "活跃天数", value: stats.activeDays.toString(), icon: "calendar" },
+      { label: "最后活跃", value: stats.lastActiveDate, icon: "clock" },
+    ];
+
+    for (const item of items) {
+      const card = grid.createDiv({ cls: "hp-detail-stat-card" });
+      const iconEl = card.createDiv({ cls: "hp-detail-stat-icon" });
+      iconEl.innerHTML = SVG_ICON[item.icon as keyof typeof SVG_ICON];
+      const info = card.createDiv({ cls: "hp-detail-stat-info" });
+      info.createDiv({ cls: "hp-detail-stat-value", text: item.value });
+      info.createDiv({ cls: "hp-detail-stat-label", text: item.label });
+    }
+  }
+
+  /**
+   * 渲染项目时间轴
+   */
+  private renderTimeline(container: HTMLElement, events: TimelineEvent[], overlay: HTMLElement): void {
+    for (const event of events.slice(0, 10)) {
+      const item = container.createDiv({ cls: "hp-detail-timeline-item" });
+
+      const dot = item.createDiv({ cls: "hp-detail-timeline-dot" });
+      dot.style.backgroundColor = event.color;
+
+      const content = item.createDiv({ cls: "hp-detail-timeline-content" });
+      const header = content.createDiv({ cls: "hp-detail-timeline-header" });
+      header.createSpan({ cls: "hp-detail-timeline-title", text: event.title });
+      header.createSpan({ cls: "hp-detail-timeline-time", text: this.formatRelativeTime(event.timestamp) });
+
+      if (event.description) {
+        content.createDiv({ cls: "hp-detail-timeline-desc", text: event.description });
+      }
+
+      // 如果有文件路径，点击跳转
+      if (event.filePath) {
+        item.style.cursor = "pointer";
+        item.addEventListener("click", () => {
+          overlay.remove();
+          this.openFile(event.filePath!);
+        });
+      }
+    }
+  }
+
+  private formatNumber(num: number): string {
+    if (num >= 10000) return `${(num / 10000).toFixed(1)}万`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
+    return num.toString();
+  }
+
   // ── 查看全部面板 ──────────────────────────────────────────
 
   private async showAllProjects(): Promise<void> {
-    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const settings = this.dependencies.settingsManager.getSettings();
     const typeFolders = settings?.homepage?.projectTypeFolders || "";
     const archiveFolder = settings?.homepage?.projectArchiveFolder || "99_归档";
     const projects = await this.projectScanService.getProjects(typeFolders, archiveFolder);
@@ -1084,7 +1319,12 @@ export class HomepageView extends ItemView {
   // ── 新建项目弹窗 ──────────────────────────────────────────
 
   private openProjectCreateModal(): void {
-    new ProjectCreateModal(this.app, this.projectScanService, () => this.loadProjects()).open();
+    new ProjectCreateModal(
+      this.app,
+      this.projectScanService,
+      () => this.loadProjects(),
+      this.dependencies.settingsManager,
+    ).open();
   }
 
   // ── 工具方法 ──────────────────────────────────────────────
@@ -1179,68 +1419,276 @@ export class HomepageView extends ItemView {
     if (!list) return;
 
     try {
-      const result = await this.taskService.getTaskRadar({
-        excludeFolders: [".obsidian", "模板"],
-        includeCompleted: true,
-        limit: 50,
-      });
+      // 使用新的 TaskSyncService
+      // 获取所有项目路径
+      const settings = this.dependencies.settingsManager.getSettings();
+      const typeFolders = settings.homepage.projectTypeFolders || "10.学习,20.工作,30.创作,40.生活,50.研究";
+      const projectPaths = await this.getProjectPaths(typeFolders);
 
-      let items = result.items;
+      // 获取所有项目的任务
+      let allTasks: Task[] = await this.dependencies.taskSyncService.getAllTasks(projectPaths);
 
       // 更新 tab 计数
-      this.updateTodoTabCounts(items);
+      this.updateTodoTabCountsNew(allTasks);
 
       // 按 Tab 过滤
       if (this.currentTodoTab === "done") {
-        items = items.filter((t) => t.completed);
-      } else if (this.currentTodoTab !== "all") {
-        items = items.filter((t) => !t.completed);
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const weekStart = todayStart - now.getDay() * 86_400_000;
-
-        if (this.currentTodoTab === "today") {
-          items = items.filter((t) => t.mtime >= todayStart);
-        } else if (this.currentTodoTab === "week") {
-          items = items.filter((t) => t.mtime >= weekStart);
-        }
+        allTasks = allTasks.filter((t) => t.completed);
+      } else if (this.currentTodoTab === "today") {
+        allTasks = this.dependencies.taskSyncService.filterTodayDue(allTasks);
+      } else if (this.currentTodoTab === "week") {
+        allTasks = this.dependencies.taskSyncService.filterWeekDue(allTasks);
+      } else if (this.currentTodoTab === "all") {
+        allTasks = allTasks.filter((t) => !t.completed);
       }
 
-      items = items.slice(0, 10);
+      // 按截止日期排序（逾期的排前面）
+      allTasks = this.dependencies.taskSyncService.sortByDue(allTasks);
+
+      // 最多显示 10 个
+      const tasks = allTasks.slice(0, 10);
 
       list.empty();
-      if (items.length === 0) {
+      if (tasks.length === 0) {
         list.createDiv({ cls: "homepage-empty-text", text: "没有待办事项" });
         return;
       }
 
-      for (const task of items) {
-        const item = list.createDiv({ cls: "homepage-todo-item" });
-
-        const left = item.createDiv({ cls: "homepage-todo-item-left" });
-        const checkbox = left.createDiv({
-          cls: `homepage-todo-checkbox${task.completed ? " homepage-todo-checkbox--done" : ""}`,
-        });
-        if (task.completed) {
-          checkbox.createDiv({ cls: "homepage-todo-checkmark", text: "✓" });
-        }
-        left.createSpan({
-          cls: `homepage-todo-text${task.completed ? " homepage-todo-text--done" : ""}`,
-          text: task.text,
-        });
-
-        // 右侧：标签 + 日期
-        const right = item.createDiv({ cls: "homepage-todo-item-right" });
-        const tag = this.inferTaskTag(task.filePath, task.text);
-        right.createSpan({ cls: `homepage-todo-tag homepage-todo-tag--${tag.type}`, text: tag.label });
-        right.createSpan({ cls: "homepage-todo-date", text: this.formatTodoDate(task.mtime) });
-
-        item.addEventListener("click", () => this.openFile(task.filePath));
+      // 渲染任务列表
+      for (const task of tasks) {
+        this.renderTodoItem(list as HTMLElement, task);
       }
-    } catch {
+    } catch (e) {
+      console.error("[Homepage] 加载待办失败:", e);
       list.empty();
       list.createDiv({ cls: "homepage-empty-text", text: "加载失败" });
     }
+  }
+
+  private openTaskCreateModal(): void {
+    if (!this.allProjects.length) {
+      new Notice("暂无可添加任务的项目");
+      return;
+    }
+
+    new HomepageTaskCreateModal(this.app, this.allProjects, async (projectPath, text, due, priority) => {
+      const success = await this.dependencies.taskSyncService.addTask(projectPath, text, {
+        created: new Date().toISOString().slice(0, 10),
+        due: due || undefined,
+        priority,
+      });
+      if (!success) {
+        new Notice("添加失败，请检查项目的 Timeline.md");
+        return;
+      }
+      new Notice("待办已添加");
+      await Promise.all([this.loadTodos(), this.loadDailyReviewStats(), this.loadProjects()]);
+    }).open();
+  }
+
+  /**
+   * 渲染单个待办项（新版 - 支持原地勾选）
+   */
+  private renderTodoItem(parent: HTMLElement, task: Task): void {
+    const item = parent.createDiv({ cls: "homepage-todo-item" });
+
+    // 设置 data 属性用于标识
+    item.setAttribute("data-task-project", task.projectPath);
+    item.setAttribute("data-task-line", String(task.line));
+
+    const left = item.createDiv({ cls: "homepage-todo-item-left" });
+
+    // 复选框（可点击）
+    const checkbox = left.createDiv({
+      cls: `homepage-todo-checkbox${task.completed ? " homepage-todo-checkbox--done" : ""}`,
+    });
+    if (task.completed) {
+      checkbox.createDiv({ cls: "homepage-todo-checkmark", text: "✓" });
+    }
+
+    // 绑定点击事件 → 原地勾选
+    checkbox.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await this.toggleTask(task, checkbox);
+    });
+
+    // 任务文本（点击跳转到 Timeline.md）
+    const textSpan = left.createSpan({
+      cls: `homepage-todo-text${task.completed ? " homepage-todo-text--done" : ""}`,
+      text: task.text,
+    });
+    textSpan.style.cursor = "pointer";
+    textSpan.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.openFileAndScroll(task.projectPath + "/00 控制台/Timeline.md", task.line);
+    });
+
+    // 右侧：优先级 + 截止日期
+    const right = item.createDiv({ cls: "homepage-todo-item-right" });
+
+    // 优先级标签
+    if (task.priority) {
+      const priorityColors: Record<string, string> = {
+        urgent: "red",
+        high: "orange",
+        medium: "blue",
+        low: "gray",
+      };
+      const color = priorityColors[task.priority] || "gray";
+      right.createSpan({ cls: `homepage-todo-tag homepage-todo-tag--${color}`, text: task.priority });
+    }
+
+    // 截止日期
+    if (task.due) {
+      const dateSpan = right.createSpan({ cls: "homepage-todo-date", text: this.formatDueDate(task.due) });
+
+      // 逾期标红
+      const today = new Date().toISOString().slice(0, 10);
+      if (task.due < today) {
+        dateSpan.style.color = "var(--text-error)";
+        dateSpan.style.fontWeight = "600";
+      }
+    }
+  }
+
+  /**
+   * 切换任务完成状态（原地勾选）
+   */
+  private async toggleTask(task: Task, checkboxEl: HTMLElement): Promise<void> {
+    // 1. 乐观更新 UI（立即反馈）
+    const wasCompleted = task.completed;
+    checkboxEl.classList.toggle("homepage-todo-checkbox--done");
+
+    if (!wasCompleted) {
+      // 添加 ✓ 符号
+      checkboxEl.createDiv({ cls: "homepage-todo-checkmark", text: "✓" });
+    } else {
+      // 移除 ✓ 符号
+      const checkmark = checkboxEl.querySelector(".homepage-todo-checkmark");
+      if (checkmark) checkmark.remove();
+    }
+
+    // 更新任务文本样式
+    const item = checkboxEl.closest(".homepage-todo-item");
+    if (item) {
+      const textEl = item.querySelector(".homepage-todo-text");
+      if (textEl) {
+        if (!wasCompleted) {
+          textEl.addClass("homepage-todo-text--done");
+        } else {
+          textEl.removeClass("homepage-todo-text--done");
+        }
+      }
+    }
+
+    // 2. 调用 TaskSyncService 修改文件
+    try {
+      const success = await this.dependencies.taskSyncService.toggleTask(task.projectPath, task.line, task.raw);
+
+      if (!success) {
+        throw new Error("任务切换失败");
+      }
+
+      // 3. 记录活动日志
+      if (!wasCompleted) {
+        this.dependencies.activityLogService.logActivity("task_completed", task.projectPath);
+      }
+
+      // 4. 延迟重新加载列表（更新计数和排序）
+      setTimeout(() => {
+        this.loadTodos();
+      }, 300);
+
+    } catch (e) {
+      console.error("[Homepage] 切换任务失败:", e);
+
+      // 回滚 UI
+      checkboxEl.classList.toggle("homepage-todo-checkbox--done");
+
+      if (wasCompleted) {
+        checkboxEl.createDiv({ cls: "homepage-todo-checkmark", text: "✓" });
+      } else {
+        const checkmark = checkboxEl.querySelector(".homepage-todo-checkmark");
+        if (checkmark) checkmark.remove();
+      }
+
+      if (item) {
+        const textEl = item.querySelector(".homepage-todo-text");
+        if (textEl) {
+          if (wasCompleted) {
+            textEl.addClass("homepage-todo-text--done");
+          } else {
+            textEl.removeClass("homepage-todo-text--done");
+          }
+        }
+      }
+
+      // 显示错误提示
+      new Notice("任务状态更新失败");
+    }
+  }
+
+  /**
+   * 获取项目路径列表
+   */
+  private async getProjectPaths(typeFolders: string): Promise<string[]> {
+    const paths: string[] = [];
+    const folders = typeFolders.split(",").map((f) => f.trim()).filter(Boolean);
+
+    for (const typeFolder of folders) {
+      const folder = this.app.vault.getAbstractFileByPath(typeFolder);
+      if (folder instanceof TFolder) {
+        for (const child of folder.children) {
+          if (child instanceof TFolder) {
+            // 跳过归档文件夹
+            if (child.name.startsWith("99")) continue;
+            paths.push(child.path);
+          }
+        }
+      }
+    }
+
+    return paths;
+  }
+
+  /**
+   * 更新待办 Tab 计数（新版 - 使用 Task 类型）
+   */
+  private updateTodoTabCountsNew(tasks: Task[]): void {
+    const allCount = tasks.filter((t) => !t.completed).length;
+    const todayCount = this.dependencies.taskSyncService.filterTodayDue(tasks).length;
+    const weekCount = this.dependencies.taskSyncService.filterWeekDue(tasks).length;
+    const doneCount = tasks.filter((t) => t.completed).length;
+
+    const counts: Record<string, number> = {
+      all: allCount,
+      today: todayCount,
+      week: weekCount,
+      done: doneCount,
+    };
+
+    const tabs = this.containerEl.querySelectorAll(".homepage-todo-tab");
+    tabs.forEach((tab) => {
+      const key = tab.getAttribute("data-tab");
+      if (key && key in counts) {
+        const countEl = tab.querySelector(".homepage-todo-tab-count");
+        if (countEl) countEl.textContent = String(counts[key]);
+      }
+    });
+  }
+
+  /**
+   * 格式化截止日期
+   */
+  private formatDueDate(due: string): string {
+    const today = new Date().toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+    if (due === today) return "今天";
+    if (due === tomorrow) return "明天";
+    if (due < today) return `逾期 ${due.slice(5)}`;
+
+    return due.slice(5); // MM-DD
   }
 
   private updateTodoTabCounts(items: import("./types").HomepageTaskItem[]): void {
@@ -1296,7 +1744,16 @@ export class HomepageView extends ItemView {
         noteEl.createDiv({ cls: "homepage-sticky-text", text: note.content });
       }
 
-      // 点击打开文件
+      // 双击打开编辑器
+      noteEl.addEventListener("dblclick", (e) => {
+        // 如果双击的是删除按钮，不触发编辑
+        if ((e.target as HTMLElement).classList.contains("homepage-sticky-delete")) {
+          return;
+        }
+        this.openQuickNoteEditor(note);
+      });
+
+      // 单击打开文件（保留原有功能）
       if (note.path) {
         noteEl.style.cursor = "pointer";
         noteEl.addEventListener("click", (e) => {
@@ -1304,7 +1761,10 @@ export class HomepageView extends ItemView {
           if ((e.target as HTMLElement).classList.contains("homepage-sticky-delete")) {
             return;
           }
-          this.openFile(note.path);
+          // 延迟执行，避免与双击冲突
+          setTimeout(() => {
+            this.openFile(note.path);
+          }, 200);
         });
       }
 
@@ -1318,6 +1778,24 @@ export class HomepageView extends ItemView {
     });
   }
 
+  /**
+   * 打开便签编辑器
+   */
+  private openQuickNoteEditor(note: HomepageQuickNote): void {
+    const { QuickNoteEditorModal } = require("./components/QuickNoteEditorModal");
+
+    new QuickNoteEditorModal(
+      this.app,
+      note.id,
+      note.label,
+      note.content || "",
+      async (id: string, content: string) => {
+        await this.dataService.updateQuickNoteContent(id, content);
+        this.loadStickyNotes();
+      }
+    ).open();
+  }
+
   private openQuickNoteModal(existing?: HomepageQuickNote): void {
     new QuickNoteModal(this.app, async (data) => {
       await this.dataService.addQuickNote(data.label, data.path, data.color, data.content);
@@ -1328,7 +1806,9 @@ export class HomepageView extends ItemView {
   // ── 每日回顾统计 ──────────────────────────────────────────
 
   private async loadDailyReviewStats(): Promise<void> {
-    const stats = this.statsService.getMonthlyStats();
+    // 获取今日真实活动数据
+    const todayActivity = this.activityLogService.getTodayActivity();
+    const monthlyStats = this.activityLogService.getMonthlyStats();
 
     // 待办统计
     let taskTotal = 0;
@@ -1342,18 +1822,18 @@ export class HomepageView extends ItemView {
       taskTotal = result.items.length;
       taskDone = result.items.filter((t) => t.completed).length;
     } catch {
-      // ignore
+      // 如果获取失败，使用活动日志中的任务完成数
+      taskDone = todayActivity.taskCompleted;
     }
 
-    const remaining = taskTotal - taskDone;
-    const readingCount = Math.round(stats.editCount * 0.3);
+    const remaining = Math.max(0, taskTotal - taskDone);
 
     // 更新检查列表数值
     const updates: Record<string, string> = {
-      notes: `记录了 ${stats.noteCount} 条笔记`,
+      notes: `记录了 ${todayActivity.created} 条笔记`,
       tasks: `完成了 ${taskDone} 项待办`,
-      reading: `阅读了 ${readingCount} 篇文章`,
-      remaining: `剩余 ${remaining} 项待办`,
+      reading: `编辑了 ${todayActivity.edited} 个文件`,
+      remaining: remaining > 0 ? `剩余 ${remaining} 项待办` : `太棒了，待办全部完成！`,
     };
 
     for (const [key, value] of Object.entries(updates)) {
@@ -1363,11 +1843,12 @@ export class HomepageView extends ItemView {
 
     // 根据数据更新状态图标
     const statusMap: Record<string, boolean> = {
-      notes: stats.noteCount > 0,
+      notes: todayActivity.created > 0,
       tasks: taskDone > 0,
-      reading: readingCount > 0,
+      reading: todayActivity.edited > 0,
       remaining: remaining === 0,
     };
+
     for (const [key, hasData] of Object.entries(statusMap)) {
       const row = this.containerEl.querySelector(`[data-review="${key}"]`);
       if (!row) continue;
@@ -1385,16 +1866,15 @@ export class HomepageView extends ItemView {
     }
 
     // ── 今日元气值 ──
-    // 基于当日活跃度综合打分 (0-100)
-    const today = this.statsService.getTodayActivity();
+    // 基于当日真实活动综合打分 (0-100)
     let energyScore = 0;
-    energyScore += Math.min(today.created * 20, 40);       // 创建笔记：每条 20 分，上限 40
-    energyScore += Math.min(taskDone * 10, 30);            // 完成待办：每项 10 分，上限 30
-    energyScore += Math.min(today.edited * 2, 20);         // 编辑文件：每次 2 分，上限 20
-    energyScore += Math.min(stats.consecutiveDays * 5, 20);// 连续活跃：每天 5 分，上限 20
+    energyScore += Math.min(todayActivity.created * 20, 40);        // 创建笔记：每条 20 分，上限 40
+    energyScore += Math.min(taskDone * 10, 30);                     // 完成待办：每项 10 分，上限 30
+    energyScore += Math.min(todayActivity.edited * 2, 20);          // 编辑文件：每次 2 分，上限 20
+    energyScore += Math.min(monthlyStats.consecutiveDays * 2, 10);  // 连续活跃：每天 2 分，上限 10
     energyScore = Math.min(energyScore, 100);
 
-    // 更新环形
+    // 更新环形进度
     const ringValueEl = this.containerEl.querySelector(".homepage-review-ring-value");
     if (ringValueEl) ringValueEl.textContent = `${energyScore}`;
 
@@ -1546,7 +2026,7 @@ export class HomepageView extends ItemView {
 
   private updateClock(): void {
     const now = new Date();
-    const settings = (this.app as any).plugins?.plugins?.zendian?.settingsManager?.getSettings?.();
+    const settings = this.dependencies.settingsManager.getSettings();
     const userName = settings?.homepage?.userName;
 
     // 问候语

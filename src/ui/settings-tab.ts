@@ -21,7 +21,7 @@ interface SettingDef {
   descZh?: string;
   type: "toggle" | "select" | "number" | "number-slider" | "text";
   get: (s: PluginSettings) => any;
-  set: (s: PluginSettings, val: any) => Partial<PluginSettings[keyof PluginSettings]>;
+  set: (s: PluginSettings, val: any) => Partial<PluginSettings>;
   options?: { label: string; value: string }[];
   min?: number;
   max?: number;
@@ -600,6 +600,7 @@ function renderHeadingTabs(
 // ============================================================
 
 export class ZENdianSettingTab extends PluginSettingTab {
+  private zendianPlugin: ZENdianPlugin;
   private settingsManager: SettingsManager;
   private moduleManager: ModuleManager;
   private activeTabId = "zendian-about";
@@ -608,6 +609,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
   constructor(app: App, plugin: ZENdianPlugin, settingsManager: SettingsManager, moduleManager: ModuleManager) {
     super(app, plugin);
+    this.zendianPlugin = plugin;
     this.settingsManager = settingsManager;
     this.moduleManager = moduleManager;
   }
@@ -668,7 +670,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
     const iconWrap = hero.createDiv("zendian-about-icon");
     iconWrap.innerHTML = ABOUT_SVG_LOGO;
     hero.createEl("h1", { text: "ZENdian", cls: "zendian-about-title" });
-    const version = (this.plugin as any).manifest?.version ?? "unknown";
+    const version = this.zendianPlugin.manifest.version ?? "unknown";
     hero.createEl("span", { text: `V${version} BETA`, cls: "zendian-about-version" });
     hero.createEl("p", { text: "Designed by Junkey", cls: "zendian-about-author" });
 

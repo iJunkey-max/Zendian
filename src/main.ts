@@ -7,10 +7,15 @@
  * 3. 注册设置面板
  */
 
-import { Plugin } from "obsidian";
+import { Plugin, TFile } from "obsidian";
 import { EventBus, Events } from "./core/event-bus";
 import { SettingsManager } from "./core/settings-manager";
 import { ModuleManager } from "./core/module-manager";
+
+// 新数据服务
+import { ActivityLogService } from "./services/ActivityLogService";
+import { ProjectMetadataService } from "./services/ProjectMetadataService";
+import { TaskSyncService } from "./services/TaskSyncService";
 
 // 功能模块导入
 import { AutoHideModule } from "./modules/auto-hide.module";
@@ -41,6 +46,7 @@ import { BannerModule } from "./modules/banner.module";
 // Homepage
 import { HomepageView, VIEW_TYPE_HOMEPAGE } from "./homepage/HomepageView";
 import { ProjectConsoleView, VIEW_TYPE_PROJECT_CONSOLE } from "./homepage/ProjectConsoleView";
+import { destroyServiceManager } from "./homepage/services";
 
 // UI
 import { ZENdianSettingTab } from "./ui/settings-tab";
@@ -49,6 +55,11 @@ export default class ZENdianPlugin extends Plugin {
   private events!: EventBus;
   private settingsManager!: SettingsManager;
   private moduleManager!: ModuleManager;
+
+  // 新数据服务
+  public activityLogService!: ActivityLogService;
+  public projectMetadataService!: ProjectMetadataService;
+  public taskSyncService!: TaskSyncService;
 
   async onload() {
     // 1. 初始化核心服务
@@ -63,6 +74,12 @@ export default class ZENdianPlugin extends Plugin {
       this.app,
       this.settingsManager
     );
+
+    // 1.1 初始化数据服务
+    this.activityLogService = new ActivityLogService(this.app);
+    this.projectMetadataService = new ProjectMetadataService(this.app);
+    this.taskSyncService = new TaskSyncService(this.app);
+    await this.activityLogService.load();
 
     // 2. 注册功能模块
     this.moduleManager.register(new AutoHideModule());
@@ -96,13 +113,18 @@ export default class ZENdianPlugin extends Plugin {
     // 4. 注册主页 View
     this.registerView(
       VIEW_TYPE_HOMEPAGE,
-      (leaf) => new HomepageView(leaf)
+      (leaf) => new HomepageView(leaf, {
+        settingsManager: this.settingsManager,
+        events: this.events,
+        activityLogService: this.activityLogService,
+        taskSyncService: this.taskSyncService,
+      })
     );
 
     // 注册项目控制台 View（.home 文件）
     this.registerView(
       VIEW_TYPE_PROJECT_CONSOLE,
-      (leaf) => new ProjectConsoleView(leaf)
+      (leaf) => new ProjectConsoleView(leaf, this.taskSyncService)
     );
     this.registerExtensions(["home"], VIEW_TYPE_PROJECT_CONSOLE);
 
@@ -139,13 +161,33 @@ export default class ZENdianPlugin extends Plugin {
       })
     );
 
-    // 5. 注册设置面板
+    // 6. 监听 vault 事件 — 自动记录活动
+    this.registerEvent(
+      this.app.vault.on("create", (file) => {
+        if (file instanceof TFile && file.extension === "md") {
+          this.activityLogService.logActivity("note_created", file.path);
+        }
+      })
+    );
+
+    this.registerEvent(
+      this.app.vault.on("modify", (file) => {
+        if (file instanceof TFile && file.extension === "md") {
+          this.activityLogService.logActivity("note_edited", file.path);
+        }
+      })
+    );
+
+    // 7. 注册设置面板
     this.addSettingTab(
       new ZENdianSettingTab(this.app, this, this.settingsManager, this.moduleManager)
     );
   }
 
   onunload() {
+    // 强制保存活动日志
+    this.activityLogService?.flush();
+    destroyServiceManager();
     this.moduleManager?.unloadAll();
     this.events?.clear();
   }

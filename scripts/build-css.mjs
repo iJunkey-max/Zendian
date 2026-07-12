@@ -13,11 +13,14 @@ const ROOT = resolve(__dirname, "..");
 
 // CSS files in merge order (later files override earlier ones)
 const CSS_MERGE_ORDER = [
+  "css/design-system.css",           // 设计系统（基础样式）
   "css/settings-blocks/border-settings.css",
   "css/base/border-theme.css",
   "css/overlays/phycat-overlay.css",
   "css/overlays/banner.css",
   "css/overlays/homepage.css",
+  "css/overlays/quicknote-editor.css",
+  "css/overlays/console-enhanced.css", // 项目控制台增强样式
   "css/ui/style-settings-ui.css",
 ];
 
@@ -121,15 +124,15 @@ settings:
         title: Version
         title.zh: 版本
         type: info-text
-        description: "v2.1.04"
-        description.zh: "v2.1.04"
+        description: "v2.2.10Fix"
+        description.zh: "v2.2.10Fix"
     -
         id: zendian-changelog
         title: Changelog
         title.zh: 版本记录
         type: info-text
-        description: "**v2.1.04Enhanced** — Banner & Dark Mode Fixes<br>- Fix banner blank space when image URL is invalid<br>- Fix infinite re-render loop for broken banner images<br>- Darker dark mode background (5-10% lightness)<br>**v2.1.03** — Banner (Page Header Image)<br>- Frontmatter-driven banner images for notes<br>- Glassmorphism metadata overlay, fade mask<br>- Per-leaf data-attribute isolation for split views<br>- Configurable height, YAML key, image position<br>- Reading/editing mode polling + event sync<br>**v2.1.02E** — Dynamic icon system<br>- Data-driven file tree icons with regex matching<br>- Lucide built-in + Boxicons/Coolicons/Tabler support<br>- Icon picker modal with grid layout<br>- Right-click custom icons per file<br>- Tab icons for workspace tabs<br>**v1.0.0** — Initial release<br>- Merged Border theme, Phycat overlay, and Style Settings<br>- Apple-style settings panel with sidebar navigation<br>- Full Chinese localization<br>- Rainbow folder support<br>- Theme accent color sync with Obsidian<br>- Default card layout with grid background"
-        description.zh: "**v2.1.04Enhanced** — Banner 与深色模式修复<br>- 修复图片链接无效时页面顶部留白问题<br>- 修复死链图片导致无限重渲染闪烁<br>- 深色模式背景色调暗至 5-10% 亮度区间<br>**v2.1.03** — 页眉图片 (Banner)<br>- 基于 frontmatter 的笔记页眉图片<br>- 毛玻璃属性面板融合、渐变遮罩<br>- data-attribute 隔离分屏视图<br>- 可配置高度、YAML 键名、图片对齐方式<br>- 阅读/编辑模式心跳轮询 + 事件同步<br>**v2.1.02E** — 动态图标系统<br>- 数据驱动文件树图标，正则匹配引擎<br>- 内置 Lucide + Boxicons/Coolicons/Tabler 图标库<br>- 图标选择器弹窗，CSS Grid 多列网格<br>- 右键自定义单个文件图标<br>- 标签页图标显示<br>**v1.0.0** — 首发版本<br>- 整合 Border 主题、Phycat 覆盖层与 Style Settings<br>- 苹果风格设置面板，侧边栏导航<br>- 全面中文本地化<br>- 彩虹文件夹支持<br>- 主题色与 Obsidian 同步<br>- 默认卡片布局与网格背景"
+        description: "**v2.2.10Fix** — Homepage & Project Reliability<br>- Unified .home file resolution<br>- Timeline.md as the single task source<br>- Project-scoped file watching and cache invalidation<br>- Homepage settings and dependency injection fixes<br>- TypeScript strict check restored<br>**v2.1.04Enhanced** — Banner & Dark Mode Fixes<br>- Fix banner blank space when image URL is invalid<br>- Fix infinite re-render loop for broken banner images<br>- Darker dark mode background (5-10% lightness)<br>**v2.1.03** — Banner (Page Header Image)<br>- Frontmatter-driven banner images for notes<br>- Glassmorphism metadata overlay, fade mask<br>- Per-leaf data-attribute isolation for split views<br>- Configurable height, YAML key, image position<br>- Reading/editing mode polling + event sync"
+        description.zh: "**v2.2.10Fix** — 主页与项目可靠性修复<br>- 统一 .home 文件定位<br>- Timeline.md 作为唯一任务数据源<br>- 按项目隔离文件监听并修复缓存失效<br>- 修复主页设置响应与依赖注入<br>- 恢复 TypeScript 严格检查<br>**v2.1.04Enhanced** — Banner 与深色模式修复<br>- 修复图片链接无效时页面顶部留白问题<br>- 修复死链图片导致无限重渲染闪烁<br>- 深色模式背景色调暗至 5-10% 亮度区间<br>**v2.1.03** — 页眉图片 (Banner)<br>- 基于 frontmatter 的笔记页眉图片<br>- 毛玻璃属性面板融合、渐变遮罩<br>- data-attribute 隔离分屏视图<br>- 可配置高度、YAML 键名、图片对齐方式"
         markdown: true
 */
 `;

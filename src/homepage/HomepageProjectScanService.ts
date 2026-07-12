@@ -13,6 +13,7 @@ import type {
   ProjectTask,
   ProjectConsoleData,
 } from "./types";
+import { findProjectHomeFile } from "./services/ProjectHomeFileResolver";
 
 const TASK_REGEX = /^- \[([ x])\] (.+)$/;
 
@@ -153,7 +154,9 @@ export class HomepageProjectScanService {
     const consolePath = `${folderPath}/00 控制台`;
 
     // 优先从 .home 文件读取
-    const homeData = await this.readHomeFile(consolePath, name);
+    const homeData = await this.readHomeFile(folderPath, name);
+    const timelineFile = this.app.vault.getAbstractFileByPath(`${consolePath}/Timeline.md`);
+    const timelineData = await this.parseTimeline(consolePath);
 
     let description: string;
     let taskTotal: number;
@@ -162,22 +165,28 @@ export class HomepageProjectScanService {
     let pendingTasks: ProjectTask[];
 
     if (homeData) {
-      // 从 .home 文件获取数据
+      // .home 提供元数据；Timeline.md 是任务事实源。
       description = homeData.description || "";
-      taskTotal = homeData.tasks.length;
-      taskDone = homeData.tasks.filter((t) => t.completed).length;
-      progress = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
-      pendingTasks = homeData.tasks
-        .filter((t) => !t.completed)
-        .map((t, i) => ({ text: t.text, completed: false, created: t.created, due: t.due, line: i }));
+      if (timelineFile instanceof TFile) {
+        taskTotal = timelineData.taskTotal;
+        taskDone = timelineData.taskDone;
+        progress = timelineData.progress;
+        pendingTasks = timelineData.pendingTasks;
+      } else {
+        taskTotal = homeData.tasks.length;
+        taskDone = homeData.tasks.filter((t) => t.completed).length;
+        progress = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
+        pendingTasks = homeData.tasks
+          .filter((t) => !t.completed)
+          .map((t, i) => ({ text: t.text, completed: false, created: t.created, due: t.due, line: i }));
+      }
     } else {
       // 降级：从 Overview.md + Timeline.md 读取
       description = await this.readFirstParagraph(consolePath, "Overview.md");
-      const parsed = await this.parseTimeline(consolePath);
-      taskTotal = parsed.taskTotal;
-      taskDone = parsed.taskDone;
-      progress = parsed.progress;
-      pendingTasks = parsed.pendingTasks;
+      taskTotal = timelineData.taskTotal;
+      taskDone = timelineData.taskDone;
+      progress = timelineData.progress;
+      pendingTasks = timelineData.pendingTasks;
     }
 
     // 获取最近编辑的文件
@@ -197,53 +206,28 @@ export class HomepageProjectScanService {
       recentFiles,
       pendingTasks,
       updatedAt,
+      status: homeData?.status === "archived" ? "completed" : homeData?.status,
+      priority: homeData?.metadata?.priority === "urgent" ? "high" : homeData?.metadata?.priority,
+      lastActiveTime: updatedAt,
+      createdTime: homeData?.createdAt ? new Date(homeData.createdAt).getTime() : 0,
     };
   }
 
   /**
    * 在 00 控制台/ 中查找 .home 文件并解析
    */
-  private async readHomeFile(consolePath: string, projectName: string): Promise<ProjectConsoleData | null> {
-    // 优先查找与项目同名的 .home 文件
-    const candidates = [
-      `${consolePath}/${projectName}.home`,
-      `${consolePath}/控制台.home`,
-    ];
+  private async readHomeFile(projectPath: string, projectName: string): Promise<ProjectConsoleData | null> {
+    const file = findProjectHomeFile(this.app, projectPath, projectName);
+    if (!file) return null;
 
-    for (const filePath of candidates) {
-      const file = this.app.vault.getAbstractFileByPath(filePath);
-      if (file instanceof TFile) {
-        try {
-          const content = await this.app.vault.read(file);
-          const data = JSON.parse(content) as ProjectConsoleData;
-          if (data && typeof data.name === "string") {
-            return data;
-          }
-        } catch {
-          // JSON 解析失败，跳过
-        }
-      }
+    try {
+      const content = await this.app.vault.read(file);
+      const data = JSON.parse(content) as ProjectConsoleData;
+      return data && typeof data.name === "string" ? data : null;
+    } catch (error) {
+      console.warn(`[ZENdian] 解析 ${file.path} 失败:`, error);
+      return null;
     }
-
-    // 扫描 00 控制台/ 下所有 .home 文件
-    const consoleFolder = this.app.vault.getAbstractFileByPath(consolePath);
-    if (consoleFolder instanceof TFolder) {
-      for (const child of consoleFolder.children) {
-        if (child instanceof TFile && child.extension === "home") {
-          try {
-            const content = await this.app.vault.read(child);
-            const data = JSON.parse(content) as ProjectConsoleData;
-            if (data && typeof data.name === "string") {
-              return data;
-            }
-          } catch {
-            // JSON 解析失败，跳过
-          }
-        }
-      }
-    }
-
-    return null;
   }
 
   /**

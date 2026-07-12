@@ -106,6 +106,10 @@ export interface HomepageProject {
   recentFiles: ProjectRecentFile[];
   pendingTasks: ProjectTask[];
   updatedAt: number;
+  status?: "active" | "paused" | "completed";
+  priority?: "high" | "medium" | "low";
+  lastActiveTime?: number;
+  createdTime?: number;
 }
 
 /** 快捷便签 */
@@ -189,9 +193,37 @@ export interface ProjectConsoleData {
   description: string;
   type: ProjectType;
   createdAt: string;          // YYYY-MM-DD
+  updatedAt?: string;
+  status?: "active" | "paused" | "completed" | "archived";
+  metadata?: {
+    priority?: "urgent" | "high" | "medium" | "low";
+    tags?: string[];
+    collaborators?: string[];
+    dependencies?: string[];
+    deadline?: string;
+  };
   tasks: ProjectConsoleTask[];
   deliverables: ProjectConsoleDeliverable[];
 }
+
+/** 任务优先级 */
+export type TaskPriority = "P0" | "P1" | "P2" | "P3";
+
+/** 任务优先级配色 */
+export const TASK_PRIORITY_COLORS: Record<TaskPriority, string> = {
+  "P0": "#ef4444",  // 紧急 - 红色
+  "P1": "#f59e0b",  // 重要 - 橙色
+  "P2": "#3b82f6",  // 普通 - 蓝色
+  "P3": "#6b7280",  // 低优 - 灰色
+};
+
+/** 任务优先级标签 */
+export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
+  "P0": "紧急",
+  "P1": "重要",
+  "P2": "普通",
+  "P3": "低优",
+};
 
 /** 控制台任务 */
 export interface ProjectConsoleTask {
@@ -199,6 +231,16 @@ export interface ProjectConsoleTask {
   completed: boolean;
   created?: string;           // YYYY-MM-DD
   due?: string;               // YYYY-MM-DD
+  priority?: TaskPriority;    // 优先级
+  tags?: string[];            // 标签
+  subtasks?: ProjectConsoleSubtask[]; // 子任务
+  progress?: number;          // 进度 0-100（用于多步骤任务）
+}
+
+/** 子任务 */
+export interface ProjectConsoleSubtask {
+  text: string;
+  completed: boolean;
 }
 
 /** 控制台交付物 */

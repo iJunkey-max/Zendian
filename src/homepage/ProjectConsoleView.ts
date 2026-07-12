@@ -2,7 +2,7 @@
  * ProjectConsoleView — 项目控制台视图（仪表盘风格）
  */
 
-import { FileView, type WorkspaceLeaf, type App, TFile, TFolder, getIcon, Modal, Setting } from "obsidian";
+import { FileView, type WorkspaceLeaf, type App, TFile, TFolder, getIcon, Modal, Setting, Notice } from "obsidian";
 import type {
   ProjectConsoleData,
   ProjectConsoleTask,
@@ -11,6 +11,12 @@ import type {
   ProjectType,
 } from "./types";
 import { PROJECT_TYPE_COLORS } from "./types";
+import { getServiceManager } from "./services";
+import type { ServiceManager, ProjectStatistics, ProjectHealth } from "./services";
+import { LineChart, HeatmapChart } from "./components/charts";
+import type { Task } from "../services/TaskSyncService";
+import { TaskSyncService } from "../services/TaskSyncService";
+import type { DataChangeCallback } from "./services/types";
 
 export const VIEW_TYPE_PROJECT_CONSOLE = "zendian-project-console";
 
@@ -28,6 +34,10 @@ const SVG = {
   package: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`,
   fileStack: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7h-3a2 2 0 0 1-2-2V2"/><path d="M21 6v6.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-9c0-.8.7-1.5 1.5-1.5H17Z"/><path d="M7 8v8.8c0 .3.2.6.4.8.2.2.5.4.8.4H15"/><path d="M3 12v8.8c0 .3.2.6.4.8.2.2.5.4.8.4H11"/></svg>`,
   arrowRight: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`,
+  filePlus: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>`,
+  fileEdit: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12h4"/><path d="M10 16h4"/></svg>`,
+  check: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+  flag: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>`,
 } as const;
 
 function svg(key: keyof typeof SVG): HTMLSpanElement {
@@ -58,23 +68,102 @@ function relTime(mtime: number): string {
 
 // ── AddTaskModal ──────────────────────────────────────
 
+import type { TaskPriority } from "./types";
+import { TASK_PRIORITY_COLORS, TASK_PRIORITY_LABELS } from "./types";
+
 class AddTaskModal extends Modal {
   private text = "";
   private due = "";
+  private priority: TaskPriority = "P2";
+  private tags: string[] = [];
+  private tagInput = "";
   private cb: (t: ProjectConsoleTask) => void;
+
   constructor(app: App, cb: (t: ProjectConsoleTask) => void) { super(app); this.cb = cb; }
+
   onOpen() {
     const c = this.contentEl;
     c.createEl("h2", { text: "添加任务" });
-    new Setting(c).setName("任务内容").addText((t) => t.setPlaceholder("输入任务描述").onChange((v) => (this.text = v)));
-    new Setting(c).setName("截止日期").addText((t) => t.setPlaceholder("YYYY-MM-DD（可选）").onChange((v) => (this.due = v)));
-    new Setting(c).addButton((b) => b.setButtonText("添加").setCta().onClick(() => {
-      const v = this.text.trim(); if (!v) return;
-      this.cb({ text: v, completed: false, created: new Date().toISOString().slice(0, 10), due: this.due.trim() || undefined });
-      this.close();
-    }));
-    setTimeout(() => { const i = c.querySelector("input[type=text]") as HTMLInputElement; i?.focus(); }, 50);
+
+    // 任务内容
+    new Setting(c).setName("任务内容").addText((t) =>
+      t.setPlaceholder("输入任务描述").onChange((v) => (this.text = v))
+    );
+
+    // 截止日期
+    new Setting(c).setName("截止日期").addText((t) =>
+      t.setPlaceholder("YYYY-MM-DD（可选）").onChange((v) => (this.due = v))
+    );
+
+    // 优先级
+    const prioritySetting = new Setting(c).setName("优先级");
+    const prioritySelect = prioritySetting.controlEl.createEl("select");
+    const priorities: TaskPriority[] = ["P0", "P1", "P2", "P3"];
+    for (const p of priorities) {
+      const option = prioritySelect.createEl("option", { value: p, text: `${TASK_PRIORITY_LABELS[p]} (${p})` });
+      if (p === this.priority) option.selected = true;
+    }
+    prioritySelect.addEventListener("change", () => {
+      this.priority = prioritySelect.value as TaskPriority;
+    });
+
+    // 标签
+    const tagSetting = new Setting(c).setName("标签");
+    const tagContainer = tagSetting.controlEl.createDiv({ cls: "zc-tag-container" });
+    const tagInput = tagContainer.createEl("input", {
+      cls: "zc-tag-input",
+      attr: { type: "text", placeholder: "输入标签后回车" },
+    });
+    const tagList = tagContainer.createDiv({ cls: "zc-tag-list" });
+
+    tagInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && tagInput.value.trim()) {
+        const tag = tagInput.value.trim();
+        if (!this.tags.includes(tag)) {
+          this.tags.push(tag);
+          this.renderTags(tagList);
+        }
+        tagInput.value = "";
+        e.preventDefault();
+      }
+    });
+
+    // 添加按钮
+    new Setting(c).addButton((b) =>
+      b.setButtonText("添加").setCta().onClick(() => {
+        const v = this.text.trim();
+        if (!v) return;
+        this.cb({
+          text: v,
+          completed: false,
+          created: new Date().toISOString().slice(0, 10),
+          due: this.due.trim() || undefined,
+          priority: this.priority,
+          tags: this.tags.length > 0 ? this.tags : undefined,
+        });
+        this.close();
+      })
+    );
+
+    setTimeout(() => {
+      const i = c.querySelector("input[type=text]") as HTMLInputElement;
+      i?.focus();
+    }, 50);
   }
+
+  private renderTags(container: HTMLElement) {
+    container.empty();
+    for (const tag of this.tags) {
+      const tagEl = container.createDiv({ cls: "zc-tag" });
+      tagEl.createSpan({ text: tag });
+      const removeBtn = tagEl.createSpan({ cls: "zc-tag-remove", text: "×" });
+      removeBtn.addEventListener("click", () => {
+        this.tags = this.tags.filter((t) => t !== tag);
+        this.renderTags(container);
+      });
+    }
+  }
+
   onClose() { this.contentEl.empty(); }
 }
 
@@ -83,9 +172,18 @@ class AddTaskModal extends Modal {
 export class ProjectConsoleView extends FileView {
   private data: ProjectConsoleData | null = null;
   private projPath = "";
-  private tab: "tasks" | "deliverables" | "recent" = "tasks";
+  private tab: "tasks" | "deliverables" | "recent" | "timeline" | "analytics" = "tasks";
+  private services: ServiceManager;
+  private timelineTasks: Task[] = [];
+  private fileWatcherCallback: DataChangeCallback | null = null;
+  private projectStats: ProjectStatistics | null = null;
+  private health: ProjectHealth | null = null;
 
-  constructor(l: WorkspaceLeaf) { super(l); }
+  constructor(l: WorkspaceLeaf, private taskSyncService: TaskSyncService) {
+    super(l);
+    this.services = getServiceManager(this.app, taskSyncService);
+  }
+
   getViewType() { return VIEW_TYPE_PROJECT_CONSOLE; }
   getDisplayText() { return this.data?.name || "项目控制台"; }
   getIcon() { return "layout-dashboard"; }
@@ -94,7 +192,16 @@ export class ProjectConsoleView extends FileView {
   async onLoadFile(file: TFile) {
     const p = file.path.split("/");
     this.projPath = p.slice(0, -2).join("/");
-    await this.load();
+    await this.loadProjectData();
+
+    // 开始监听文件变更
+    this.fileWatcherCallback = async (event) => {
+      console.log("[ProjectConsoleView] 文件变更，刷新数据", event);
+      await this.loadProjectData();
+      this.render();
+    };
+    this.services.fileWatcher.watchProject(this.projPath, this.fileWatcherCallback);
+
     this.render();
   }
 
@@ -102,6 +209,12 @@ export class ProjectConsoleView extends FileView {
     const c = this.containerEl.children[1];
     if (c) { c.empty(); c.removeClass("zc-root"); }
     this.data = null;
+    this.projectStats = null;
+    this.health = null;
+
+    // 停止监听
+    this.services.fileWatcher.unwatchProject(this.projPath, this.fileWatcherCallback || undefined);
+    this.fileWatcherCallback = null;
   }
 
   async onOpen() {
@@ -112,35 +225,45 @@ export class ProjectConsoleView extends FileView {
 
   // ── 数据 ──────────────────────────────────────────
 
-  private async load() {
+  private async loadProjectData() {
     const f = this.file;
     if (!(f instanceof TFile)) return;
-    try { this.data = JSON.parse(await this.app.vault.read(f)); } catch { this.data = null; }
+
+    // 使用数据服务加载数据
+    this.data = await this.services.projectData.getProjectConsoleData(this.projPath);
+    if (!this.data) return;
+
+    const timelinePath = `${this.projPath}/00 控制台/Timeline.md`;
+    const hasTimeline = this.app.vault.getAbstractFileByPath(timelinePath) instanceof TFile;
+    if (hasTimeline) {
+      this.timelineTasks = await this.taskSyncService.getTasks(this.projPath);
+      this.data.tasks = this.timelineTasks.map((task) => ({
+        text: task.text,
+        completed: task.completed,
+        created: task.created,
+        due: task.due,
+        priority: this.toDisplayPriority(task.priority),
+        tags: task.tags,
+      }));
+    } else {
+      this.timelineTasks = [];
+    }
+
+    // 并行加载统计和健康度数据
+    [this.projectStats, this.health] = await Promise.all([
+      this.services.projectData.getProjectStatistics(this.projPath),
+      this.services.projectData.getProjectHealth(this.projPath),
+    ]);
   }
 
   private recent(limit: number): ProjectRecentFile[] {
-    const folder = this.app.vault.getAbstractFileByPath(this.projPath);
-    if (!(folder instanceof TFolder)) return [];
-
-    // 检测 Obsidian 的 "Detect all file extensions" 设置
-    const detectAll = (this.app.vault as any).getConfig?.("detectAllFiles") === true;
-
-    const fs: ProjectRecentFile[] = [];
-    const walk = (d: TFolder) => {
-      for (const c of d.children) {
-        if (c instanceof TFile) {
-          // 跳过 .home 文件本身
-          if (c.extension === "home") continue;
-          // 如果未开启 detectAllFiles，只显示 Obsidian 可识别的文件
-          if (!detectAll && !this.app.vault.getFileByPath(c.path)) continue;
-          fs.push({ name: c.basename, path: c.path, mtime: c.stat.mtime });
-        } else if (c instanceof TFolder) {
-          walk(c);
-        }
-      }
-    };
-    walk(folder);
-    return fs.sort((a, b) => b.mtime - a.mtime).slice(0, limit);
+    // 使用数据服务获取最近文件
+    const files = this.services.projectData.getRecentFiles(this.projPath, limit);
+    return files.map(f => ({
+      name: f.name,
+      path: f.path,
+      mtime: f.modified,
+    }));
   }
 
   private progress() {
@@ -167,7 +290,7 @@ export class ProjectConsoleView extends FileView {
       c.createDiv({ cls: "zc-breath-bg" });
       const w = c.createDiv({ cls: "zc-wrapper" });
       this.hero(w);
-      this.stats(w);
+      this.renderStats(w);
       this.tabsArea(w);
       this.actions(w);
     } catch (e) {
@@ -206,6 +329,81 @@ export class ProjectConsoleView extends FileView {
     const editBtn = descEl.createSpan({ cls: "zc-hero-desc-edit" });
     editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
     descEl.addEventListener("click", () => this.editDescription(descEl));
+
+    // 导出按钮
+    const exportBtn = sec.createDiv({ cls: "zc-hero-export" });
+    exportBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
+    exportBtn.createSpan({ text: "导出" });
+    exportBtn.addEventListener("click", () => this.showExportMenu(exportBtn));
+  }
+
+  /** 显示导出菜单 */
+  private showExportMenu(anchor: HTMLElement) {
+    const menu = document.createElement("div");
+    menu.addClass("zc-export-menu");
+    menu.innerHTML = `
+      <div class="zc-export-option" data-format="markdown">
+        <span class="zc-export-icon">📄</span>
+        <span class="zc-export-label">Markdown 报告</span>
+      </div>
+      <div class="zc-export-option" data-format="json">
+        <span class="zc-export-icon">📊</span>
+        <span class="zc-export-label">JSON 数据</span>
+      </div>
+      <div class="zc-export-option" data-format="csv">
+        <span class="zc-export-icon">📋</span>
+        <span class="zc-export-label">CSV 表格</span>
+      </div>
+    `;
+
+    // 定位菜单
+    const rect = anchor.getBoundingClientRect();
+    menu.style.top = `${rect.bottom + 4}px`;
+    menu.style.right = `${window.innerWidth - rect.right}px`;
+
+    // 添加点击事件
+    menu.querySelectorAll(".zc-export-option").forEach((option) => {
+      option.addEventListener("click", async () => {
+        const format = option.getAttribute("data-format") as "markdown" | "json" | "csv";
+        await this.exportProject(format);
+        menu.remove();
+      });
+    });
+
+    // 点击外部关闭
+    const closeMenu = (e: MouseEvent) => {
+      if (!menu.contains(e.target as Node)) {
+        menu.remove();
+        document.removeEventListener("click", closeMenu);
+      }
+    };
+
+    document.body.appendChild(menu);
+    setTimeout(() => document.addEventListener("click", closeMenu), 10);
+  }
+
+  /** 导出项目 */
+  private async exportProject(format: "markdown" | "json" | "csv") {
+    try {
+      const { ExportService } = await import("./services/ExportService");
+      const exportService = new ExportService(this.app);
+
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const fileName = `${this.data!.name}_报告_${timestamp}`;
+      const extension = format === "markdown" ? "md" : format;
+      const outputPath = `${this.projPath}/00 控制台/${fileName}.${extension}`;
+
+      await exportService.exportToFile(this.projPath, outputPath, {
+        format,
+        includeStats: true,
+        includeTimeline: true,
+        includeTasks: true,
+        includeDeliverables: true,
+      });
+    } catch (error) {
+      console.error("[ProjectConsoleView] 导出失败:", error);
+      new Notice("导出失败，请查看控制台日志");
+    }
   }
 
   /** 编辑简介 */
@@ -230,9 +428,11 @@ export class ProjectConsoleView extends FileView {
   }
 
   /** 统计卡片行 */
-  private stats(p: HTMLElement) {
+  private renderStats(p: HTMLElement) {
+    if (!this.projectStats || !this.health) return;
+
     const { done, total, pct } = this.progress();
-    const files = this.recent(999).length;
+    const files = this.projectStats.totalFiles;
     const delivers = this.data!.deliverables.length;
     const row = p.createDiv({ cls: "zc-stats" });
 
@@ -252,6 +452,42 @@ export class ProjectConsoleView extends FileView {
       body.createDiv({ cls: "zc-stat-label", text: label });
       card.createDiv({ cls: "zc-stat-sub", text: sub });
     }
+
+    // 添加健康度卡片
+    this.addHealthCard(row);
+  }
+
+  /** 添加项目健康度卡片 */
+  private addHealthCard(container: HTMLElement) {
+    if (!this.health) return;
+
+    const card = container.createDiv({ cls: "zc-stat-card zc-stat-health" });
+    const iconEl = card.createDiv({ cls: "zc-stat-icon" });
+
+    // 根据健康度状态设置图标和颜色
+    const statusConfig = {
+      excellent: { icon: "❤️", color: "#22c55e" },
+      good: { icon: "💚", color: "#3b82f6" },
+      fair: { icon: "💛", color: "#f59e0b" },
+      poor: { icon: "💔", color: "#ef4444" },
+    };
+
+    const config = statusConfig[this.health.status];
+    iconEl.innerHTML = `<span style="font-size: 24px;">${config.icon}</span>`;
+    iconEl.style.background = `${config.color}15`;
+    iconEl.style.color = config.color;
+
+    const body = card.createDiv({ cls: "zc-stat-body" });
+    body.createDiv({ cls: "zc-stat-value", text: String(this.health.score) });
+    body.createDiv({ cls: "zc-stat-label", text: "健康度" });
+
+    const statusText = {
+      excellent: "优秀",
+      good: "良好",
+      fair: "一般",
+      poor: "需改进",
+    };
+    card.createDiv({ cls: "zc-stat-sub", text: statusText[this.health.status] });
   }
 
   /** Tab 区域 */
@@ -260,7 +496,13 @@ export class ProjectConsoleView extends FileView {
 
     // Tab 栏
     const tabBar = section.createDiv({ cls: "zc-tabs" });
-    const defs: [typeof this.tab, string][] = [["tasks", "任务"], ["deliverables", "交付物"], ["recent", "最近文件"]];
+    const defs: [typeof this.tab, string][] = [
+      ["tasks", "任务"],
+      ["deliverables", "交付物"],
+      ["timeline", "时间轴"],
+      ["analytics", "数据"],
+      ["recent", "最近文件"]
+    ];
     for (const [key, label] of defs) {
       const btn = tabBar.createDiv({ cls: `zc-tab${this.tab === key ? " is-active" : ""}`, text: label });
       btn.addEventListener("click", () => {
@@ -279,6 +521,8 @@ export class ProjectConsoleView extends FileView {
   private tabBody(c: HTMLElement) {
     if (this.tab === "tasks") this.tasks(c);
     else if (this.tab === "deliverables") this.deliverables(c);
+    else if (this.tab === "timeline") this.timeline(c);
+    else if (this.tab === "analytics") this.analytics(c);
     else this.files(c);
   }
 
@@ -293,9 +537,26 @@ export class ProjectConsoleView extends FileView {
       e.createDiv({ cls: "zc-empty-icon" }).innerHTML = SVG.checkSquare;
       e.createDiv({ cls: "zc-empty-title", text: "暂无任务" });
       e.createDiv({ cls: "zc-empty-sub", text: "添加第一个任务开始追踪进度" });
+      return;
     }
 
-    const pending = d.tasks.map((t, i) => ({ t, i })).filter((x) => !x.t.completed);
+    // 排序函数：优先级 > 截止日期 > 创建时间
+    const priorityOrder: Record<string, number> = { "P0": 0, "P1": 1, "P2": 2, "P3": 3, "": 4 };
+    const sortFn = (a: { t: ProjectConsoleTask; i: number }, b: { t: ProjectConsoleTask; i: number }) => {
+      // 优先级排序
+      const pa = priorityOrder[a.t.priority || ""] ?? 4;
+      const pb = priorityOrder[b.t.priority || ""] ?? 4;
+      if (pa !== pb) return pa - pb;
+
+      // 截止日期排序（有截止日期的排前面）
+      if (a.t.due && !b.t.due) return -1;
+      if (!a.t.due && b.t.due) return 1;
+      if (a.t.due && b.t.due) return a.t.due.localeCompare(b.t.due);
+
+      return 0;
+    };
+
+    const pending = d.tasks.map((t, i) => ({ t, i })).filter((x) => !x.t.completed).sort(sortFn);
     const done = d.tasks.map((t, i) => ({ t, i })).filter((x) => x.t.completed);
 
     for (const { t, i } of pending) this.taskRow(list, t, i);
@@ -306,23 +567,103 @@ export class ProjectConsoleView extends FileView {
     const add = c.createDiv({ cls: "zc-add-btn" });
     add.appendChild(svg("plus"));
     add.createSpan({ text: "添加任务" });
-    add.addEventListener("click", () => new AddTaskModal(this.app, async (task) => { d.tasks.push(task); await this.save(); this.render(); }).open());
+    add.addEventListener("click", () => new AddTaskModal(this.app, async (task) => {
+      const success = await this.taskSyncService.addTask(this.projPath, task.text, {
+        created: task.created,
+        due: task.due,
+        priority: this.toStoragePriority(task.priority),
+        tags: task.tags,
+      });
+      if (!success) {
+        new Notice("添加任务失败，请检查 Timeline.md");
+        return;
+      }
+      await this.loadProjectData();
+      this.render();
+    }).open());
   }
 
   private taskRow(p: HTMLElement, t: ProjectConsoleTask, i: number) {
     const row = p.createDiv({ cls: `zc-row${t.completed ? " is-done" : ""}` });
+
+    // 复选框
     const ck = row.createDiv({ cls: "zc-check" });
     ck.innerHTML = t.completed ? SVG.checkCircle : SVG.circle;
-    ck.addEventListener("click", async () => { this.data!.tasks[i].completed = !t.completed; await this.save(); this.render(); });
-    row.createSpan({ cls: "zc-row-text", text: t.text });
-    if (t.due) {
-      const d = row.createSpan({ cls: "zc-due" });
-      d.appendChild(svg("clock"));
-      d.createSpan({ text: t.due });
+    ck.addEventListener("click", async () => {
+      const source = this.timelineTasks[i];
+      if (!source) {
+        new Notice("旧版 .home 任务需要先迁移到 Timeline.md");
+        return;
+      }
+      const success = await this.taskSyncService.toggleTask(this.projPath, source.line, source.raw);
+      if (!success) {
+        new Notice("任务已发生变化，请刷新后重试");
+        await this.loadProjectData();
+        this.render();
+        return;
+      }
+      await this.loadProjectData();
+      this.render();
+    });
+
+    // 任务内容区域
+    const content = row.createDiv({ cls: "zc-row-content" });
+
+    // 第一行：任务文本 + 优先级标签
+    const firstLine = content.createDiv({ cls: "zc-row-first-line" });
+    firstLine.createSpan({ cls: "zc-row-text", text: t.text });
+
+    // 优先级标签
+    if (t.priority) {
+      const priorityEl = firstLine.createSpan({
+        cls: `zc-priority zc-priority-${t.priority}`,
+        text: t.priority,
+      });
+      priorityEl.style.backgroundColor = TASK_PRIORITY_COLORS[t.priority] + "20";
+      priorityEl.style.color = TASK_PRIORITY_COLORS[t.priority];
     }
+
+    // 第二行：标签 + 截止日期
+    const secondLine = content.createDiv({ cls: "zc-row-second-line" });
+
+    // 标签
+    if (t.tags && t.tags.length > 0) {
+      const tagsContainer = secondLine.createDiv({ cls: "zc-tags" });
+      for (const tag of t.tags) {
+        tagsContainer.createSpan({ cls: "zc-tag", text: tag });
+      }
+    }
+
+    // 截止日期
+    if (t.due) {
+      const dueEl = secondLine.createSpan({ cls: "zc-due" });
+      dueEl.appendChild(svg("clock"));
+      dueEl.createSpan({ text: t.due });
+
+      // 检查是否逾期
+      const today = new Date().toISOString().slice(0, 10);
+      if (t.due < today && !t.completed) {
+        dueEl.addClass("zc-due-overdue");
+      }
+    }
+
+    // 删除按钮
     const del = row.createDiv({ cls: "zc-del" });
     del.innerHTML = SVG.trash;
-    del.addEventListener("click", async () => { this.data!.tasks.splice(i, 1); await this.save(); this.render(); });
+    del.addEventListener("click", async () => {
+      const source = this.timelineTasks[i];
+      if (!source) {
+        new Notice("旧版 .home 任务需要先迁移到 Timeline.md");
+        return;
+      }
+      const success = await this.taskSyncService.deleteTask(this.projPath, source.line, source.raw);
+      if (!success) {
+        new Notice("删除失败，任务内容可能已发生变化");
+        return;
+      }
+      await this.loadProjectData();
+      this.render();
+    });
   }
 
   /** 交付物 */
@@ -396,13 +737,269 @@ export class ProjectConsoleView extends FileView {
   private async save() {
     if (!this.data) return;
     const f = this.file;
-    if (f instanceof TFile) await this.app.vault.modify(f, JSON.stringify(this.data, null, 2));
+    if (f instanceof TFile) {
+      let legacyTasks: ProjectConsoleTask[] = [];
+      try {
+        const stored = JSON.parse(await this.app.vault.read(f)) as ProjectConsoleData;
+        legacyTasks = stored.tasks || [];
+      } catch {
+        // Invalid JSON is handled by the view's load state.
+      }
+      await this.app.vault.modify(f, JSON.stringify({ ...this.data, tasks: legacyTasks }, null, 2));
+    }
+  }
+
+  private toDisplayPriority(priority: Task["priority"]): import("./types").TaskPriority | undefined {
+    const map = { urgent: "P0", high: "P1", medium: "P2", low: "P3" } as const;
+    return priority ? map[priority] : undefined;
+  }
+
+  private toStoragePriority(priority: import("./types").TaskPriority | undefined): Task["priority"] {
+    const map = { P0: "urgent", P1: "high", P2: "medium", P3: "low" } as const;
+    return priority ? map[priority] : undefined;
   }
 
   private async openRel(rel: string) {
     const full = rel.includes("/") ? rel : `${this.projPath}/${rel}`;
     const f = this.app.vault.getAbstractFileByPath(full);
     if (f instanceof TFile) await this.app.workspace.getLeaf(false).openFile(f);
+  }
+
+  /** 时间轴列表 */
+  private async timeline(c: HTMLElement) {
+    const scroll = c.createDiv({ cls: "zc-scroll" });
+    const container = scroll.createDiv({ cls: "zc-timeline-container" });
+
+    // 显示加载状态
+    const loading = container.createDiv({ cls: "zc-loading", text: "加载时间轴..." });
+
+    try {
+      // 异步加载时间轴数据
+      const timelineData = await this.services.timeline.getProjectTimeline(this.projPath);
+
+      // 移除加载提示
+      loading.remove();
+
+      if (!timelineData.events.length) {
+        const e = container.createDiv({ cls: "zc-empty" });
+        e.createDiv({ cls: "zc-empty-icon" }).innerHTML = SVG.clock;
+        e.createDiv({ cls: "zc-empty-title", text: "暂无活动" });
+        e.createDiv({ cls: "zc-empty-sub", text: "项目活动记录将显示在这里" });
+        return;
+      }
+
+      // 按日期分组
+      const byDate = new Map<string, typeof timelineData.events>();
+      for (const event of timelineData.events) {
+        if (!byDate.has(event.date)) {
+          byDate.set(event.date, []);
+        }
+        byDate.get(event.date)!.push(event);
+      }
+
+      // 渲染时间轴
+      const sortedDates = Array.from(byDate.keys()).sort((a, b) => b.localeCompare(a));
+
+      for (const date of sortedDates.slice(0, 30)) { // 只显示最近30天
+        const events = byDate.get(date)!;
+
+        // 日期分隔
+        const dateHeader = container.createDiv({ cls: "zc-timeline-date" });
+        dateHeader.createDiv({ cls: "zc-timeline-date-text", text: this.formatTimelineDate(date) });
+
+        // 事件列表
+        const eventList = container.createDiv({ cls: "zc-timeline-events" });
+
+        for (const event of events) {
+          const eventEl = eventList.createDiv({ cls: "zc-timeline-event" });
+
+          // 事件图标
+          const iconEl = eventEl.createDiv({ cls: "zc-timeline-icon" });
+          iconEl.innerHTML = this.getTimelineIcon(event.type);
+
+          // 事件内容
+          const content = eventEl.createDiv({ cls: "zc-timeline-content" });
+          const title = content.createDiv({ cls: "zc-timeline-title", text: event.title });
+
+          if (event.description) {
+            content.createDiv({ cls: "zc-timeline-desc", text: event.description });
+          }
+
+          // 如果有文件路径，添加点击跳转
+          if (event.filePath) {
+            eventEl.addClass("zc-timeline-clickable");
+            eventEl.addEventListener("click", async () => {
+              const file = this.app.vault.getAbstractFileByPath(event.filePath!);
+              if (file instanceof TFile) {
+                await this.app.workspace.getLeaf(false).openFile(file);
+              }
+            });
+          }
+        }
+      }
+
+      // 统计信息
+      const statsEl = container.createDiv({ cls: "zc-timeline-stats" });
+      statsEl.createDiv({ text: `共 ${timelineData.stats.totalEvents} 个事件` });
+      statsEl.createDiv({ text: `本周 ${timelineData.stats.eventsThisWeek} 个` });
+      statsEl.createDiv({ text: `本月 ${timelineData.stats.eventsThisMonth} 个` });
+
+    } catch (error) {
+      loading.remove();
+      const errorEl = container.createDiv({ cls: "zc-error" });
+      errorEl.createDiv({ text: "加载时间轴失败" });
+      console.error("[ProjectConsoleView] 时间轴加载失败:", error);
+    }
+  }
+
+  /** 格式化时间轴日期 */
+  private formatTimelineDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const dateOnly = (d: Date) => d.toISOString().slice(0, 10);
+
+    if (dateOnly(date) === dateOnly(today)) {
+      return "今天";
+    } else if (dateOnly(date) === dateOnly(yesterday)) {
+      return "昨天";
+    } else {
+      return dateStr;
+    }
+  }
+
+  /** 获取时间轴图标 */
+  private getTimelineIcon(type: string): string {
+    const icons: Record<string, string> = {
+      "file-created": SVG.filePlus,
+      "file-modified": SVG.fileEdit,
+      "task-created": SVG.plus,
+      "task-completed": SVG.check,
+      "deliverable-added": SVG.package,
+      "milestone": SVG.flag,
+    };
+    return icons[type] || SVG.circle;
+  }
+
+  /** 数据可视化 */
+  private async analytics(c: HTMLElement) {
+    const scroll = c.createDiv({ cls: "zc-scroll" });
+    const container = scroll.createDiv({ cls: "zc-analytics-container" });
+
+    // 显示加载状态
+    const loading = container.createDiv({ cls: "zc-loading", text: "加载数据..." });
+
+    try {
+      // 并行加载数据
+      const [trend, heatmap, stats] = await Promise.all([
+        this.services.statistics.getActivityTrend(this.projPath, 30),
+        this.services.timeline.getActivityHeatmap(this.projPath, 365),
+        this.services.statistics.getTaskStatistics(this.projPath),
+      ]);
+
+      // 移除加载提示
+      loading.remove();
+
+      // 概览卡片
+      this.renderOverviewCards(container, stats);
+
+      // 任务完成趋势图
+      this.renderTrendChart(container, trend);
+
+      // 活动热力图
+      this.renderHeatmap(container, heatmap);
+
+    } catch (error) {
+      loading.remove();
+      const errorEl = container.createDiv({ cls: "zc-error" });
+      errorEl.createDiv({ text: "加载数据失败" });
+      console.error("[ProjectConsoleView] 数据加载失败:", error);
+    }
+  }
+
+  /** 渲染概览卡片 */
+  private renderOverviewCards(container: HTMLElement, stats: any) {
+    const cards = container.createDiv({ cls: "zc-analytics-cards" });
+
+    const items = [
+      { label: "总任务", value: String(stats.total), icon: "📋" },
+      { label: "已完成", value: String(stats.completed), icon: "✅" },
+      { label: "进行中", value: String(stats.pending), icon: "⏳" },
+      { label: "完成率", value: `${stats.completionRate.toFixed(1)}%`, icon: "📊" },
+      { label: "逾期", value: String(stats.overdue), icon: "⚠️", warning: stats.overdue > 0 },
+    ];
+
+    for (const item of items) {
+      const card = cards.createDiv({ cls: "zc-analytics-card" });
+      if (item.warning) {
+        card.addClass("zc-analytics-card-warning");
+      }
+
+      const icon = card.createDiv({ cls: "zc-analytics-card-icon" });
+      icon.textContent = item.icon;
+
+      const content = card.createDiv({ cls: "zc-analytics-card-content" });
+      content.createDiv({ cls: "zc-analytics-card-value", text: item.value });
+      content.createDiv({ cls: "zc-analytics-card-label", text: item.label });
+    }
+  }
+
+  /** 渲染趋势图 */
+  private renderTrendChart(container: HTMLElement, trend: Array<{ date: string; count: number }>) {
+    const section = container.createDiv({ cls: "zc-analytics-section" });
+    section.createDiv({ cls: "zc-analytics-section-title", text: "活动趋势（最近30天）" });
+
+    const chartContainer = section.createDiv({ cls: "zc-chart-container" });
+
+    // 准备数据
+    const labels = trend.map((d) => {
+      const date = new Date(d.date);
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    });
+    const data = trend.map((d) => d.count);
+
+    // 创建折线图
+    new LineChart(chartContainer, {
+      labels,
+      datasets: [{
+        label: "活动次数",
+        data,
+        color: "#3b82f6",
+        fillColor: "#3b82f6",
+      }],
+    }, {
+      width: 800,
+      height: 250,
+      showGrid: true,
+      showTooltip: true,
+      animate: true,
+    });
+  }
+
+  /** 渲染热力图 */
+  private renderHeatmap(container: HTMLElement, heatmap: Map<string, number>) {
+    const section = container.createDiv({ cls: "zc-analytics-section" });
+    section.createDiv({ cls: "zc-analytics-section-title", text: "活动热力图（最近365天）" });
+
+    const chartContainer = section.createDiv({ cls: "zc-chart-container" });
+
+    // 准备数据
+    const data = Array.from(heatmap.entries()).map(([date, value]) => ({
+      date,
+      value,
+    }));
+
+    // 创建热力图
+    new HeatmapChart(chartContainer, data, {
+      width: 800,
+      height: 150,
+      colorScale: ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
+      showMonthLabels: true,
+      showDayLabels: true,
+      showTooltip: true,
+    });
   }
 
   private async openFolder(path: string) {
