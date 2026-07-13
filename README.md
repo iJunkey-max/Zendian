@@ -4,7 +4,7 @@
 
 本插件深度融合了 [**Border Theme**](https://github.com/Akifyss/obsidian-border "null") 的底层架构优势与 **Phycat Apple 设计语言** 的优雅配色。通过「核心 JS 框架 + 独立功能模块」的全新架构，不仅重塑了界面的视觉质感，还实现了诸多原生 CSS 无法完成的高级交互增强。
 
-当前版本：`2.1.02E` | 最低 Obsidian 版本：`1.12.7`
+当前版本：`V2.2.12BETA` | 最低 Obsidian 版本：`1.12.7`
 
 ## ✨ 核心特性
 

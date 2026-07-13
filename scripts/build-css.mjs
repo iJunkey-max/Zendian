@@ -124,15 +124,15 @@ settings:
         title: Version
         title.zh: 版本
         type: info-text
-        description: "v2.2.10Fix"
-        description.zh: "v2.2.10Fix"
+        description: "V2.2.12BETA"
+        description.zh: "V2.2.12BETA"
     -
         id: zendian-changelog
         title: Changelog
         title.zh: 版本记录
         type: info-text
-        description: "**v2.2.10Fix** — Homepage & Project Reliability<br>- Unified .home file resolution<br>- Timeline.md as the single task source<br>- Project-scoped file watching and cache invalidation<br>- Homepage settings and dependency injection fixes<br>- TypeScript strict check restored<br>**v2.1.04Enhanced** — Banner & Dark Mode Fixes<br>- Fix banner blank space when image URL is invalid<br>- Fix infinite re-render loop for broken banner images<br>- Darker dark mode background (5-10% lightness)<br>**v2.1.03** — Banner (Page Header Image)<br>- Frontmatter-driven banner images for notes<br>- Glassmorphism metadata overlay, fade mask<br>- Per-leaf data-attribute isolation for split views<br>- Configurable height, YAML key, image position<br>- Reading/editing mode polling + event sync"
-        description.zh: "**v2.2.10Fix** — 主页与项目可靠性修复<br>- 统一 .home 文件定位<br>- Timeline.md 作为唯一任务数据源<br>- 按项目隔离文件监听并修复缓存失效<br>- 修复主页设置响应与依赖注入<br>- 恢复 TypeScript 严格检查<br>**v2.1.04Enhanced** — Banner 与深色模式修复<br>- 修复图片链接无效时页面顶部留白问题<br>- 修复死链图片导致无限重渲染闪烁<br>- 深色模式背景色调暗至 5-10% 亮度区间<br>**v2.1.03** — 页眉图片 (Banner)<br>- 基于 frontmatter 的笔记页眉图片<br>- 毛玻璃属性面板融合、渐变遮罩<br>- data-attribute 隔离分屏视图<br>- 可配置高度、YAML 键名、图片对齐方式"
+        description: "**V2.2.12BETA** — Project Homepage Redesign<br>- Clear project, task, status, and activity hierarchy<br>- Project cards aligned with the ZENdian homepage design system<br>- Improved typography, contrast, spacing, and information density<br>- Responsive task viewport uses available space before scrolling<br>**v2.2.10Fix** — Homepage & Project Reliability<br>- Unified .home file resolution<br>- Timeline.md as the single task source<br>- Project-scoped file watching and cache invalidation<br>- Homepage settings and dependency injection fixes<br>- TypeScript strict check restored"
+        description.zh: "**V2.2.12BETA** — 项目主页重设计<br>- 重构项目、任务、状态和活动的信息层级<br>- 项目卡片与 ZENdian 主页设计系统保持一致<br>- 优化字号、对比度、间距和信息密度<br>- 任务内容区优先利用可用高度后再滚动<br>**v2.2.10Fix** — 主页与项目可靠性修复<br>- 统一 .home 文件定位<br>- Timeline.md 作为唯一任务数据源<br>- 按项目隔离文件监听并修复缓存失效<br>- 修复主页设置响应与依赖注入<br>- 恢复 TypeScript 严格检查"
         markdown: true
 */
 `;

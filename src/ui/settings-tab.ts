@@ -671,7 +671,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
     iconWrap.innerHTML = ABOUT_SVG_LOGO;
     hero.createEl("h1", { text: "ZENdian", cls: "zendian-about-title" });
     const version = this.zendianPlugin.manifest.version ?? "unknown";
-    hero.createEl("span", { text: `V${version} BETA`, cls: "zendian-about-version" });
+    const displayVersion = version === "unknown" ? version : `V${version.toUpperCase()}`;
+    hero.createEl("span", { text: displayVersion, cls: "zendian-about-version" });
     hero.createEl("p", { text: "Designed by Junkey", cls: "zendian-about-author" });
 
     // ── Description Card ──

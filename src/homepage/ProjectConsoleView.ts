@@ -286,13 +286,10 @@ export class ProjectConsoleView extends FileView {
     }
 
     try {
-      // 呼吸背景层
-      c.createDiv({ cls: "zc-breath-bg" });
       const w = c.createDiv({ cls: "zc-wrapper" });
       this.hero(w);
-      this.renderStats(w);
       this.tabsArea(w);
-      this.actions(w);
+      this.renderDossierFooter(w);
     } catch (e) {
       console.error("[ZENdian] 控制台渲染失败:", e);
       c.createDiv({ cls: "zc-error", text: `渲染出错: ${e}` });
@@ -303,6 +300,13 @@ export class ProjectConsoleView extends FileView {
   private hero(p: HTMLElement) {
     const d = this.data!;
     const color = PROJECT_TYPE_COLORS[d.type as ProjectType] || "#3b82f6";
+    const breadcrumb = p.createDiv({ cls: "zc-breadcrumb" });
+    breadcrumb.createSpan({ text: "项目" });
+    breadcrumb.createSpan({ cls: "zc-breadcrumb-separator", text: "/" });
+    breadcrumb.createSpan({ text: d.type || "未分类" });
+    breadcrumb.createSpan({ cls: "zc-breadcrumb-separator", text: "/" });
+    breadcrumb.createSpan({ cls: "is-current", text: d.name });
+
     const sec = p.createDiv({ cls: "zc-hero" });
 
     // 图标
@@ -335,6 +339,17 @@ export class ProjectConsoleView extends FileView {
     exportBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
     exportBtn.createSpan({ text: "导出" });
     exportBtn.addEventListener("click", () => this.showExportMenu(exportBtn));
+
+    const { pct } = this.progress();
+    const spine = p.createDiv({ cls: "zc-progress-spine", attr: { "aria-label": `项目完成度 ${pct}%` } });
+    const phases = ["规划", "实现", "验证"];
+    const activePhase = pct < 20 ? 0 : pct < 85 ? 1 : 2;
+    for (let index = 0; index < phases.length; index++) {
+      const phase = spine.createDiv({ cls: `zc-spine-phase${index === activePhase ? " is-active" : ""}${index < activePhase ? " is-complete" : ""}` });
+      phase.createSpan({ cls: "zc-spine-dot" });
+      phase.createSpan({ cls: "zc-spine-label", text: phases[index] });
+      if (index === activePhase) phase.createSpan({ cls: "zc-spine-value", text: `${pct}%` });
+    }
   }
 
   /** 显示导出菜单 */
@@ -434,60 +449,47 @@ export class ProjectConsoleView extends FileView {
     const { done, total, pct } = this.progress();
     const files = this.projectStats.totalFiles;
     const delivers = this.data!.deliverables.length;
-    const row = p.createDiv({ cls: "zc-stats" });
-
-    const cards: [string, string, string, keyof typeof SVG][] = [
-      [`${pct}%`, "完成度", `已完成 ${done}/${total} 项任务`, "target"],
-      [String(total), "任务", `${done} 已完成`, "checkSquare"],
-      [String(delivers), "交付物", delivers > 0 ? `${delivers} 项产出` : "暂无", "package"],
-      [String(files), "文件", `项目内共 ${files} 个文件`, "fileStack"],
-    ];
-
-    for (const [val, label, sub, iconKey] of cards) {
-      const card = row.createDiv({ cls: "zc-stat-card" });
-      const iconEl = card.createDiv({ cls: "zc-stat-icon" });
-      iconEl.appendChild(svg(iconKey));
-      const body = card.createDiv({ cls: "zc-stat-body" });
-      body.createDiv({ cls: "zc-stat-value", text: val });
-      body.createDiv({ cls: "zc-stat-label", text: label });
-      card.createDiv({ cls: "zc-stat-sub", text: sub });
-    }
-
-    // 添加健康度卡片
-    this.addHealthCard(row);
-  }
-
-  /** 添加项目健康度卡片 */
-  private addHealthCard(container: HTMLElement) {
-    if (!this.health) return;
-
-    const card = container.createDiv({ cls: "zc-stat-card zc-stat-health" });
-    const iconEl = card.createDiv({ cls: "zc-stat-icon" });
-
-    // 根据健康度状态设置图标和颜色
-    const statusConfig = {
-      excellent: { icon: "❤️", color: "#22c55e" },
-      good: { icon: "💚", color: "#3b82f6" },
-      fair: { icon: "💛", color: "#f59e0b" },
-      poor: { icon: "💔", color: "#ef4444" },
-    };
-
-    const config = statusConfig[this.health.status];
-    iconEl.innerHTML = `<span style="font-size: 24px;">${config.icon}</span>`;
-    iconEl.style.background = `${config.color}15`;
-    iconEl.style.color = config.color;
-
-    const body = card.createDiv({ cls: "zc-stat-body" });
-    body.createDiv({ cls: "zc-stat-value", text: String(this.health.score) });
-    body.createDiv({ cls: "zc-stat-label", text: "健康度" });
-
     const statusText = {
       excellent: "优秀",
       good: "良好",
       fair: "一般",
       poor: "需改进",
     };
-    card.createDiv({ cls: "zc-stat-sub", text: statusText[this.health.status] });
+
+    const section = p.createDiv({ cls: "zc-status-panel" });
+    section.createDiv({ cls: "zc-aside-title", text: "项目状态" });
+
+    const progress = section.createDiv({ cls: "zc-status-progress" });
+    const progressHeader = progress.createDiv({ cls: "zc-status-progress-header" });
+    progressHeader.createSpan({ text: "完成度" });
+    progressHeader.createSpan({ cls: "zc-status-progress-value", text: `${pct}%` });
+    const progressTrack = progress.createDiv({ cls: "zc-status-progress-track" });
+    progressTrack.createDiv({ cls: "zc-status-progress-fill", attr: { style: `width:${pct}%` } });
+
+    const rows: Array<[string, string, string?]> = [
+      ["健康度", `${this.health.score} · ${statusText[this.health.status]}`],
+      ["任务", `${done} / ${total}`, `${Math.max(0, total - done)} 项待推进`],
+      ["交付物", String(delivers), delivers > 0 ? "项目产出" : "暂无产出"],
+      ["文件", String(files), "项目内文件"],
+    ];
+
+    for (const [label, value, hint] of rows) {
+      const row = section.createDiv({ cls: "zc-status-row" });
+      row.createSpan({ cls: "zc-status-label", text: label });
+      const valueWrap = row.createDiv({ cls: "zc-status-value-wrap" });
+      valueWrap.createSpan({ cls: "zc-status-value", text: value });
+      if (hint) valueWrap.createSpan({ cls: "zc-status-hint", text: hint });
+    }
+
+    const nextTask = this.data!.tasks
+      .filter((task) => !task.completed && task.due)
+      .sort((a, b) => (a.due || "").localeCompare(b.due || ""))[0];
+    if (nextTask?.due) {
+      const next = section.createDiv({ cls: "zc-next-node" });
+      next.createSpan({ cls: "zc-next-node-label", text: "下一节点" });
+      next.createSpan({ cls: "zc-next-node-title", text: nextTask.text });
+      next.createSpan({ cls: "zc-next-node-date", text: fmtDate(nextTask.due) });
+    }
   }
 
   /** Tab 区域 */
@@ -514,8 +516,14 @@ export class ProjectConsoleView extends FileView {
       });
     }
 
-    const body = section.createDiv({ cls: "zc-section-body" });
+    const layout = section.createDiv({ cls: "zc-workspace-layout" });
+    const primary = layout.createDiv({ cls: "zc-workspace-primary" });
+    const body = primary.createDiv({ cls: "zc-section-body" });
     this.tabBody(body);
+
+    const aside = layout.createEl("aside", { cls: "zc-workspace-aside" });
+    this.renderStats(aside);
+    this.actions(aside);
   }
 
   private tabBody(c: HTMLElement) {
@@ -529,6 +537,15 @@ export class ProjectConsoleView extends FileView {
   /** 任务列表 */
   private tasks(c: HTMLElement) {
     const d = this.data!;
+    const heading = c.createDiv({ cls: "zc-content-heading" });
+    const headingText = heading.createDiv({ cls: "zc-content-heading-copy" });
+    headingText.createDiv({ cls: "zc-content-eyebrow", text: "当前焦点" });
+    headingText.createEl("h2", { cls: "zc-content-title", text: "下一步行动" });
+    const add = heading.createDiv({ cls: "zc-add-btn zc-add-btn--inline" });
+    add.appendChild(svg("plus"));
+    add.createSpan({ text: "添加任务" });
+    add.addEventListener("click", () => this.openAddTaskModal());
+
     const scroll = c.createDiv({ cls: "zc-scroll" });
     const list = scroll.createDiv({ cls: "zc-list" });
 
@@ -563,11 +580,10 @@ export class ProjectConsoleView extends FileView {
     if (done.length && pending.length) list.createDiv({ cls: "zc-divider" });
     for (const { t, i } of done) this.taskRow(list, t, i);
 
-    // 添加按钮固定在底部
-    const add = c.createDiv({ cls: "zc-add-btn" });
-    add.appendChild(svg("plus"));
-    add.createSpan({ text: "添加任务" });
-    add.addEventListener("click", () => new AddTaskModal(this.app, async (task) => {
+  }
+
+  private openAddTaskModal(): void {
+    new AddTaskModal(this.app, async (task) => {
       const success = await this.taskSyncService.addTask(this.projPath, task.text, {
         created: task.created,
         due: task.due,
@@ -580,7 +596,7 @@ export class ProjectConsoleView extends FileView {
       }
       await this.loadProjectData();
       this.render();
-    }).open());
+    }).open();
   }
 
   private taskRow(p: HTMLElement, t: ProjectConsoleTask, i: number) {
@@ -717,7 +733,9 @@ export class ProjectConsoleView extends FileView {
 
   /** 底部快捷操作 */
   private actions(p: HTMLElement) {
-    const grid = p.createDiv({ cls: "zc-grid" });
+    const section = p.createDiv({ cls: "zc-workspace-index" });
+    section.createDiv({ cls: "zc-aside-title", text: "工作区索引" });
+    const grid = section.createDiv({ cls: "zc-grid" });
     const map: [string, string][] = [["10 笔记流", "笔记流"], ["20 工作区", "工作区"], ["30 交付物", "交付物"], ["90 资源库", "资源库"]];
     for (const [folder, label] of map) {
       const path = `${this.projPath}/${folder}`;
@@ -729,6 +747,47 @@ export class ProjectConsoleView extends FileView {
       const arrow = card.createDiv({ cls: "zc-grid-arrow" });
       arrow.innerHTML = SVG.arrowRight;
       card.addEventListener("click", () => this.openFolder(path));
+    }
+  }
+
+  private renderDossierFooter(p: HTMLElement): void {
+    const footer = p.createDiv({ cls: "zc-dossier-footer" });
+
+    const activity = footer.createDiv({ cls: "zc-dossier-summary" });
+    activity.createDiv({ cls: "zc-summary-title", text: "近期活动" });
+    const recentFiles = this.recent(3);
+    if (recentFiles.length === 0) {
+      activity.createDiv({ cls: "zc-summary-empty", text: "项目活动会显示在这里" });
+    } else {
+      for (const file of recentFiles) {
+        const row = activity.createDiv({ cls: "zc-summary-row zc-clickable" });
+        const mark = row.createSpan({ cls: "zc-summary-mark" });
+        mark.innerHTML = SVG.fileEdit;
+        const copy = row.createDiv({ cls: "zc-summary-copy" });
+        copy.createSpan({ cls: "zc-summary-primary", text: file.name });
+        copy.createSpan({ cls: "zc-summary-secondary", text: "最近编辑" });
+        row.createSpan({ cls: "zc-summary-time", text: relTime(file.mtime) });
+        row.addEventListener("click", () => this.openRel(file.path));
+      }
+    }
+
+    const outputs = footer.createDiv({ cls: "zc-dossier-summary" });
+    outputs.createDiv({ cls: "zc-summary-title", text: "交付物" });
+    const deliverables = this.data!.deliverables.slice(0, 3);
+    if (deliverables.length === 0) {
+      outputs.createDiv({ cls: "zc-summary-empty", text: "尚未登记交付物" });
+    } else {
+      const labels: Record<string, string> = { pending: "待开始", "in-progress": "进行中", done: "已完成" };
+      for (const item of deliverables) {
+        const row = outputs.createDiv({ cls: "zc-summary-row zc-clickable" });
+        const mark = row.createSpan({ cls: "zc-summary-mark" });
+        mark.innerHTML = SVG.package;
+        row.createSpan({ cls: "zc-summary-primary", text: item.name });
+        const label = labels[item.status] || item.status;
+        const status = row.createSpan({ cls: `zc-summary-status is-${item.status}`, text: label });
+        status.setAttribute("aria-label", `状态：${label}`);
+        row.addEventListener("click", () => this.openRel(item.path));
+      }
     }
   }
 
