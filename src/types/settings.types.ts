@@ -283,6 +283,7 @@ export interface IconSystemSettings {
 export interface ProjectCategory {
   number: string;
   name: string;
+  icon: string;
 }
 
 /** 新建项目时使用的自定义一级子文件夹模板。 */
@@ -592,7 +593,13 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       { regex: "\\.excalidraw\\.md$", iconId: "lucide-pen-tool" },
       { regex: "\\.canvas$", iconId: "lucide-layout-dashboard" },
     ],
-    customIcons: {},
+    customIcons: {
+      "10_课程": "lucide-book-open",
+      "20_竞赛": "lucide-trophy",
+      "30_研究": "lucide-flask-conical",
+      "40_技能": "lucide-wrench",
+      "50_生活": "lucide-heart",
+    },
   },
   banner: {
     enabled: false,
@@ -607,11 +614,11 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     weatherLocation: "",
     projectBoardEnabled: true,
     projectCategories: [
-      { number: "10", name: "课程" },
-      { number: "20", name: "竞赛" },
-      { number: "30", name: "研究" },
-      { number: "40", name: "技能" },
-      { number: "50", name: "生活" },
+      { number: "10", name: "课程", icon: "lucide-book-open" },
+      { number: "20", name: "竞赛", icon: "lucide-trophy" },
+      { number: "30", name: "研究", icon: "lucide-flask-conical" },
+      { number: "40", name: "技能", icon: "lucide-wrench" },
+      { number: "50", name: "生活", icon: "lucide-heart" },
     ],
     projectSubfolders: {},
     projectArchiveFolder: "99_归档",

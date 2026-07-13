@@ -958,10 +958,26 @@ export class ZENdianSettingTab extends PluginSettingTab {
     const section = containerEl.createDiv("zendian-project-categories");
     section.createEl("p", {
       cls: "zendian-project-category-help",
-      text: "新增分类会创建“编号_名称”文件夹；修改后保存会同步重命名文件夹。删除分类仅移除设置，已有文件夹和项目会保留。",
+      text: "可为每个分类选择图标；保存后会同步更新“编号_名称”文件夹。删除分类仅移除设置，已有文件夹和项目会保留。",
     });
 
     const list = section.createDiv("zendian-project-category-list");
+
+    const setIconButton = (button: HTMLButtonElement, iconId: string): void => {
+      button.empty();
+      const icon = iconId.startsWith("lucide-") ? getIcon(iconId.slice("lucide-".length)) : null;
+      if (icon) button.appendChild(icon);
+      else button.createSpan({ text: iconId || "选择图标" });
+      button.title = iconId || "选择图标";
+    };
+
+    const openIconPicker = (currentIcon: string, onSelect: (iconId: string) => void): void => {
+      const settings = this.settingsManager.getSettings();
+      const libraries = ["Lucide", ...settings.iconSystem.installedLibraries];
+      new IconPickerModal(this.app, libraries, (iconId) => {
+        if (iconId !== null) onSelect(iconId || currentIcon);
+      }).open();
+    };
 
     const validateCategory = (
       number: string,
@@ -993,6 +1009,14 @@ export class ZENdianSettingTab extends PluginSettingTab {
       for (let i = 0; i < categories.length; i++) {
         const category = categories[i];
         const row = list.createDiv("zendian-project-category-row");
+        let selectedIcon = category.icon
+          || this.settingsManager.getSettings().iconSystem.customIcons[getProjectCategoryFolder(category)]
+          || "lucide-folder";
+        const iconButton = row.createEl("button", {
+          cls: "zendian-project-subfolder-icon",
+          attr: { type: "button", "aria-label": `修改 ${category.name} 的分类文件夹图标` },
+        });
+        setIconButton(iconButton, selectedIcon);
         const editNumber = row.createEl("input", {
           cls: "zendian-project-category-number-input",
           type: "text",
@@ -1037,8 +1061,17 @@ export class ZENdianSettingTab extends PluginSettingTab {
           const number = editNumber.value.trim();
           const name = editName.value.trim();
           folderPreview.textContent = `${number || "编号"}_${name || "标签名字"}`;
-          saveButton.disabled = number === category.number && name === category.name;
+          saveButton.disabled = number === category.number
+            && name === category.name
+            && selectedIcon === (category.icon || "lucide-folder");
         };
+        iconButton.addEventListener("click", () => {
+          openIconPicker(selectedIcon, (iconId) => {
+            selectedIcon = iconId;
+            setIconButton(iconButton, selectedIcon);
+            updateEditState();
+          });
+        });
         editNumber.addEventListener("input", updateEditState);
         editName.addEventListener("input", updateEditState);
 
@@ -1054,7 +1087,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
             return;
           }
 
-          const updatedCategory = { number, name };
+          const updatedCategory = { number, name, icon: selectedIcon };
           const oldFolderPath = getProjectCategoryFolder(category);
           const newFolderPath = getProjectCategoryFolder(updatedCategory);
           const oldFolder = this.app.vault.getAbstractFileByPath(oldFolderPath);
@@ -1101,6 +1134,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
                 return [path, iconId];
               })
             );
+            customIcons[newFolderPath] = selectedIcon;
 
             await this.settingsManager.updateMultiple({
               homepage: { ...current.homepage, projectCategories, projectSubfolders },
@@ -1152,6 +1186,12 @@ export class ZENdianSettingTab extends PluginSettingTab {
     };
 
     const addRow = section.createDiv("zendian-project-category-add-row");
+    let newIcon = "lucide-folder";
+    const iconButton = addRow.createEl("button", {
+      cls: "zendian-project-subfolder-icon",
+      attr: { type: "button", "aria-label": "选择新项目分类文件夹图标" },
+    });
+    setIconButton(iconButton, newIcon);
     const numberInput = addRow.createEl("input", {
       cls: "zendian-project-category-number-input",
       type: "text",
@@ -1174,6 +1214,13 @@ export class ZENdianSettingTab extends PluginSettingTab {
       attr: { "aria-label": "新增项目分类" },
     });
 
+    iconButton.addEventListener("click", () => {
+      openIconPicker(newIcon, (iconId) => {
+        newIcon = iconId;
+        setIconButton(iconButton, newIcon);
+      });
+    });
+
     const updatePreview = () => {
       const number = numberInput.value.trim();
       const name = nameInput.value.trim();
@@ -1194,7 +1241,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
         return;
       }
 
-      const category = { number, name };
+      const category = { number, name, icon: newIcon };
       const folderPath = getProjectCategoryFolder(category);
       const existing = this.app.vault.getAbstractFileByPath(folderPath);
       if (existing && !(existing instanceof TFolder)) {
@@ -1204,11 +1251,17 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
       try {
         if (!existing) await this.app.vault.createFolder(folderPath);
-        await this.settingsManager.update("homepage", {
-          projectCategories: [...categories, category],
+        await this.settingsManager.updateMultiple({
+          homepage: { ...current.homepage, projectCategories: [...categories, category] },
+          iconSystem: {
+            ...current.iconSystem,
+            customIcons: { ...current.iconSystem.customIcons, [folderPath]: newIcon },
+          },
         });
         numberInput.value = "";
         nameInput.value = "";
+        newIcon = "lucide-folder";
+        setIconButton(iconButton, newIcon);
         updatePreview();
         renderList();
         new Notice(existing ? `已添加分类并关联文件夹 ${folderPath}` : `已添加分类并创建文件夹 ${folderPath}`);

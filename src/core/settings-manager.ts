@@ -118,6 +118,14 @@ export class SettingsManager {
       if (Array.isArray((settings.homepage as any).projectSubfolders)) {
         settings.homepage.projectSubfolders = {};
       }
+      const customIcons = { ...settings.iconSystem.customIcons };
+      settings.homepage.projectCategories = settings.homepage.projectCategories.map((category) => {
+        const folderPath = `${category.number}_${category.name}`;
+        const icon = category.icon || customIcons[folderPath] || "lucide-folder";
+        if (!(folderPath in customIcons)) customIcons[folderPath] = icon;
+        return { ...category, icon };
+      });
+      settings.iconSystem.customIcons = customIcons;
       return settings;
     }
 

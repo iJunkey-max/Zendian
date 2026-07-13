@@ -846,7 +846,7 @@
 
 .zendian-project-category-row {
     display: grid;
-    grid-template-columns: 72px minmax(110px, 1fr) minmax(150px, 1.25fr) auto;
+    grid-template-columns: 34px 72px minmax(110px, 1fr) minmax(150px, 1.25fr) auto;
     align-items: center;
     gap: 8px;
     min-height: 34px;
@@ -854,7 +854,7 @@
 
 .zendian-project-category-add-row {
     display: grid;
-    grid-template-columns: 72px minmax(110px, 1fr) minmax(150px, 1.25fr) 32px;
+    grid-template-columns: 34px 72px minmax(110px, 1fr) minmax(150px, 1.25fr) 32px;
     align-items: center;
     gap: 8px;
     min-height: 34px;
@@ -1073,11 +1073,11 @@
 
 @media (max-width: 620px) {
     .zendian-project-category-row {
-        grid-template-columns: 64px minmax(100px, 1fr) auto;
+        grid-template-columns: 34px 64px minmax(100px, 1fr) auto;
     }
 
     .zendian-project-category-add-row {
-        grid-template-columns: 64px minmax(100px, 1fr) 32px;
+        grid-template-columns: 34px 64px minmax(100px, 1fr) 32px;
     }
 
     .zendian-project-category-folder,

@@ -81,7 +81,10 @@ export class IconSystemModule implements IFeatureModule {
     if (changedKeys.includes("iconSystem")) {
       this.syncSettings(settings.iconSystem);
       this.apply();
-      this.scanAndApply();
+      if (this.enabled) {
+        this.removeAllIcons();
+        this.scanAndApply();
+      }
     }
   }
 
