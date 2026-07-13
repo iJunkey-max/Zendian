@@ -51,7 +51,7 @@ export class CardLayoutModule implements IFeatureModule {
 
     // 2. canvas-card-border-width: variable-text
     //    设置 CSS 变量 --canvas-card-border-width
-    setCSSVar(document.body, "--canvas-card-border-width", settings.canvasBorder);
+    setCSSVar(document.body, "--canvas-card-border-width", `${settings.canvasBorderWidth}px`);
 
     // 3. canvas-card-menu: class-select
     //    移除所有候选 class，添加当前选中的

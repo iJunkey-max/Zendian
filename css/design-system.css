@@ -54,7 +54,8 @@
   /* 文本颜色 */
   --zd-text-primary: #111827;
   --zd-text-secondary: #4b5563;
-  --zd-text-tertiary: #9ca3af;
+  --zd-text-tertiary: #6b7280;
+  --zd-text-disabled: #7c8492;
   --zd-text-inverse: #ffffff;
 
   /* 边框颜色 */
@@ -84,8 +85,9 @@
 
   /* 文本颜色 */
   --zd-text-primary: var(--text-normal);
-  --zd-text-secondary: var(--text-muted);
-  --zd-text-tertiary: var(--text-faint);
+  --zd-text-secondary: color-mix(in srgb, var(--text-normal) 76%, var(--background-primary));
+  --zd-text-tertiary: color-mix(in srgb, var(--text-normal) 64%, var(--background-primary));
+  --zd-text-disabled: color-mix(in srgb, var(--text-normal) 54%, var(--background-primary));
   --zd-text-inverse: var(--text-on-accent);
 
   /* 边框颜色 */

@@ -18,7 +18,8 @@ function createTypewriterPlugin() {
 
       update(update: ViewUpdate) {
         if (!update.selectionSet && !update.docChanged) return;
-        if (!document.body.classList.contains("border-focus-mode")) return;
+        if (!document.body.classList.contains("border-focus-mode") ||
+            !document.body.classList.contains("focus-mode-typewriter")) return;
 
         (update.view as any).requestMeasure({
           read: (view: EditorView) => {
@@ -80,6 +81,7 @@ export class EditorEnhanceModule implements IFeatureModule {
 
   private apply(s: PluginSettings["editorEnhance"]): void {
     this.classes.toggle("border-focus-mode", s.focusMode);
+    this.classes.toggle("focus-mode-typewriter", s.focusMode && s.focusModeTypewriter);
     this.classes.toggle("line-hover-indicator", s.hoverIndicator);
     this.classes.toggle("focus-indicator-list-level", s.hoverIndicatorListLevel);
     this.classes.toggle("focus-indicator-codeblock-line-number", s.hoverIndicatorCodeblockLineNumber);

@@ -41,8 +41,8 @@ export class NewTabModule implements IFeatureModule {
     this.classes.add(`new-tab-image-${s.imageStyle}`);
 
     // imageUrl: variable-text (only applied when imageStyle is "customize")
-    if (s.imageStyle === "customize") {
-      setCSSVar(document.body, "--new-tab-image", s.imageUrl);
+    if (s.imageStyle === "customize" && s.imageUrl.trim()) {
+      setCSSVar(document.body, "--new-tab-image", `url(${JSON.stringify(s.imageUrl.trim())})`);
     } else {
       removeCSSVar(document.body, "--new-tab-image");
     }

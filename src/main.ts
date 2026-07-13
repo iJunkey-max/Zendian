@@ -34,7 +34,6 @@ import { ListTableModule } from "./modules/list-table.module";
 import { LinkModule } from "./modules/link.module";
 import { EmbedModule } from "./modules/embed.module";
 import { MobileModule } from "./modules/mobile.module";
-import { PluginCompatModule } from "./modules/plugin-compat.module";
 import { UIDetailModule } from "./modules/ui-detail.module";
 import { FileTreeModule } from "./modules/file-tree.module";
 import { HeadingsModule } from "./modules/headings.module";
@@ -98,7 +97,6 @@ export default class ZENdianPlugin extends Plugin {
     this.moduleManager.register(new LinkModule());
     this.moduleManager.register(new EmbedModule());
     this.moduleManager.register(new MobileModule());
-    this.moduleManager.register(new PluginCompatModule());
     this.moduleManager.register(new UIDetailModule());
     this.moduleManager.register(new FileTreeModule());
     this.moduleManager.register(new HeadingsModule());

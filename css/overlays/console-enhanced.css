@@ -15,6 +15,8 @@
   --zc-text: var(--zd-text-primary);
   --zc-text-secondary: var(--zd-text-secondary);
   --zc-text-tertiary: var(--zd-text-tertiary);
+  --text-muted: var(--zd-text-secondary);
+  --text-faint: var(--zd-text-tertiary);
   --zc-border: var(--zd-border-default);
   --zc-border-hover: var(--zd-border-hover);
   --zc-shadow: var(--zd-shadow-sm);
@@ -47,6 +49,8 @@
   font-family: var(--zd-font-sans);
   font-size: var(--zd-text-base);
   line-height: var(--zd-leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* ═══════════════════════════════════════════════════════════

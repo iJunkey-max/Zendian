@@ -30,6 +30,9 @@ export class SettingsManager {
     const saved = await this.plugin.loadData();
     if (saved) {
       this.settings = this.migrate(saved);
+      if (JSON.stringify(saved) !== JSON.stringify(this.settings)) {
+        await this.plugin.saveData(this.settings);
+      }
     }
   }
 
@@ -90,18 +93,27 @@ export class SettingsManager {
     // 如果已经是新格式，与默认值深度合并后返回
     // 确保新版本新增的字段有默认值
     if (oldData.autoHide && typeof oldData.autoHide === "object") {
-      for (const key of Object.keys(settings) as Array<keyof PluginSettings>) {
-        if (key in oldData) {
-          if (typeof oldData[key] === "object" && oldData[key] !== null && !Array.isArray(oldData[key])) {
-            // 对象类型：深度合并（默认值 + 用户数据）
-            settings[key] = { ...settings[key], ...oldData[key] } as any;
-          } else {
-            // 基本类型或数组：直接赋值
-            (settings as any)[key] = oldData[key];
-          }
+      const mergeKnown = (defaults: any, savedValue: any): any => {
+        if (Array.isArray(defaults)) return Array.isArray(savedValue) ? structuredClone(savedValue) : defaults;
+        if (defaults && typeof defaults === "object") {
+          if (!savedValue || typeof savedValue !== "object" || Array.isArray(savedValue)) return defaults;
+          if (Object.keys(defaults).length === 0) return structuredClone(savedValue);
+          const result: Record<string, any> = {};
+          for (const key of Object.keys(defaults)) result[key] = mergeKnown(defaults[key], savedValue[key]);
+          return result;
         }
-        // 如果 oldData 中没有某个 key，保留 DEFAULT_SETTINGS 的默认值
+        return savedValue === undefined ? defaults : savedValue;
+      };
+      Object.assign(settings, mergeKnown(DEFAULT_SETTINGS, oldData));
+
+      const legacyBorder = oldData.cardLayout?.canvasBorder;
+      if (legacyBorder !== undefined) {
+        const width = Number.parseFloat(String(legacyBorder));
+        settings.cardLayout.canvasBorderWidth = Number.isFinite(width) ? Math.max(0, Math.min(8, width)) : 2;
       }
+      const legacyImage = String(oldData.newTab?.imageUrl ?? settings.newTab.imageUrl);
+      const wrappedUrl = legacyImage.match(/^url\((['"]?)(.*?)\1\)$/i);
+      settings.newTab.imageUrl = wrappedUrl ? wrappedUrl[2].trim() : legacyImage.trim();
       // 早期测试版曾使用全局数组；分类独立配置启用后不再沿用该方案。
       if (Array.isArray((settings.homepage as any).projectSubfolders)) {
         settings.homepage.projectSubfolders = {};
@@ -121,7 +133,10 @@ export class SettingsManager {
 
       // Card Layout
       ["Components@@card-layout-open", (v) => (settings.cardLayout.enabled = !!v)],
-      ["Components@@canvas-card-border-width", (v) => (settings.cardLayout.canvasBorder = v || "2px solid")],
+      ["Components@@canvas-card-border-width", (v) => {
+        const width = Number.parseFloat(String(v));
+        settings.cardLayout.canvasBorderWidth = Number.isFinite(width) ? Math.max(0, Math.min(8, width)) : 2;
+      }],
       ["Components@@canvas-card-menu", (v) => (settings.cardLayout.canvasMenu = v || "center")],
       ["Components@@media-embed-card-border-off", (v) => (settings.cardLayout.mediaEmbedBorderOff = !!v)],
 
@@ -183,7 +198,6 @@ export class SettingsManager {
       ["Editor@@link-decoration-thickness", (v) => (settings.link.decorationThickness = v || "auto")],
       ["Editor@@link-external-decoration", (v) => (settings.link.externalDecoration = v || "underline")],
       ["Editor@@link-external-decoration-hover", (v) => (settings.link.externalDecorationHover = v || "underline")],
-      ["Editor@@link-external-filter", (v) => (settings.link.externalFilter = v || "none")],
 
       // Image
       ["Editor@@img-center-align", (v) => (settings.image.centerAlign = !!v)],
@@ -192,9 +206,7 @@ export class SettingsManager {
 
       // Embed
       ["Editor@@seamless-embeds", (v) => (settings.embed.seamless = !!v)],
-      ["Editor@@embed-padding", (v) => (settings.embed.padding = v || "")],
       ["Editor@@embed-border-radius", (v) => (settings.embed.borderRadius = v || "")],
-      ["Editor@@embed-font-style", (v) => (settings.embed.fontStyle = v || "")],
       ["Editor@@embed-max-height", (v) => (settings.embed.maxHeight = v || "")],
 
       // Checkbox
@@ -267,7 +279,11 @@ export class SettingsManager {
       // New Tab
       ["Components@@new-tab-btn-select", (v) => (settings.newTab.buttonStyle = v || "default")],
       ["Components@@new-tab-image-select", (v) => (settings.newTab.imageStyle = v || "default")],
-      ["Components@@new-tab-image", (v) => (settings.newTab.imageUrl = v || 'url(" ")')],
+      ["Components@@new-tab-image", (v) => {
+        const value = String(v || "");
+        const wrapped = value.match(/^url\((['"]?)(.*?)\1\)$/i);
+        settings.newTab.imageUrl = wrapped ? wrapped[2].trim() : value.trim();
+      }],
 
       // Canvas
       ["Components@@immersive-canvas", (v) => (settings.canvas.immersive = !!v)],
@@ -288,23 +304,8 @@ export class SettingsManager {
       ["Mobile@@card-layout-pad-open", (v) => (settings.mobile.cardLayoutPad = !!v)],
       ["Mobile@@drawer-phone-full-width", (v) => (settings.mobile.drawerPhoneFullWidth = !!v)],
 
-      // Plugin Compat
-      ["Plugin@@DB-table-full-width-off", (v) => (settings.pluginCompat.dbTableFullWidthOff = !!v)],
-      ["Plugin@@DB-table-bg-color", (v) => (settings.pluginCompat.dbTableBgColor = v || "default")],
-      ["Plugin@@Projects-bg-color", (v) => (settings.pluginCompat.projectsBgColor = v || "default")],
-      ["Plugin@@Surfing-bookmark-bar-hide", (v) => (settings.pluginCompat.surfingBookmarkBarHide = !!v)],
-
       // Rainbow Folder
       ["File-tree@@rainbow-folder", (v) => (settings.rainbowFolder.enabled = !!v)],
-      ["File-tree@@rainbow-folder-color-1", (v) => (settings.rainbowFolder.colors[0] = v || "var(--color-red)")],
-      ["File-tree@@rainbow-folder-color-2", (v) => (settings.rainbowFolder.colors[1] = v || "var(--color-orange)")],
-      ["File-tree@@rainbow-folder-color-3", (v) => (settings.rainbowFolder.colors[2] = v || "var(--color-yellow)")],
-      ["File-tree@@rainbow-folder-color-4", (v) => (settings.rainbowFolder.colors[3] = v || "var(--color-green)")],
-      ["File-tree@@rainbow-folder-color-5", (v) => (settings.rainbowFolder.colors[4] = v || "var(--color-cyan)")],
-      ["File-tree@@rainbow-folder-color-6", (v) => (settings.rainbowFolder.colors[5] = v || "var(--color-blue)")],
-      ["File-tree@@rainbow-folder-color-7", (v) => (settings.rainbowFolder.colors[6] = v || "var(--color-purple)")],
-      ["File-tree@@rainbow-folder-color-8", (v) => (settings.rainbowFolder.colors[7] = v || "var(--color-pink)")],
-      ["File-tree@@rainbow-folder-icon-size", (v) => (settings.rainbowFolder.iconSize = v ?? 16)],
       ["File-tree@@rainbow-folder-opacity", (v) => (settings.rainbowFolder.opacity = v ?? 0.12)],
     ];
 

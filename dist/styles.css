@@ -1,40 +1,3 @@
-/* @settings
-name: ZENdian
-name.zh: ZENdian
-id: zendian
-settings:
-    -
-        id: zendian-info
-        title: Theme Info
-        title.zh: 主题信息
-        type: info-text
-        description: "ZENdian — An elegant Obsidian theme combining Border Theme by Akifyss, Phycat overlay enhancements, and Style Settings by mgmeyers."
-        description.zh: "ZENdian — 融合 Border 主题（Akifyss）、Phycat 增强覆盖层与 Style Settings（mgmeyers）的优雅 Obsidian 主题。"
-        markdown: true
-    -
-        id: zendian-author
-        title: Author
-        title.zh: 作者
-        type: info-text
-        description: "Junkey"
-        description.zh: "Junkey"
-    -
-        id: zendian-version
-        title: Version
-        title.zh: 版本
-        type: info-text
-        description: "V2.2.17Beta"
-        description.zh: "V2.2.17Beta"
-    -
-        id: zendian-changelog
-        title: Changelog
-        title.zh: 版本记录
-        type: info-text
-        description: "**V2.2.17Beta** — Project Timeline & Snapshots<br>- Precise timeline with continuous rail and event filters<br>- Lightweight project snapshots, checkpoints, diff preview, and safe file restore<br>- Manual project status and compact project homepage layout<br>**V2.2.14BETA** — Project Management Update<br>- Configurable project categories and per-category subfolders"
-        description.zh: "**V2.2.17Beta** — 项目时间轴与轻量快照<br>- 秒级时间、连续轨道与事件分类筛选<br>- 支持项目快照、检查点、差异预览和单文件安全回档<br>- 新增手动项目状态并优化项目主页紧凑布局<br>**V2.2.14BETA** — 项目管理更新<br>- 支持自定义项目分类及按分类配置项目子文件夹"
-        markdown: true
-*/
-
 /* ============================================================
    ZENdian Design System — 统一设计语言
 
@@ -91,7 +54,8 @@ settings:
   /* 文本颜色 */
   --zd-text-primary: #111827;
   --zd-text-secondary: #4b5563;
-  --zd-text-tertiary: #9ca3af;
+  --zd-text-tertiary: #6b7280;
+  --zd-text-disabled: #7c8492;
   --zd-text-inverse: #ffffff;
 
   /* 边框颜色 */
@@ -121,8 +85,9 @@ settings:
 
   /* 文本颜色 */
   --zd-text-primary: var(--text-normal);
-  --zd-text-secondary: var(--text-muted);
-  --zd-text-tertiary: var(--text-faint);
+  --zd-text-secondary: color-mix(in srgb, var(--text-normal) 76%, var(--background-primary));
+  --zd-text-tertiary: color-mix(in srgb, var(--text-normal) 64%, var(--background-primary));
+  --zd-text-disabled: color-mix(in srgb, var(--text-normal) 54%, var(--background-primary));
   --zd-text-inverse: var(--text-on-accent);
 
   /* 边框颜色 */
@@ -529,1366 +494,6 @@ settings:
   border-width: 0;
 }
 
-
-/* @settings
-name: Components
-name.zh: 组件
-id: Components
-settings:
-    - 
-        id: autohide
-        title: Auto hide
-        title.zh: 自动隐藏
-        type: heading
-        collapsed: true
-        level: 3
-    - 
-        id: tab-autohide
-        title: Auto hide tab bar
-        title.zh: 自动隐藏 tab栏
-        description: Mac users can adjust the position of the traffic light using the 'Electron Window Tweaker' plugin
-        description.zh: Mac 用户可以使用 “Electron Window Tweaker” 插件来调整左上角红绿灯的位置
-        type: class-toggle
-    -
-        id: status-bar-autohide
-        title: Auto hide bottom status bar
-        title.zh: 自动隐藏 底部状态栏
-        description.zh: 隐藏窗口底部的状态栏，鼠标移到底部时自动显示
-        type: class-toggle
-    -
-        id: Ribbon-autohide
-        title: Auto hide left ribbon menu
-        title.zh: 自动隐藏 左侧功能区菜单
-        description.zh: 隐藏左侧的图标工具栏，鼠标移到左侧时自动显示
-        type: class-toggle
-    -
-        id: nav-header-autohide
-        title: Auto hide header icons in sidepane
-        title.zh: 自动隐藏 侧边面板中的头部按钮
-        description.zh: 隐藏侧边面板顶部的操作按钮，鼠标悬停时显示
-        type: class-toggle
-    -
-        id: tab-title-bar-autohide
-        title: Auto hide tab title bar
-        title.zh: 自动隐藏 标签页标题栏
-        description.zh: 隐藏标签页上方的标题栏，节省垂直空间
-        type: class-toggle
-    -
-        id: vault-profile-autohide
-        title: Auto hide vault profile
-        title.zh: 自动隐藏 vault 配置栏
-        description.zh: 隐藏左侧边栏顶部的仓库名称和头像区域
-        type: class-toggle
-    - 
-        id: file-explorer
-        title: File explorer
-        title.zh: 文件列表
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: CTA-BTN-enable
-        title: Enable bigger “New note” button
-        title.zh: 启用 更大的”New Note”按钮
-        description.zh: 将文件列表顶部的新建笔记按钮放大并添加背景色，使其更醒目
-        type: class-toggle
-    -
-        id: file-names-untrim
-        title: Untrim file names
-        title.zh: 不修剪文件名
-        description.zh: 显示完整的文件名，不因窗口宽度不足而截断
-        type: class-toggle
-    -
-        id: folder-font-bold
-        title: Bold folder font
-        title.zh: 加粗文件夹字体
-        description.zh: 将文件夹名称加粗显示，便于区分文件和文件夹
-        type: class-toggle
-    -
-        id: outline-panel
-        title: Outline Panel
-        title.zh: 大纲面板
-        type: heading
-        collapsed: true
-        level: 3
-    - 
-        id: outline-enhanced
-        title: Enable enhanced outline style
-        title.zh: 启用 增强的大纲样式
-        description: from https://github.com/subframe7536/obsidian-theme-maple, author:@subframe7536
-        description.zh: 来自 obsidian-theme-maple，作者:@subframe7536
-        type: class-toggle
-    - 
-        id: New-tab
-        title: New tab
-        title.zh: 新标签页
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: new-tab-btn-select
-        title: New tab buttons
-        title.zh: 新标签页 按钮
-        description.zh: 选择新标签页顶部显示的按钮样式
-        type: class-select
-        allowEmpty: false
-        default: new-tab-btn-default
-        options:
-            -   label: text buttons (obsidian default)
-                value: new-tab-text-btn-restore
-            -   label: default
-                value: new-tab-btn-default
-    -
-        id: new-tab-image-select
-        title: New tab image
-        title.zh: 新标签页 图像
-        description.zh: 选择新标签页显示的图像，可选择自定义图片
-        type: class-select
-        allowEmpty: false
-        default: new-tab-image-default
-        options:
-            -   label: none
-                value: new-tab-image-none
-            -   label: obsidian logo
-                value: new-tab-image-default
-            -   label: old default
-                value: new-tab-image-old
-            -   label: customize image
-                value: new-tab-image-customize
-    - 
-        id: new-tab-image
-        title: customize new tab image
-        title.zh: 自定义新标签页图像
-        type: variable-text
-        description: Enter the url of the image into quotes
-        description.zh: 向引号内输入图像的url
-        default: url(" ")
-    - 
-        id: Canvas
-        title: Canvas
-        title.zh: 白板
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: immersive-canvas
-        title: immersive canvas
-        title.zh: 沉浸式白板
-        description.zh: 移除白板的边框和阴影，使其与背景融为一体
-        type: class-toggle
-    -
-        id: media-embed-card-border-off
-        title: Remove border effect of media card.
-        title.zh: 移除媒体卡片的边框效果
-        description.zh: 移除图片、视频等媒体嵌入卡片的边框和阴影
-        type: class-toggle
-    -
-        id: canvas-card-border-width
-        title: canvas card border
-        title.zh: canvas 卡片边框
-        description.zh: 设置白板卡片的边框样式，如 "2px solid" 或 "none"
-        type: variable-text
-        default: 2px solid
-    -
-        id: canvas-card-menu
-        title: canvas card menu position
-        title.zh: canvas 卡片菜单位置
-        description.zh: 设置白板卡片右键菜单的弹出位置
-        type: class-select
-        allowEmpty: false
-        default: canvas-card-menu-center
-        options:
-            -   label: center(obsidian default)
-                value: canvas-card-menu-center
-            -   label: left
-                value: canvas-card-menu-left
-            -   label: right
-                value: canvas-card-menu-right
-    - 
-        id: animation
-        title: Animation
-        title.zh: 动效
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: extra-anim-remove
-        title: Remove additional added animation
-        title.zh: 移除 额外增加的动效
-        description.zh: 关闭插件添加的过渡动画，适合追求简洁或性能较低的设备
-        type: class-toggle
-    -
-        id: anim-speed
-        title: Animation speed
-        title.zh: 动效速度
-        description.zh: 调整过渡动画的速度，1为默认，小于1变慢，大于1变快
-        type: variable-number-slider
-        default: 1
-        min: 0.5
-        max: 2
-        step: 0.05
-    -
-        id: Card-layout
-        title: Card Layout
-        title.zh: 卡片布局
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: card-layout-open
-        title: Enable card layout
-        title.zh: 启用卡片布局
-        description.zh: 将笔记内容区域显示为圆角卡片样式，提升视觉层次感
-        type: class-toggle
-        default: true
-        classAliases: card-layout-open-light,card-layout-open-dark
-    -
-        id: Miscellaneous
-        title: Miscellaneous
-        title.zh: 杂项
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: setting-item-title-icon-remove
-        title: Remove setting item title icon
-        title.zh: 移除 设置项标题图标
-        description.zh: 移除设置面板中每个选项左侧的小图标，使界面更简洁
-        type: class-toggle
-    -
-        id: scrollbar-hide
-        title: Hide scrollbar
-        title.zh: 隐藏 滚动条
-        description.zh: 完全隐藏滚动条，内容仍可滚动，界面更简洁
-        type: class-toggle
-    -
-        id: restored-scrollbars
-        title: Restore scrollbar style
-        title.zh: 还原 滚动条的样式
-        description.zh: 将滚动条恢复为系统默认样式，而非主题自定义的细滚动条
-        type: class-toggle
-*/
-/* @settings
-name: Editor
-name.zh: 编辑器
-id: Editor
-settings:
-    - 
-        id: line-emphasis
-        title: Focus indicator
-        title.zh: 焦点指示器
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: line-hover-indicator
-        title: Enable Focus indicator
-        title.zh: 启用 焦点指示器
-        description.zh: 鼠标悬停的行左侧显示竖线标记，帮助定位当前行
-        type: class-toggle
-    -
-        id: focus-indicator-list-level
-        title: indicate list level
-        title.zh: 指示列表层级
-        description.zh: 焦点指示器根据列表缩进层级显示不同颜色
-        type: class-toggle
-    -
-        id: focus-indicator-codeblock-line-number
-        title: indicate codeblock line number
-        title.zh: 指示代码块行号
-        description.zh: 在代码块中显示当前行号
-        type: class-toggle
-    - 
-        id: border-focus-mode-heading
-        title: Focus mode
-        title.zh: 专注模式
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: border-focus-mode
-        title: Enable focus mode
-        title.zh: 启用 专注模式
-        description.zh: 降低非当前行的透明度，让注意力集中在正在编辑的段落
-        type: class-toggle
-    -
-        id: line-normal-opacity
-        title: Normal line opacity
-        title.zh: 普通行透明度
-        description.zh: 专注模式下非当前行的透明度，值越小越聚焦
-        type: variable-number-slider
-        default: 0.5
-        min: 0.05
-        max: 1
-        step: 0.05
-    - 
-        id: Editor-background-pattern
-        title: Editor background pattern
-        title.zh: 编辑器背景图案
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: editor-grid-background-pattren
-        title: Enable grid background pattern
-        title.zh: 启用 网格背景图案
-        description.zh: 在编辑器背景显示淡雅的网格线，营造书写纸效果
-        type: class-toggle
-        default: true
-    - 
-        id: grid-background-pattern-size
-        title: Custom grid background pattern size
-        title.zh: 自定义 网格背景图案尺寸
-        description: Accepts any CSS background-size value
-        description.zh: 接受任何 CSS background-size 值
-        type: variable-text
-        default: 36px
-    - 
-        id: Headings
-        title: Headings
-        title.zh: 标题
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: collapse-icon-restore
-        title: Restore the collapse icon before headings
-        title.zh: 还原标题前的折叠图标
-        description.zh: 在标题前显示三角形折叠图标，可点击展开/折叠标题下的内容
-        type: class-toggle
-    -
-		id: heading-indicator-off
-		title: Remove headings indicator
-		title.zh: 移除标题左侧的指示器
-		description.zh: 移除标题左侧的彩色竖线指示器
-		type: class-toggle
-		default: false
-    - 
-		id: Inline-title
-		title: Inline Title
-        title.zh: 页内标题
-		type: heading
-		level: 4
-		collapsed: true
-    -
-        id: inline-title-divider-remove
-        title: Remove inline title divider
-        title.zh: 移除页内标题分隔线
-        description.zh: 移除页内标题下方的水平分隔线
-        type: class-toggle
-    -
-		id: inline-title-font
-		title: inline title font
-        title.zh: 页内标题 字体
-		description.zh: 自定义页内标题的字体，留空使用默认字体
-		type: variable-text
-		default: ''
-	-
-		id: inline-title-size
-		title: inline title size
-        title.zh: 页内标题 字体大小
-		description.zh: 设置页内标题的字体大小，如 1.5em、24px
-		type: variable-text
-		default: 1.5em
-	-
-        id: inline-title-weight
-        title: inline title weight
-        title.zh: 页内标题 字重
-        description.zh: 设置页内标题的字重，400为正常，700为粗体
-        type: variable-number
-        default: 700
-    -
-		id: inline-title-text-transform
-		title: inline title text-transform
-		title.zh: 页内标题 text-transform
-		description.zh: 设置页内标题的文本转换，如 uppercase、capitalize
-		type: variable-text
-		default: ''
-    -
-        id: heading-levels-grid
-        title: Per-Level Headings
-        title.zh: 各级标题设置
-        type: heading-levels-grid
-        level: 4
-        collapsed: true
-        levels: H1,H2,H3,H4,H5,H6
-    -
-        id: h1-divider-on
-        title: Enable divider
-        title.zh: 启用分隔线
-        description.zh: 在一级标题下方显示水平分隔线
-        type: class-toggle
-        default: false
-    -
-        id: h1-font
-        title: Font
-        title.zh: 字体
-        description.zh: 自定义一级标题的字体，留空使用默认字体
-        type: variable-text
-        default: ''
-    -
-        id: h1-weight
-        title: Font weight
-        title.zh: 字重
-        description.zh: 设置一级标题的字重，400为正常，700为粗体
-        type: variable-number
-        default: 700
-    -
-        id: h1-text-transform
-        title: text-transform
-        title.zh: text-transform
-        description.zh: 设置一级标题的文本转换，如 uppercase、capitalize
-        type: variable-text
-        default: ''
-    -
-        id: h1-color-select
-        title: Text color
-        title.zh: 文本颜色
-        description.zh: 选择一级标题的文本颜色方案
-        type: class-select
-        allowEmpty: false
-        default: h1-color-default
-        options:
-            -   label: Default
-                value: h1-color-default
-            -   label: Accent color
-                value: h1-color-designated
-    -
-        id: h2-divider-on
-        title: Enable divider
-        title.zh: 启用分隔线
-        description.zh: 在二级标题下方显示水平分隔线
-        type: class-toggle
-        default: false
-    -
-        id: h2-font
-        title: Font
-        title.zh: 字体
-        description.zh: 自定义二级标题的字体，留空使用默认字体
-        type: variable-text
-        default: ''
-    -
-        id: h2-weight
-        title: Font weight
-        title.zh: 字重
-        description.zh: 设置二级标题的字重，400为正常，700为粗体
-        type: variable-number
-        default: 675
-    -
-        id: h2-text-transform
-        title: text-transform
-        title.zh: text-transform
-        description.zh: 设置二级标题的文本转换，如 uppercase、capitalize
-        type: variable-text
-        default: ''
-    -
-        id: h2-color-select
-        title: Text color
-        title.zh: 文本颜色
-        description.zh: 选择二级标题的文本颜色方案
-        type: class-select
-        allowEmpty: false
-        default: h2-color-default
-        options:
-            -   label: Default
-                value: h2-color-default
-            -   label: Accent color
-                value: h2-color-designated
-    -
-        id: h3-divider-on
-        title: Enable divider
-        title.zh: 启用分隔线
-        description.zh: 在三级标题下方显示水平分隔线
-        type: class-toggle
-        default: false
-    -
-        id: h3-font
-        title: Font
-        title.zh: 字体
-        description.zh: 自定义三级标题的字体，留空使用默认字体
-        type: variable-text
-        default: ''
-    -
-        id: h3-weight
-        title: Font weight
-        title.zh: 字重
-        description.zh: 设置三级标题的字重，400为正常，700为粗体
-        type: variable-number
-        default: 650
-    -
-        id: h3-text-transform
-        title: text-transform
-        title.zh: text-transform
-        description.zh: 设置三级标题的文本转换，如 uppercase、capitalize
-        type: variable-text
-        default: ''
-    -
-        id: h3-color-select
-        title: Text color
-        title.zh: 文本颜色
-        description.zh: 选择三级标题的文本颜色方案
-        type: class-select
-        allowEmpty: false
-        default: h3-color-default
-        options:
-            -   label: Default
-                value: h3-color-default
-            -   label: Accent color
-                value: h3-color-designated
-    -
-        id: h4-divider-on
-        title: Enable divider
-        title.zh: 启用分隔线
-        description.zh: 在四级标题下方显示水平分隔线
-        type: class-toggle
-        default: false
-    -
-        id: h4-font
-        title: Font
-        title.zh: 字体
-        description.zh: 自定义四级标题的字体，留空使用默认字体
-        type: variable-text
-        default: ''
-    -
-        id: h4-weight
-        title: Font weight
-        title.zh: 字重
-        description.zh: 设置四级标题的字重，400为正常，700为粗体
-        type: variable-number
-        default: 625
-    -
-        id: h4-text-transform
-        title: text-transform
-        title.zh: text-transform
-        description.zh: 设置四级标题的文本转换，如 uppercase、capitalize
-        type: variable-text
-        default: ''
-    -
-        id: h4-color-select
-        title: Text color
-        title.zh: 文本颜色
-        description.zh: 选择四级标题的文本颜色方案
-        type: class-select
-        allowEmpty: false
-        default: h4-color-default
-        options:
-            -   label: Default
-                value: h4-color-default
-            -   label: Accent color
-                value: h4-color-designated
-    -
-        id: h5-divider-on
-        title: Enable divider
-        title.zh: 启用分隔线
-        description.zh: 在五级标题下方显示水平分隔线
-        type: class-toggle
-        default: false
-    -
-        id: h5-font
-        title: Font
-        title.zh: 字体
-        description.zh: 自定义五级标题的字体，留空使用默认字体
-        type: variable-text
-        default: ''
-    -
-        id: h5-weight
-        title: Font weight
-        title.zh: 字重
-        description.zh: 设置五级标题的字重，400为正常，700为粗体
-        type: variable-number
-        default: 600
-    -
-        id: h5-text-transform
-        title: text-transform
-        title.zh: text-transform
-        description.zh: 设置五级标题的文本转换，如 uppercase、capitalize
-        type: variable-text
-        default: ''
-    -
-        id: h5-color-select
-        title: Text color
-        title.zh: 文本颜色
-        description.zh: 选择五级标题的文本颜色方案
-        type: class-select
-        allowEmpty: false
-        default: h5-color-default
-        options:
-            -   label: Default
-                value: h5-color-default
-            -   label: Accent color
-                value: h5-color-designated
-    -
-        id: h6-divider-on
-        title: Enable divider
-        title.zh: 启用分隔线
-        description.zh: 在六级标题下方显示水平分隔线
-        type: class-toggle
-        default: false
-    -
-        id: h6-font
-        title: Font
-        title.zh: 字体
-        description.zh: 自定义六级标题的字体，留空使用默认字体
-        type: variable-text
-        default: ''
-    -
-        id: h6-weight
-        title: Font weight
-        title.zh: 字重
-        description.zh: 设置六级标题的字重，400为正常，700为粗体
-        type: variable-number
-        default: 575
-    -
-        id: h6-text-transform
-        title: text-transform
-        title.zh: text-transform
-        description.zh: 设置六级标题的文本转换，如 uppercase、capitalize
-        type: variable-text
-        default: ''
-    -
-        id: h6-color-select
-        title: Text color
-        title.zh: 文本颜色
-        description.zh: 选择六级标题的文本颜色方案
-        type: class-select
-        allowEmpty: false
-        default: h6-color-default
-        options:
-            -   label: Default
-                value: h6-color-default
-            -   label: Accent color
-                value: h6-color-designated
-    - 
-        id: Paragraph
-        title: Paragraph
-        title.zh: 段落
-        type: heading
-        collapsed: true
-        level: 3
-    -
-		id: text-align-justify
-		title: Justify paragraph text
-		title.zh: 段落两端对齐
-		description.zh: 使段落文本左右两端对齐，类似报纸排版效果
-		type: class-toggle
-		default: false
-    -
-		id: p-spacing-br
-		title: Paragraph spacing also takes effect after a line break (Reading mode)
-		title.zh: 段间距也对换行后的内容生效（阅读模式）
-		description.zh: 让 Shift+Enter 软换行后的内容也保持段落间距
-		type: class-toggle
-		default: false
-    - 
-        id: Text
-        title: Text
-        title.zh: 文本
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: inline-code-background-light
-        title: Customize inline code background (light mode)
-        title.zh: 自定义 内联代码背景（亮色模式）
-        description.zh: 自定义亮色模式下内联代码的背景颜色，如 #f0f0f0
-        type: variable-text
-        default: ''
-    -
-        id: inline-code-background-dark
-        title: Customize inline code background (dark mode)
-        title.zh: 自定义 内联代码背景（暗色模式）
-        description.zh: 自定义暗色模式下内联代码的背景颜色，如 #2d2d2d
-        type: variable-text
-        default: ''
-    - 
-        id: Links
-        title: Links
-        title.zh: 链接
-        type: heading
-        collapsed: true
-        level: 3
-	-
-		id: link-decoration
-		title: Link decoration
-        title.zh: 链接装饰
-		description.zh: 设置链接的装饰样式，如 underline、none、dashed
-		type: variable-text
-		default: underline
-	-
-		id: link-decoration-hover
-		title: Link decoration (hover)
-        title.zh: 链接装饰（鼠标悬停时）
-		description.zh: 设置鼠标悬停时链接的装饰样式
-		type: variable-text
-		default: underline
-	-
-		id: link-decoration-thickness
-		title: Link decoration thickness
-        title.zh: 链接装饰厚度
-		description.zh: 设置链接下划线的粗细，如 auto、1px、2px
-		type: variable-text
-		default: auto
-    - 
-		id: links-external
-		title: External links
-        title.zh: 外部链接
-		type: heading
-		level: 4
-		collapsed: true
-    -
-		id: link-external-decoration
-		title: External link decoration
-        title.zh: 外部链接装饰
-		description.zh: 设置外部链接的装饰样式，如 underline、none
-		type: variable-text
-		default: underline
-	-
-		id: link-external-decoration-hover
-		title: External link decoration (hover)
-        title.zh: 外部链接装饰（鼠标悬停时）
-		description.zh: 设置鼠标悬停时外部链接的装饰样式
-		type: variable-text
-		default: underline
-	-
-		id: link-external-filter
-		title: External link filter
-        title.zh: 外部链接 filter
-		description.zh: 为外部链接添加 CSS 滤镜效果，如 grayscale(50%)、brightness(0.8)
-		type: variable-text
-		default: none
-	- 
-        id: Lists
-        title: Lists
-        title.zh: 列表
-        type: heading
-        collapsed: true
-        level: 3
-    -
-		id: list-indent
-		title: list indent
-        title.zh:  列表缩进
-		description.zh: 设置列表子项的缩进距离，值越大缩进越多
-		type: variable-text
-		default: 2.25em
-    -
-		id: list-spacing
-		title: list spacing
-        title.zh:  列表间距
-		description.zh: 设置列表项之间的垂直间距
-		type: variable-text
-		default: 0.075em
-    -
-		id: ul-marker-restore
-		title: Restore default style of unordered list
-        title.zh: 恢复无序列表的默认样式
-		description.zh: 将无序列表的圆点标记恢复为 Obsidian 默认样式
-		type: class-toggle
-		default: false
-    - 
-        id: Tables
-        title: Tables
-        title.zh: 表格
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: table-header-background-light
-        title: Customize table header background (light mode)
-        title.zh: 自定义 表头背景（亮色模式）
-        description.zh: 自定义亮色模式下表格表头的背景颜色
-        type: variable-text
-        default: ''
-    -
-        id: table-header-background-dark
-        title: Customize table header background (dark mode)
-        title.zh: 自定义 表头背景（暗色模式）
-        description.zh: 自定义暗色模式下表格表头的背景颜色
-        type: variable-text
-        default: ''
-    -
-        id: table-width-select
-        title: Table width
-        title.zh: 表格宽度
-        description.zh: 选择表格宽度的计算方式
-        type: class-select
-        allowEmpty: false
-        default: table-width-default
-        options:
-            -   label: Consistent with line width (Default)
-                value: table-width-default
-            -   label: Obsidian default
-                value: table-width-obsidian-default
-            -   label: Customize table width
-                value: table-width-customized
-    - 
-        id: table-width
-        title: customize table width
-        title.zh: 自定义表格宽度
-        description: () percent of the editor panel width
-        description.zh: 编辑器面板宽度的百分之（）
-        type: variable-number-slider
-        default: 88
-        min: 10
-        max: 100
-        step: 1
-        format: cqw
-    - 
-        id: Image
-        title: Image
-        title.zh: 图片
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: img-center-align
-        title: center-align the image
-        title.zh: 图像居中显示
-        description.zh: 将笔记中的图片居中对齐，而非默认的左对齐
-        type: class-toggle
-    - 
-        id: img-darken
-        title: darken image in dark mode
-        title.zh: 在暗黑模式下暗化图像
-        description: Hover to restore image
-        description.zh: 鼠标经过时还原
-        type: class-toggle
-    - 
-        id: zoom-off
-        title: Disable Image zoom
-        title.zh: 关闭图像缩放
-        description: from https://github.com/kepano/obsidian-minimal, author:@kepano
-        description.zh: 来自 obsidian-minimal，作者:@kepano
-        type: class-toggle
-    - 
-        id: Code-heading
-        title: Codeblock
-        title.zh: 代码块
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: codeblock-style-select
-        title: Codeblock theme
-        title.zh: 代码块主题
-        description.zh: 选择代码块的配色主题方案
-        type: class-select
-        allowEmpty: false
-        default: codeblock-style-customize
-        options:
-            -   label: Customize
-                value: codeblock-style-customize
-            -   label: Dracula
-                value: codeblock-style-dracula
-            -   label: Solarized light
-                value: codeblock-style-solarized-light
-            -   label: Solarized dark
-                value: codeblock-style-solarized-dark
-            -   label: One dark
-                value: codeblock-style-one-dark
-    -
-        id: code-background-light
-        title: Customize codeblock background (light mode)
-        title.zh: 自定义 代码块背景（亮色模式）
-        description.zh: 自定义亮色模式下代码块的背景颜色
-        type: variable-text
-        default: ''
-    -
-        id: code-border-light
-        title: Customize codeblock border (light mode)
-        title.zh: 自定义 代码块边框（亮色模式）
-        description.zh: 自定义亮色模式下代码块的边框样式，如 1px solid #ddd
-        type: variable-text
-        default: ''
-    -
-        id: code-background-dark
-        title: Customize codeblock background (dark mode)
-        title.zh: 自定义 代码块背景（暗色模式）
-        description.zh: 自定义暗色模式下代码块的背景颜色
-        type: variable-text
-        default: ''
-    -
-        id: code-border-dark
-        title: Customize codeblock border (dark mode)
-        title.zh: 自定义 代码块边框（暗色模式）
-        description.zh: 自定义暗色模式下代码块的边框样式
-        type: variable-text
-        default: ''
-    - 
-        id: Blockquote-heading
-        title: Blockquote
-        title.zh: 块引用
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: blockquote-background-light
-        title: Customize blockquote background (light mode)
-        title.zh: 自定义 块引用背景（亮色模式）
-        description.zh: 自定义亮色模式下引用块的背景颜色
-        type: variable-text
-        default: ''
-    -
-        id: blockquote-background-dark
-        title: Customize blockquote background (dark mode)
-        title.zh: 自定义 块引用背景（暗色模式）
-        description.zh: 自定义暗色模式下引用块的背景颜色
-        type: variable-text
-        default: ''
-    - 
-        id: Callouts
-        title: Callouts
-        title.zh: 标注
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: callout-style-select
-        title: callout style
-        title.zh: 标注风格
-        description.zh: 选择标注块的视觉风格方案
-        type: class-select
-        allowEmpty: false
-        default: callout-style-customize
-        options:
-            -   label: Customize
-                value: callout-style-customize
-            -   label: style 1
-                value: callout-style-1
-            -   label: style 2
-                value: callout-style-2
-            -   label: style 3
-                value: callout-style-3
-            -   label: style 4
-                value: callout-style-4
-    -
-		id: callout-border-width
-		title: callout border width
-        title.zh: 标注边框大小
-        description.zh: 设置标注块左侧边框的宽度，如 0px、2px、4px
-        type: variable-text
-        default: 0px
-    -
-        id: callout-border-opacity
-        title: callout border opacity
-        title.zh: 标注边框透明度
-        description.zh: 调整标注边框的透明度，0为完全透明，1为完全不透明
-        type: variable-number-slider
-        default: 0.25
-        min: 0
-        max: 1
-        step: 0.05
-    -
-		id: callout-padding
-		title: callout padding
-        title.zh: 标注边距
-		description.zh: 设置标注块内部的内边距，如 1em、16px
-		type: variable-text
-		default: ''
-    -
-		id: callout-title-padding
-		title: callout title padding
-        title.zh: 标注标题边距
-		description.zh: 设置标注标题区域的内边距
-		type: variable-text
-		default: ''
-    -
-		id: callout-title-size
-		title: callout title size
-        title.zh: 标注标题大小
-		description.zh: 设置标注标题的字体大小，如 1em、16px
-		type: variable-text
-		default: ''
-    -
-		id: callout-content-padding
-		title: callout content padding
-        title.zh: 标注内容边距
-		description.zh: 设置标注正文内容区域的内边距
-		type: variable-text
-		default: ''
-    -
-        id: callout-content-radius
-        title: callout content radius
-        title.zh: 标注内容圆角
-        description.zh: 设置标注内容区域的圆角大小，如 0px、8px
-        type: variable-text
-        default: ''
-    - 
-        id: Embeds
-        title: Embeds
-        title.zh: 内嵌文档
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: seamless-embeds
-        title: seamless embeds
-        title.zh: 无缝嵌入
-        description.zh: 移除嵌入文档的边框和背景，使其与正文融为一体
-        type: class-toggle
-    -
-        id: embed-padding
-        title: embed padding
-        title.zh: 内嵌文档 padding
-        description.zh: 设置嵌入文档的内边距
-        type: variable-text
-        default: ''
-    -
-        id: embed-border-radius
-        title: embed border radius
-        title.zh: 内嵌文档 圆角半径
-        description.zh: 设置嵌入文档的圆角大小，如 0px、8px
-        type: variable-text
-        default: ''
-    -
-        id: embed-font-style
-        title: embed font style
-        title.zh: 内嵌文档 字体风格
-        description.zh: 设置嵌入文档的字体风格，如 normal、italic
-        type: variable-text
-        default: ''
-    -
-        id: embed-max-height
-        title: embed max height
-        title.zh: 内嵌文档 最大高度
-        description.zh: 限制嵌入文档的最大高度，超出部分可滚动，如 300px、50vh
-        type: variable-text
-        default: ''
-    - 
-        id: Checkbox
-        title: Checkbox
-        title.zh: 复选框
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: disable-alternative-checkboxes
-        title: Disable Alternative Checkboxes
-        title.zh: 禁用备用复选框
-        description: Disable this if you are using your own implementation via a CSS Snippet.
-        description.zh: 如果你使用 CSS 片段实现了自己的复选框样式，请禁用此项。
-        type: class-toggle
-    -
-        id: checkbox-radius
-        title: checkbox radius
-        title.zh: 复选框 圆角半径
-        description.zh: 设置复选框的圆角大小，0px为方形，50%为圆形
-        type: variable-text
-        default: '6px'
-    -
-        id: phycat-spacing-heading
-        title: Phycat Spacing
-        title.zh: Phycat 文章间距
-        type: heading
-        level: 3
-        collapsed: true
-    -
-        id: file-line-width
-        title: File line width
-        title.zh: 阅读区宽度
-        description.zh: 单位px
-        type: variable-number
-        default: 900
-        format: px
-    -
-        id: letter-spacing
-        title: Letter spacing
-        title.zh: 字间距
-        description.zh: 调整字符之间的间距，0为默认，正值增大间距
-        type: variable-number
-        default: 1
-        format: px
-    -
-        id: line-height-customize
-        title: Line height
-        title.zh: 段落行高
-        description.zh: 调整段落文本的行高，值越大行距越宽松
-        type: variable-number
-        default: 2.2
-    -
-        id: code-line-height
-        title: code Line height
-        title.zh: 代码行高
-        description.zh: 调整代码块中文本的行高
-        type: variable-number
-        default: 1.6
-    -
-        id: blockquote-line-height
-        title: blockquote Line height
-        title.zh: 引用块行高
-        description.zh: 调整引用块中文本的行高
-        type: variable-number
-        default: 1.6
-    -
-        id: table-line-height
-        title: Table Line height
-        title.zh: 表格行高
-        description.zh: 调整表格单元格中文本的行高
-        type: variable-number
-        default: 1.8
-    -
-        id: p-spacing
-        title: Paragraph spacing (Reading mode)
-        title.zh: 段落间距（阅读模式）
-        description.zh: 设置阅读模式下段落之间的间距，如 1em、16px
-        type: variable-text
-        default: 1em
-    -
-        id: phycat-headings-heading
-        title: Phycat Headings
-        title.zh: Phycat 标题设置
-        type: heading
-        level: 3
-        collapsed: true
-    -
-        id: h1-alignment
-        title: H1 Alignment
-        title.zh: H1 对齐方式
-        description.zh: 选择 H1 标题是居中显示还是居左显示
-        type: class-select
-        allowEmpty: false
-        default: h1-align-center
-        options:
-          - label: Center (Default)
-            value: h1-align-center
-          - label: Left
-            value: h1-align-left
-    -
-        id: h2-style-select
-        title: H2 Style (Light)
-        title.zh: H2 亮色模式风格
-        description.zh: 选择亮色模式下二级标题的装饰风格，双子塔或胶囊
-        type: class-select
-        allowEmpty: false
-        default: h2-style-twin
-        options:
-            -
-                label: Twin Pillars
-                value: h2-style-twin
-            -
-                label: Capsule
-                value: h2-style-capsule
-    -
-        id: h2-style-dark-select
-        title: H2 Style (Dark)
-        title.zh: H2 暗色模式风格
-        description.zh: 选择暗色模式下二级标题的装饰风格，霓虹双子塔或玻璃胶囊
-        type: class-select
-        allowEmpty: false
-        default: h2-style-dark-twin
-        options:
-            -
-                label: Neon Twin
-                value: h2-style-dark-twin
-            -
-                label: Glass Capsule
-                value: h2-style-dark-capsule
-    -
-        id: h2-spacing-scale-start
-        title: H2 spacing start
-        title.zh: H2前间距
-        description.zh: 调整二级标题上方的间距倍数
-        type: variable-number
-        default: 1.318
-    -
-        id: h2-spacing-scale-end
-        title: H2 spacing end
-        title.zh: H2后间距
-        description.zh: 调整二级标题下方的间距倍数
-        type: variable-number
-        default: 1.318
-    -
-        id: h3-spacing-scale-start
-        title: H3 spacing start
-        title.zh: H3前间距
-        description.zh: 调整三级标题上方的间距倍数
-        type: variable-number
-        default: 1.5
-    -
-        id: h3-spacing-scale-end
-        title: H3 spacing end
-        title.zh: H3后间距
-        description.zh: 调整三级标题下方的间距倍数
-        type: variable-number
-        default: 1.5
-    -
-        id: h4-spacing-scale-start
-        title: H4 spacing start
-        title.zh: H4前间距
-        description.zh: 调整四级标题上方的间距倍数
-        type: variable-number
-        default: 1.5
-    -
-        id: h4-spacing-scale-end
-        title: H4 spacing end
-        title.zh: H4后间距
-        description.zh: 调整四级标题下方的间距倍数
-        type: variable-number
-        default: 1.5
-    -
-        id: h5-spacing-scale-start
-        title: H5 spacing start
-        title.zh: H5前间距
-        description.zh: 调整五级标题上方的间距倍数
-        type: variable-number
-        default: 1.5
-    -
-        id: h5-spacing-scale-end
-        title: H5 spacing end
-        title.zh: H5后间距
-        description.zh: 调整五级标题下方的间距倍数
-        type: variable-number
-        default: 1.5
-    -
-        id: h6-spacing-scale-start
-        title: H6 spacing start
-        title.zh: H6前间距
-        description.zh: 调整六级标题上方的间距倍数
-        type: variable-number
-        default: 1.5
-    -
-        id: h6-spacing-scale-end
-        title: H6 spacing end
-        title.zh: H6后间距
-        description.zh: 调整六级标题下方的间距倍数
-        type: variable-number
-        default: 1.5
-*/
-
-/* @settings
-name: Mobile
-name.zh: 移动端
-id: Mobile
-settings:
-    -
-        id: card-layout-pad-open
-        title: Enable card layout (pad only)
-        title.zh: 开启卡片式布局（平板端）
-        description.zh: 在平板设备上启用卡片式笔记布局
-        type: class-toggle
-    -
-        id: drawer-phone-full-width
-        title: Side drawer full screen (phone only)
-        title.zh: 侧边抽屉全屏（手机端）
-        description.zh: 在手机端打开侧边栏时自动全屏显示，关闭后返回笔记
-        type: class-toggle
-*/
-
-/* @settings
-name: Plugin
-name.zh: 插件兼容
-id: Plugin
-settings:
-    - 
-        id: DB Folder
-        title: DB Folder
-        title.zh: DB Folder
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: DB-table-full-width-off
-        title: Disable full width table
-        title.zh: 关闭 全宽表格
-        description.zh: 让 DB Folder 插件的表格不自动撑满整个窗口宽度
-        type: class-toggle
-    -
-        id: DB-table-bg-color
-        title: background color
-        title.zh: 背景颜色
-        description.zh: 设置 DB Folder 表格的背景颜色方案
-        type: class-select
-        allowEmpty: false
-        default: DB-table-bg-color-default
-        options:
-            -   label: Default
-                value: DB-table-bg-color-default
-            -   label: Adapt to lower background
-                value: DB-table-bg-color-adapt
-            -   label: Unify background color
-                value: DB-table-bg-color-unify
-    - 
-        id: Projects
-        title: Projects
-        title.zh: Projects
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: Projects-bg-color
-        title: background color
-        title.zh: 背景颜色
-        description.zh: 设置 Projects 插件的背景颜色方案
-        type: class-select
-        allowEmpty: false
-        default: Projects-bg-color-default
-        options:
-            -   label: Default
-                value: Projects-bg-color-default
-            -   label: Adapt to lower background
-                value: Projects-bg-color-adapt
-            -   label: Unify background color
-                value: Projects-bg-color-unify
-    - 
-        id: Surfing
-        title: Surfing
-        title.zh: Surfing
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: Surfing-bookmark-bar-hide
-        title: Hide bookmark bar when browsing web
-        title.zh: 浏览网页时隐藏书签栏
-        description.zh: 使用 Surfing 插件浏览网页时自动隐藏书签栏，获得更大浏览空间
-        type: class-toggle
-    - 
-        id: Checklist
-        title: Checklist
-        title.zh: Checklist
-        type: heading
-        collapsed: true
-        level: 3
-    -
-        id: colorful-checkbox
-        title: colorful checkbox
-        title.zh: 多彩选框
-        description.zh: 为 Checklist 插件的复选框添加不同颜色，区分任务状态
-        type: class-toggle
-*/
-
-/* @settings
-name: File Tree
-name.zh: 文件树
-id: File-tree
-settings:
-    -
-        id: rainbow-folder
-        title: Enable rainbow folder
-        title.zh: 启用彩虹文件夹
-        description.zh: 为文件树中的文件夹图标添加彩虹色循环效果
-        type: class-toggle
-        default: false
-    -
-        id: rainbow-folder-icon-size
-        title: Folder icon size
-        title.zh: 文件夹图标大小
-        description.zh: 调整文件夹图标的大小
-        type: variable-number
-        default: 16
-        format: px
-        min: 10
-        max: 24
-    -
-        id: rainbow-folder-opacity
-        title: Background opacity
-        title.zh: 背景遮罩透明度
-        description.zh: 调整文件夹标题背景遮罩的透明度，0为完全透明，1为完全不透明
-        type: variable-number
-        default: 0.12
-        min: 0
-        max: 0.5
-        step: 0.02
-*/
 
 
 
@@ -3078,14 +1683,12 @@ body {
     --scrollbar-active-thumb-bg: rgba(var(--mono-rgb-100), 0.15);
 }
 
-body:not(.restored-scrollbars) ::-webkit-scrollbar,
-body:not(.restored-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar {
+body:not(.restored-scrollbars) ::-webkit-scrollbar {
     width: 11px;
     height: 11px;
 }
 
-body:not(.restored-scrollbars) ::-webkit-scrollbar-thumb,
-body:not(.restored-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar-thumb {
+body:not(.restored-scrollbars) ::-webkit-scrollbar-thumb {
     background-clip: padding-box;
     border-radius: 20px;
     border: 3px solid transparent;
@@ -3113,7 +1716,7 @@ body:not(.restored-scrollbars):not(.is-mobile) ::-webkit-scrollbar-thumb:active 
     background-color: var(--scrollbar-active-thumb-bg) !important;
 }
 
-.workspace-leaf-content:is([data-type="surfing-view"], [data-type="graph"], [data-type="localgraph"]) ::-webkit-scrollbar,
+.workspace-leaf-content:is([data-type="graph"], [data-type="localgraph"]) ::-webkit-scrollbar,
 .scrollbar-hide ::-webkit-scrollbar {
     display: none;
 }
@@ -3773,17 +2376,6 @@ body:not(.is-mobile) .view-header>* {
     --icon-stroke: var(--icon-m-stroke-width);
 }
 
-/*view-header surfing*/
-body:not(.is-mobile) .workspace-leaf-content[data-type="empty"]:has(.wb-bookmark-bar) .view-header {
-    margin-top: 0px !important;
-    height: var(--header-height) !important;
-}
-
-body:not(.is-mobile) .workspace-leaf-content[data-type="empty"]:has(.wb-bookmark-bar) :is(.view-actions, .view-header-nav-buttons, .view-header-title-container) {
-    opacity: 1;
-}
-
-
 /* vault profile */
 
 body:not(.is-mobile) .workspace-split.mod-left-split {
@@ -4223,25 +2815,6 @@ body {
 .is-mobile .workspace-leaf-content[data-type="empty"] .empty-state-action {
     margin: 12px 0;
     padding: 4px 24px;
-}
-
-/*surfing plugin*/
-
-.empty-state:has(.wb-search-bar-container)::before,
-.empty-state:has(.wb-search-bar-container) .empty-state-container {
-    display: none;
-}
-
-.surfing-settings-icon {
-    width: fit-content;
-    height: fit-content;
-    position: absolute;
-    right: 20px;
-    margin-top: var(--size-4-4);
-}
-
-input.wb-search-bar {
-    --background-modifier-form-field: transparent;
 }
 
 /* ====== workspace mod side====== */
@@ -4858,11 +3431,6 @@ body:not(.is-mobile) input.prompt-input {
 
 body:not(.is-phone) div:has(>input.prompt-input) {
     border-bottom: 2px solid var(--color-accent) !important;
-}
-
-.kanban-plugin__lane-input>textarea,
-.kanban-plugin__grow-wrap>textarea {
-    --background-modifier-form-field: transparent;
 }
 
 .combobox .search-input-container input[type=search] {
@@ -6516,287 +5084,6 @@ svg {
 .is-phone.drawer-phone-full-width .workspace-drawer {
     width: 100vw;
     border-radius: 0px;
-}
-
-
-/* ======== Plugin support ========*/
-
-/*DB folder*/
-body:not(.DB-table-full-width-off) .database-plugin__table {
-    width: 100% !important;
-}
-
-body.DB-table-bg-color-unify .database-plugin__navbar,
-body.DB-table-bg-color-unify .database-plugin__table {
-    --background-primary: transparent;
-    --background-secondary: transparent;
-}
-
-body.DB-table-bg-color-adapt .database-plugin__navbar,
-body.DB-table-bg-color-adapt .database-plugin__table {
-    --background-primary: transparent;
-    --background-secondary: rgba(var(--mono-rgb-100), 0.025);
-}
-
-body.DB-table-bg-color-unify .database-plugin__th:hover,
-body.DB-table-bg-color-unify .data-input:hover,
-body.DB-table-bg-color-adapt .database-plugin__th:hover,
-body.DB-table-bg-color-adapt .data-input:hover {
-    --background-modifier-hover: rgba(var(--mono-rgb-100), 0.025);
-    --background-secondary: var(--background-modifier-hover);
-}
-
-.database-plugin__pagination-button:hover {
-    background-color: var(--interactive-hover);
-}
-
-/* Projects */
-body.Projects-bg-color-unify .projects-container.svelte-gr1f73 {
-    --background-primary: transparent;
-    --background-secondary: transparent;
-    --tab-background-active: var(--background-primary);
-}
-
-body.Projects-bg-color-adapt .projects-container.svelte-gr1f73 {
-    --background-primary: transparent;
-    --background-secondary: rgba(var(--mono-rgb-100), 0.025);
-    --tab-background-active: var(--background-primary);
-}
-
-/*style settings*/
-
-body:not(.is-mobile) .workspace-leaf-content[data-type="style-settings"] .view-content {
-    padding: 12px !important;
-}
-
-.setting-item.setting-item-heading.style-settings-heading {
-    border: 0;
-    padding: 8px 0 4px;
-    margin-bottom: 0;
-    margin-top: 8px;
-    border-radius: 0
-}
-
-.style-settings-container {
-    padding-left: var(--size-4-8);
-    margin-left: var(--size-4-1);
-    border-left: 1px solid var(--divider-color);
-}
-
-.style-settings-heading,
-.style-settings-heading[data-level="0"] {
-    margin-bottom: 12px;
-}
-
-.style-settings-heading[data-level="0"]+.style-settings-container .style-settings-collapse-indicator {
-    margin-left: unset;
-}
-
-.setting-item+div>.setting-item-heading,
-.setting-item+.setting-item-heading,
-.themed-color-wrapper>div+div {
-    margin-top: 0px;
-}
-
-.themed-color-wrapper>div {
-    box-shadow: 0px 0px 0px 1px var(--background-modifier-border);
-}
-
-.themed-color-wrapper {
-    display: flex;
-    align-items: center;
-    flex-direction: row;
-    gap: 8px;
-}
-
-.style-settings-container {
-    padding-bottom: 8px;
-}
-
-.setting-item.style-settings-heading:is([data-id=Info], [data-id=Components], [data-id=Appearance-light], [data-id=Appearance-dark], [data-id=Editor], [data-id=Mobile], [data-id=Plugin]) .style-settings-collapse-indicator::after {
-    content: "";
-    margin-left: var(--size-4-2);
-    display: inline-block;
-    position: relative;
-    top: 4px;
-    width: 18px;
-    height: 18px;
-    background-color: var(--text-muted);
-}
-
-.setting-item.style-settings-heading[data-id=Info] .style-settings-collapse-indicator::after {
-    -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' viewBox='0 0 18 18'%3e%3cg clip-path='url(%23a)'%3e%3cpath fill='%2309244B' d='M9 1.5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15ZM9 3a6 6 0 1 0 0 12A6 6 0 0 0 9 3Zm-.008 4.5c.419 0 .758.34.758.758V12.1a.75.75 0 0 1-.375 1.4h-.367a.757.757 0 0 1-.758-.758V9a.75.75 0 1 1 0-1.5h.742ZM9 5.25a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Z'/%3e%3c/g%3e%3cdefs%3e%3cclipPath id='a'%3e%3cpath fill='white' d='M0 0h18v18H0z'/%3e%3c/clipPath%3e%3c/defs%3e%3c/svg%3e");
-}
-
-.setting-item.style-settings-heading[data-id=Components] .style-settings-collapse-indicator::after {
-    -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' viewBox='0 0 18 18'%3e%3cg clip-path='url(%23a)'%3e%3cpath stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M4.125 6.375 6.75 9l-2.625 2.625L1.5 9l2.625-2.625ZM9 1.5l2.625 2.625L9 6.75 6.375 4.125 9 1.5Zm4.875 4.875L16.5 9l-2.625 2.625L11.25 9l2.625-2.625ZM9 11.25l2.625 2.625L9 16.5l-2.625-2.625L9 11.25Z'/%3e%3c/g%3e%3cdefs%3e%3cclipPath id='a'%3e%3cpath fill='white' d='M0 0h18v18H0z'/%3e%3c/clipPath%3e%3c/defs%3e%3c/svg%3e");
-}
-
-.setting-item.style-settings-heading[data-id=Appearance-light] .style-settings-collapse-indicator::after {
-    -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' viewBox='0 0 18 18'%3e%3cg clip-path='url(%23a)'%3e%3cpath fill='black' d='M9 3a.726.726 0 0 1-.535-.216.723.723 0 0 1-.215-.534V1.5c0-.213.072-.391.216-.535A.723.723 0 0 1 9 .75a.73.73 0 0 1 .535.216.723.723 0 0 1 .215.534v.75c0 .212-.072.39-.216.534A.723.723 0 0 1 9 3Zm0 14.25a.726.726 0 0 1-.535-.216.723.723 0 0 1-.215-.534v-.75c0-.213.072-.391.216-.535A.723.723 0 0 1 9 15a.73.73 0 0 1 .535.216.723.723 0 0 1 .215.534v.75a.73.73 0 0 1-.216.535.723.723 0 0 1-.534.215Zm6.75-7.5a.726.726 0 0 1-.535-.216A.723.723 0 0 1 15 9c0-.213.072-.391.216-.535a.723.723 0 0 1 .534-.215h.75a.73.73 0 0 1 .535.216.723.723 0 0 1 .215.534c0 .212-.072.39-.216.534a.723.723 0 0 1-.534.216h-.75Zm-14.25 0a.726.726 0 0 1-.535-.216A.723.723 0 0 1 .75 9c0-.213.072-.391.216-.535A.723.723 0 0 1 1.5 8.25h.75a.73.73 0 0 1 .535.216A.723.723 0 0 1 3 9c0 .212-.072.39-.216.534a.723.723 0 0 1-.534.216H1.5Zm12-5.25a.688.688 0 0 1-.206-.507c0-.2.068-.38.206-.543l.262-.282a.68.68 0 0 1 .525-.225.74.74 0 0 1 .544.225.79.79 0 0 1 .235.554.638.638 0 0 1-.235.534l-.281.262a.699.699 0 0 1-.515.207.732.732 0 0 1-.535-.225ZM3.169 14.83a.784.784 0 0 1-.234-.553.645.645 0 0 1 .234-.535l.28-.262a.7.7 0 0 1 .517-.206.73.73 0 0 1 .534.225.7.7 0 0 1 .206.516.762.762 0 0 1-.206.534l-.263.281a.68.68 0 0 1-.525.225.74.74 0 0 1-.543-.225Zm10.575 0-.263-.281a.7.7 0 0 1-.206-.516.73.73 0 0 1 .225-.534.7.7 0 0 1 .516-.207c.206 0 .384.07.534.207l.281.262a.68.68 0 0 1 .225.525.74.74 0 0 1-.225.544.787.787 0 0 1-.553.235.641.641 0 0 1-.534-.235ZM3.45 4.5l-.281-.263a.68.68 0 0 1-.225-.525.74.74 0 0 1 .225-.544.787.787 0 0 1 .553-.234.638.638 0 0 1 .534.234l.263.282a.7.7 0 0 1 .206.516.728.728 0 0 1-.225.534.688.688 0 0 1-.506.206.821.821 0 0 1-.544-.206Zm5.55 9c-1.25 0-2.313-.438-3.188-1.313S4.5 10.25 4.5 9c0-1.25.437-2.313 1.312-3.188S7.75 4.5 9 4.5c1.25 0 2.312.437 3.187 1.312S13.5 7.75 13.5 9c0 1.25-.438 2.312-1.313 3.187S10.25 13.5 9 13.5ZM9 12c.837 0 1.547-.291 2.128-.873C11.71 10.546 12 9.837 12 9c0-.838-.29-1.547-.872-2.129C10.546 6.29 9.837 6 9 6c-.838 0-1.547.29-2.129.872C6.29 7.453 6 8.162 6 9c0 .837.29 1.547.872 2.128C7.454 11.71 8.162 12 9 12Z'/%3e%3c/g%3e%3cdefs%3e%3cclipPath id='a'%3e%3cpath fill='white' d='M0 0h18v18H0z'/%3e%3c/clipPath%3e%3c/defs%3e%3c/svg%3e");
-}
-
-.setting-item.style-settings-heading[data-id=Appearance-dark] .style-settings-collapse-indicator::after {
-    -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' viewBox='0 0 18 18'%3e%3cg clip-path='url(%23a)'%3e%3cpath fill='%2309244B' fill-rule='evenodd' d='M9.358 3.41a.758.758 0 0 1 .822-1.057A6.752 6.752 0 0 1 9 15.75a6.752 6.752 0 0 1-6.647-5.57.758.758 0 0 1 1.056-.822 4.5 4.5 0 0 0 5.949-5.949Zm1.803.803a6 6 0 0 1-6.947 6.947A5.252 5.252 0 0 0 14.25 9a5.252 5.252 0 0 0-3.09-4.787ZM4.174 5.787l.047.104c.205.423.527.779.929 1.023l.074.044a.05.05 0 0 1 0 .089l-.074.043c-.402.245-.724.6-.929 1.024l-.047.104a.053.053 0 0 1-.098 0l-.047-.104A2.445 2.445 0 0 0 3.1 7.09l-.074-.043a.05.05 0 0 1 0-.089l.074-.044c.402-.244.724-.6.929-1.023l.047-.104a.053.053 0 0 1 .098 0Zm2.123-3.644a.085.085 0 0 1 .155 0l.076.166c.326.674.84 1.24 1.478 1.629l.118.07a.081.081 0 0 1 0 .14l-.118.07a3.891 3.891 0 0 0-1.554 1.795.085.085 0 0 1-.155 0l-.076-.166a3.892 3.892 0 0 0-1.477-1.629l-.118-.07a.081.081 0 0 1 0-.14l.118-.07a3.892 3.892 0 0 0 1.477-1.629l.076-.166Z' clip-rule='evenodd'/%3e%3c/g%3e%3cdefs%3e%3cclipPath id='a'%3e%3cpath fill='white' d='M0 0h18v18H0z'/%3e%3c/clipPath%3e%3c/defs%3e%3c/svg%3e");
-}
-
-.setting-item.style-settings-heading[data-id=Editor] .style-settings-collapse-indicator::after {
-    -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' viewBox='0 0 18 18'%3e%3cg clip-path='url(%23a)'%3e%3cpath fill='%2309244B' d='M9.75 2.25a.75.75 0 0 1 .087 1.495l-.087.005h-6v10.5h10.5v-6a.75.75 0 0 1 1.495-.087l.005.087v6a1.5 1.5 0 0 1-1.388 1.496l-.112.004H3.75a1.5 1.5 0 0 1-1.496-1.388l-.004-.112V3.75a1.5 1.5 0 0 1 1.388-1.496l.112-.004h6Zm4.682.257a.75.75 0 0 1 1.123.99l-.062.071-7.425 7.425a.75.75 0 0 1-1.123-.99l.062-.07 7.425-7.425Z'/%3e%3c/g%3e%3cdefs%3e%3cclipPath id='a'%3e%3cpath fill='white' d='M0 0h18v18H0z'/%3e%3c/clipPath%3e%3c/defs%3e%3c/svg%3e");
-}
-
-.setting-item.style-settings-heading[data-id=Mobile] .style-settings-collapse-indicator::after {
-    -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' viewBox='0 0 18 18'%3e%3cg clip-path='url(%23a)'%3e%3cpath fill='%2309244B' d='M12.75 1.5a1.5 1.5 0 0 1 1.496 1.388L14.25 3v12a1.5 1.5 0 0 1-1.388 1.496l-.112.004h-7.5a1.5 1.5 0 0 1-1.496-1.388L3.75 15V3a1.5 1.5 0 0 1 1.388-1.496L5.25 1.5h7.5Zm0 1.5h-7.5v12h7.5V3Zm-3.375 9c.184 0 .337.133.369.308l.006.067v.75a.375.375 0 0 1-.308.369l-.067.006h-.75a.375.375 0 0 1-.369-.308l-.006-.067v-.75c0-.184.133-.337.308-.369L8.625 12h.75Z'/%3e%3c/g%3e%3cdefs%3e%3cclipPath id='a'%3e%3cpath fill='white' d='M0 0h18v18H0z'/%3e%3c/clipPath%3e%3c/defs%3e%3c/svg%3e");
-}
-
-.setting-item.style-settings-heading[data-id=Plugin] .style-settings-collapse-indicator::after {
-    -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' viewBox='0 0 18 18'%3e%3cg clip-path='url(%23a)'%3e%3cpath fill='black' fill-rule='evenodd' d='M7.875 3a1.104 1.104 0 0 0-.988 1.597l.122.244a.8.8 0 0 1-.717 1.158H3.75a.75.75 0 0 0-.75.75v.896c1.365-.082 2.625.998 2.625 2.48 0 1.48-1.26 2.56-2.625 2.479v1.645a.75.75 0 0 0 .75.75h1.645c-.081-1.365.999-2.625 2.48-2.625 1.481 0 2.561 1.26 2.48 2.625h.895a.75.75 0 0 0 .75-.75v-2.542a.801.801 0 0 1 1.159-.717l.243.122a1.105 1.105 0 1 0 0-1.975l-.243.122a.8.8 0 0 1-1.16-.717V6.749a.75.75 0 0 0-.75-.75H9.458a.801.801 0 0 1-.717-1.158l.123-.244a1.104 1.104 0 0 0-.988-1.598ZM5.298 4.5c-.237-1.513.922-3 2.577-3 1.654 0 2.814 1.487 2.577 3h.798a2.25 2.25 0 0 1 2.25 2.25v.797c1.513-.237 3 .923 3 2.577s-1.487 2.814-3 2.577v1.548a2.25 2.25 0 0 1-2.25 2.25H9.445a.794.794 0 0 1-.732-1.11l.063-.147a.981.981 0 1 0-1.803 0l.064.148a.796.796 0 0 1-.732 1.11H3.75a2.25 2.25 0 0 1-2.25-2.25v-2.556a.796.796 0 0 1 1.11-.732l.148.064a.982.982 0 0 0 1.25-1.367.981.981 0 0 0-1.25-.436l-.149.064a.796.796 0 0 1-1.11-.732V6.749A2.25 2.25 0 0 1 3.75 4.5h1.549Z' clip-rule='evenodd'/%3e%3c/g%3e%3cdefs%3e%3cclipPath id='a'%3e%3cpath fill='white' d='M0 0h18v18H0z'/%3e%3c/clipPath%3e%3c/defs%3e%3c/svg%3e");
-}
-
-
-.setting-item.style-settings-heading:is([data-id=Extended-colors-light], [data-id=Global-background-header-light], [data-id=Foreground-header-light], [data-id=interactive-color-light], [data-id=Miscellaneous-light])+.style-settings-container .setting-item .setting-item-control div.theme-dark,
-.setting-item.style-settings-heading:is([data-id=Extended-colors-dark], [data-id=Global-background-header-dark], [data-id=Foreground-header-dark], [data-id=interactive-color-dark], [data-id=Miscellaneous-dark])+.style-settings-container .setting-item .setting-item-control div.theme-light {
-    display: none;
-}
-
-/*calendar*/
-.day.svelte-q3wqg9:active .filled.svelte-1widvzq,
-.active.svelte-q3wqg9 .filled.svelte-1widvzq,
-.active.today.svelte-q3wqg9 .filled.svelte-1widvzq {
-    fill: var(--text-on-accent);
-}
-
-.today.svelte-q3wqg9 {
-    box-shadow: inset 0 0 0 1px var(--color-accent);
-}
-
-.reset-button.svelte-1vwr9dd.svelte-1vwr9dd {
-    line-height: 16px;
-}
-
-.workspace-leaf-content[data-type=calendar] .view-content {
-    padding: 8px 0 0;
-}
-
-#calendar-container {
-    padding: 0 var(--size-4-4);
-}
-
-/*surfing*/
-
-body.Surfing-bookmark-bar-hide .workspace-leaf-content[data-type="surfing-view"] .wb-bookmark-bar {
-    display: none;
-}
-
-body.Surfing-bookmark-bar-hide .workspace-leaf-content[data-type="surfing-view"] .wb-view-content:has(.wb-bookmark-bar) .wb-frame {
-    height: calc(100%);
-}
-
-
-/* make.md */
-.mk-blink-preview {
-    border-color: var(--divider-color);
-}
-
-.mk-blink-modal .mk-options-menu__search input {
-    border-bottom: 2px solid var(--color-accent);
-}
-
-/* checklist */
-.compact.svelte-sx5ktw>.content.svelte-sx5ktw {
-    --checklist-contentPadding--compact: 4px 2px;
-}
-
-li.svelte-sx5ktw.svelte-sx5ktw {
-    --checklist-listItemMargin: 0 0 4px;
-    --checklist-listItemBackground: transparent;
-    --checklist-listItemBackground--hover: var(--background-modifier-hover);
-}
-
-svg.settings.button.svelte-9fjno5 {
-    background-color: currentColor;
-    -webkit-mask-image: url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8"?><svg id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><style>.b{fill:none;}.c{fill-rule:evenodd;}</style></defs><rect class="b" width="24" height="24"/><path d="M2,12c0-.86,.11-1.7,.32-2.5,.55,.03,1.1-.1,1.59-.36,.49-.26,.89-.66,1.17-1.14,.28-.48,.42-1.03,.4-1.58-.01-.55-.18-1.09-.48-1.56,1.21-1.19,2.7-2.05,4.34-2.51,.25,.49,.63,.91,1.11,1.2,.47,.29,1.01,.44,1.57,.44s1.1-.15,1.57-.44c.47-.29,.85-.7,1.11-1.2,1.63,.45,3.13,1.32,4.33,2.51-.3,.46-.47,1-.48,1.56-.01,.55,.12,1.1,.4,1.58,.28,.48,.68,.87,1.17,1.14,.49,.26,1.04,.39,1.59,.36,.42,1.64,.42,3.36,0,5.01-.55-.03-1.1,.09-1.59,.36-.49,.26-.89,.66-1.17,1.14-.28,.48-.42,1.03-.4,1.58,.01,.55,.18,1.09,.48,1.56-1.21,1.19-2.7,2.05-4.33,2.51-.25-.49-.63-.91-1.11-1.2-.47-.29-1.01-.44-1.57-.44s-1.1,.15-1.57,.44c-.47,.29-.85,.7-1.11,1.2-1.63-.45-3.13-1.32-4.34-2.51,.3-.46,.47-1,.48-1.56,.01-.55-.12-1.1-.4-1.58-.28-.48-.68-.87-1.17-1.14-.49-.26-1.04-.39-1.59-.36-.21-.82-.32-1.66-.32-2.5Zm4.8,3c.63,1.09,.81,2.35,.56,3.52,.41,.29,.84,.54,1.3,.75,.92-.82,2.1-1.27,3.34-1.27,1.26,0,2.44,.47,3.34,1.27,.45-.21,.89-.46,1.3-.75-.25-1.2-.05-2.46,.56-3.52,.61-1.07,1.6-1.87,2.77-2.25,.05-.5,.05-1,0-1.5-1.17-.38-2.16-1.18-2.77-2.25-.62-1.07-.82-2.32-.56-3.52-.41-.29-.84-.54-1.3-.75-.92,.82-2.1,1.27-3.33,1.27-1.23,0-2.42-.45-3.34-1.27-.45,.21-.89,.46-1.3,.75,.25,1.2,.05,2.46-.56,3.52-.61,1.07-1.6,1.87-2.77,2.25-.05,.5-.05,1,0,1.5,1.17,.38,2.16,1.18,2.77,2.25Z"/><path class="c" d="M12,14c1.1,0,2-.9,2-2s-.9-2-2-2-2,.9-2,2,.9,2,2,2Zm0,2c2.21,0,4-1.79,4-4s-1.79-4-4-4-4,1.79-4,4,1.79,4,4,4Z"/></svg>')
-}
-
-.checkbox.svelte-1wagsqu {
-    --checklist-checkboxSize: var(--checkbox-size);
-    --checklist-checkboxBorder: 2px solid var(--text-muted);
-    --checklist-checkboxCheckedSize: 8px;
-    --checklist-listItemBorderRadius: var(--radius-s);
-}
-
-body.colorful-checkbox li.svelte-sx5ktw.svelte-sx5ktw:nth-child(8n+1) .checkbox.svelte-1wagsqu {
-    --checklist-checkboxBorder: 2px solid var(--color-red);
-}
-
-body.colorful-checkbox li.svelte-sx5ktw.svelte-sx5ktw:nth-child(8n+2) .checkbox.svelte-1wagsqu {
-    --checklist-checkboxBorder: 2px solid var(--color-green);
-}
-
-body.colorful-checkbox li.svelte-sx5ktw.svelte-sx5ktw:nth-child(8n+3) .checkbox.svelte-1wagsqu {
-    --checklist-checkboxBorder: 2px solid var(--color-orange);
-}
-
-body.colorful-checkbox li.svelte-sx5ktw.svelte-sx5ktw:nth-child(8n+4) .checkbox.svelte-1wagsqu {
-    --checklist-checkboxBorder: 2px solid var(--color-yellow);
-}
-
-body.colorful-checkbox li.svelte-sx5ktw.svelte-sx5ktw:nth-child(8n+5) .checkbox.svelte-1wagsqu {
-    --checklist-checkboxBorder: 2px solid var(--color-cyan);
-}
-
-body.colorful-checkbox li.svelte-sx5ktw.svelte-sx5ktw:nth-child(8n+6) .checkbox.svelte-1wagsqu {
-    --checklist-checkboxBorder: 2px solid var(--color-blue);
-}
-
-body.colorful-checkbox li.svelte-sx5ktw.svelte-sx5ktw:nth-child(8n+7) .checkbox.svelte-1wagsqu {
-    --checklist-checkboxBorder: 2px solid var(--color-purple);
-}
-
-body.colorful-checkbox li.svelte-sx5ktw.svelte-sx5ktw:nth-child(8n+8) .checkbox.svelte-1wagsqu {
-    --checklist-checkboxBorder: 2px solid var(--color-pink);
-}
-
-.checked.svelte-1wagsqu {
-    top: calc(calc(var(--checklist-checkboxSize) - var(--checklist-checkboxCheckedSize) - 2) / 2) !important;
-    left: calc(calc(var(--checklist-checkboxSize) - var(--checklist-checkboxCheckedSize) - 2) / 2) !important;
-}
-
-.checklist-plugin-main .title {
-    font-weight: 400;
-    font-size: 14px;
-}
-
-.search.svelte-rdace4.svelte-rdace4 {
-    box-shadow: 0 0 0 1px var(--background-modifier-border);
-}
-
-.count.svelte-1tzpg3c {
-    --checklist-countBackground: transparent;
-    --checklist-countPadding: 0px
-}
-
-.svg.svelte-9fjno5 {
-    --checklist-iconSize: 20px
-}
-
-.search.svelte-rdace4.svelte-rdace4 {
-    --checklist-searchBackground: transparent;
-    --checklist-listItemBorderRadius: var(--input-radius);
-}
-
-.toggle.svelte-sx5ktw.svelte-sx5ktw:hover {
-    opacity: 1 !important;
-}
-
-/* Text Generator */
-.modelTitle {
-    display: none;
-}
-
-/* callout manager */
-body:not(.is-mobile):not(.mod-macos):not(.mod-windows):not(.mod-linux) .workspace::before,
-body:not(.is-mobile):not(.mod-macos):not(.mod-windows):not(.mod-linux) .app-container::before {
-    display: none !important;
 }
 
 
@@ -10520,6 +8807,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   padding: 0 !important;
   overflow: hidden !important;
   font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* SVG 图标通用样式 */
@@ -10544,8 +8833,9 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   --bg: #f5f6f8;
   --surface: #ffffff;
   --text-main: #181b25;
-  --text-muted: #8b90a0;
-  --text-lighter: #b0b5c2;
+  --text-muted: #5f6675;
+  --text-lighter: #737b8c;
+  --text-faint: var(--text-lighter);
 
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 6px 24px -2px rgba(0, 0, 0, 0.03);
   --shadow-note: 0 2px 8px -1px rgba(0, 0, 0, 0.03);
@@ -10583,7 +8873,9 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   --bg: var(--background-primary);
   --surface: var(--background-primary-alt);
   --text-main: var(--text-normal);
-  --text-lighter: color-mix(in srgb, var(--text-muted) 82%, var(--text-normal));
+  --text-muted: color-mix(in srgb, var(--text-normal) 76%, var(--background-primary));
+  --text-lighter: color-mix(in srgb, var(--text-normal) 64%, var(--background-primary));
+  --text-faint: var(--text-lighter);
 
   --shadow-card: var(--card-shadow-dark, 0 0 0 1px var(--background-modifier-border));
   --shadow-note: 0 0 0 1px var(--background-modifier-border), 0 2px 8px rgba(0, 0, 0, 0.18);
@@ -11462,7 +9754,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   min-height: 18px;
   padding: 1px 6px;
   gap: 4px;
-  font-size: 9px;
+  font-size: 10.5px;
 }
 
 .zendian-homepage .homepage-project-name-row .zd-project-status-dot {
@@ -12103,7 +10395,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-homepage .homepage-todo-tab-count {
-  font-size: 10px;
+  font-size: 11px;
   padding: 0.0625rem 0.375rem;
   border-radius: 9999px;
   font-weight: 500;
@@ -12589,7 +10881,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-homepage .homepage-tag {
   display: inline-flex;
   align-items: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
@@ -13366,7 +11658,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-homepage .homepage-recent-tag {
-  font-size: 10px;
+  font-size: 11px;
   padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
   text-align: center;
@@ -15542,10 +13834,15 @@ body.theme-dark .codeblock-customizer-line-number-specific {
    ══════════════════════════════════════════════════════════ */
 
 .quicknote-editor-modal {
+  --text-muted: var(--zd-text-secondary);
+  --text-faint: var(--zd-text-tertiary);
   width: 90vw;
   max-width: 1200px;
   height: 80vh;
   padding: 0;
+  font-family: var(--font-interface);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .quicknote-editor-modal .modal-content {
@@ -15819,6 +14116,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   --zc-text: var(--zd-text-primary);
   --zc-text-secondary: var(--zd-text-secondary);
   --zc-text-tertiary: var(--zd-text-tertiary);
+  --text-muted: var(--zd-text-secondary);
+  --text-faint: var(--zd-text-tertiary);
   --zc-border: var(--zd-border-default);
   --zc-border-hover: var(--zd-border-hover);
   --zc-shadow: var(--zd-shadow-sm);
@@ -15851,6 +14150,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   font-family: var(--zd-font-sans);
   font-size: var(--zd-text-base);
   line-height: var(--zd-leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -20214,4 +18515,465 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .zendian-icon-rule-add:hover {
     border-color: var(--interactive-accent);
     color: var(--text-normal);
+}
+
+/* ============================================================
+   Settings UI v3 — Apple card workspace
+   ============================================================ */
+
+.zendian-settings-wrapper {
+    --zd-settings-card: color-mix(in srgb, var(--background-secondary) 88%, transparent);
+    --zd-settings-line: color-mix(in srgb, var(--background-modifier-border) 82%, transparent);
+    --zd-settings-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 9px 30px rgba(0, 0, 0, 0.035);
+    --text-muted: var(--zd-text-secondary);
+    --text-faint: var(--zd-text-tertiary);
+    display: block;
+    max-width: 1080px;
+    min-height: 520px;
+    margin: 0 auto;
+    padding: 8px 4px 40px;
+    color: var(--text-normal);
+    font-family: var(--font-interface);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+.zendian-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+    padding: 4px 4px 18px;
+    border-bottom: 1px solid var(--zd-settings-line);
+}
+
+.zendian-toolbar-identity h2,
+.zendian-page-title {
+    margin: 0;
+    color: var(--text-normal);
+    font-family: var(--font-interface);
+    font-size: 22px;
+    font-weight: 680;
+    letter-spacing: -0.025em;
+}
+
+.zendian-toolbar-identity p {
+    max-width: 520px;
+    margin: 5px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.zendian-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.zendian-search {
+    width: 220px;
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--zd-settings-line);
+    border-radius: 10px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.025);
+}
+
+.zendian-search:focus-visible,
+.zendian-reset-all:focus-visible,
+.zendian-card-reset:focus-visible,
+.zendian-nav-item:focus-visible,
+.zendian-mobile-nav:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+}
+
+.zendian-input-invalid {
+    border-color: var(--text-error) !important;
+    box-shadow: 0 0 0 1px var(--text-error) !important;
+}
+
+.zendian-reset-all,
+.zendian-card-reset {
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.zendian-reset-all:hover,
+.zendian-card-reset:hover {
+    color: var(--text-accent);
+}
+
+.zendian-settings-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+}
+
+.zendian-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    margin-bottom: 18px;
+    padding: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid var(--zd-settings-line);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--background-secondary) 92%, transparent);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.045);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    scrollbar-width: none;
+    cursor: default;
+}
+
+.zendian-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.zendian-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex: 1 0 auto;
+    justify-content: center;
+    width: auto;
+    min-width: max-content;
+    min-height: 36px;
+    padding: 7px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.zendian-nav-item svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    stroke-width: 1.8;
+}
+
+.zendian-nav-item:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.zendian-nav-item.active {
+    background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-primary));
+    color: var(--text-accent);
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+}
+
+.zendian-mobile-nav {
+    display: none;
+}
+
+.zendian-content {
+    min-width: 0;
+}
+
+.zendian-page-title {
+    margin: 1px 2px 14px;
+    font-size: 18px;
+}
+
+.zendian-section-card {
+    position: relative;
+    margin-bottom: 14px;
+    overflow: clip;
+    border: 1px solid var(--zd-settings-line);
+    border-radius: 14px;
+    background: var(--zd-settings-card);
+    box-shadow: var(--zd-settings-shadow);
+}
+
+.zendian-section-card::before {
+    content: "";
+    position: absolute;
+    inset: 12px auto 12px 0;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--interactive-accent);
+    opacity: 0.72;
+}
+
+.zendian-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 48px;
+    padding: 11px 16px 10px 18px;
+    border-bottom: 1px solid var(--zd-settings-line);
+}
+
+.zendian-section-heading h3 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: var(--text-normal);
+    font-size: 13px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+}
+
+.zendian-section-context {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-faint);
+    font-size: 11px;
+}
+
+.zendian-section-content {
+    padding: 0 16px 6px 18px;
+}
+
+.zendian-section-content > .setting-item,
+.zendian-advanced > .setting-item,
+.zendian-icon-section .setting-item {
+    min-height: 52px;
+    padding: 10px 0;
+    border-top: 1px solid var(--zd-settings-line);
+}
+
+.zendian-section-content > .setting-item:first-child {
+    border-top: 0;
+}
+
+.zendian-section-content .setting-item-name {
+    color: var(--text-normal);
+    font-size: 12.5px;
+    font-weight: 560;
+}
+
+.zendian-section-content .setting-item-description {
+    max-width: 540px;
+    padding-top: 3px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.zendian-section-content .setting-item-control {
+    gap: 7px;
+}
+
+.zendian-section-content input[type="text"],
+.zendian-section-content input[type="number"],
+.zendian-section-content select,
+.zendian-mobile-nav {
+    min-height: 30px;
+    border-radius: 8px;
+    font-size: 11.5px;
+}
+
+.zendian-slider-value {
+    width: 58px !important;
+    min-width: 58px;
+    text-align: center;
+}
+
+.zendian-advanced {
+    margin: 4px 0 7px;
+    border-top: 1px solid var(--zd-settings-line);
+}
+
+.zendian-advanced > summary {
+    padding: 10px 0;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
+
+.zendian-advanced[open] > summary {
+    color: var(--text-accent);
+}
+
+.zendian-heading-top-row {
+    gap: 10px;
+    margin: 12px 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.zendian-heading-group {
+    padding: 10px 12px;
+    border: 1px solid var(--zd-settings-line);
+    border-radius: 10px;
+    background: var(--background-primary);
+}
+
+.zendian-heading-tabs {
+    margin: 10px 0;
+    border: 0;
+    background: var(--background-primary);
+}
+
+.zendian-heading-tab-btn {
+    min-height: 34px;
+    border-radius: 7px;
+}
+
+.zendian-heading-tab-btn.active {
+    background: var(--interactive-accent);
+}
+
+.zendian-empty-state {
+    padding: 48px 20px;
+    border: 1px dashed var(--zd-settings-line);
+    border-radius: 14px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.zendian-coming-soon {
+    display: grid;
+    min-height: 112px;
+    place-items: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+}
+
+.zendian-about {
+    max-width: 640px;
+    padding: 0 0 24px;
+}
+
+.zendian-about-hero {
+    padding: 18px 8px 22px;
+    text-align: left;
+}
+
+.zendian-about-glow {
+    display: none;
+}
+
+.zendian-about-icon {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 8px;
+    animation: none;
+}
+
+.zendian-about-icon svg {
+    width: 36px;
+    height: 36px;
+}
+
+.zendian-about-title {
+    margin-bottom: 5px;
+    background: none;
+    color: var(--text-normal);
+    font-size: 28px;
+    text-align: left;
+    animation: none;
+    -webkit-text-fill-color: currentColor;
+}
+
+.zendian-about-version {
+    margin: 0 8px 0 0;
+}
+
+.zendian-about-author {
+    display: inline;
+}
+
+.zendian-about-card,
+.zendian-about-feature-card {
+    border-color: var(--zd-settings-line);
+    background: var(--zd-settings-card);
+    box-shadow: var(--zd-settings-shadow);
+}
+
+@media (max-width: 760px) {
+    .zendian-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .zendian-toolbar-actions {
+        width: 100%;
+    }
+
+    .zendian-search {
+        flex: 1;
+        width: auto;
+    }
+
+    .zendian-nav {
+        display: flex;
+        position: relative;
+        margin-bottom: 14px;
+    }
+
+    .zendian-heading-top-row {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 520px) {
+    .zendian-toolbar-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .zendian-reset-all {
+        min-height: 36px;
+        border: 1px solid var(--zd-settings-line);
+        border-radius: 9px;
+    }
+
+    .zendian-section-heading,
+    .zendian-section-content {
+        padding-left: 14px;
+        padding-right: 12px;
+    }
+
+    .zendian-section-content .setting-item {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .zendian-section-content .setting-item-control {
+        justify-content: flex-end;
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .zendian-settings-wrapper *,
+    .zendian-settings-wrapper *::before,
+    .zendian-settings-wrapper *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

@@ -65,12 +65,6 @@ export type NewTabImage = "none" | "default" | "old" | "customize";
 /** Canvas 菜单位置 */
 export type CanvasMenuPosition = "center" | "left" | "right";
 
-/** DB Folder 背景色方案 */
-export type DBTableBgColor = "default" | "adapt" | "unify";
-
-/** Projects 背景色方案 */
-export type ProjectsBgColor = "default" | "adapt" | "unify";
-
 // ============================================================
 // 模块设置接口
 // ============================================================
@@ -88,7 +82,7 @@ export interface AutoHideSettings {
 /** 卡片布局模块设置 */
 export interface CardLayoutSettings {
   enabled: boolean;
-  canvasBorder: string;
+  canvasBorderWidth: number;
   canvasMenu: CanvasMenuPosition;
   mediaEmbedBorderOff: boolean;
 }
@@ -178,7 +172,6 @@ export interface LinkSettings {
   decorationThickness: string;
   externalDecoration: string;
   externalDecorationHover: string;
-  externalFilter: string;
 }
 
 /** 图片模块设置 */
@@ -191,9 +184,7 @@ export interface ImageSettings {
 /** 嵌入文档模块设置 */
 export interface EmbedSettings {
   seamless: boolean;
-  padding: string;
   borderRadius: string;
-  fontStyle: string;
   maxHeight: string;
 }
 
@@ -206,8 +197,6 @@ export interface CheckboxSettings {
 export interface RainbowFolderSettings {
   enabled: boolean;
   opacity: number;
-  colors: string[];
-  iconSize: number;
 }
 
 /** 新标签页模块设置 */
@@ -239,15 +228,6 @@ export interface MobileSettings {
   drawerPhoneFullWidth: boolean;
 }
 
-/** 第三方插件兼容模块设置 */
-export interface PluginCompatSettings {
-  dbTableFullWidthOff: boolean;
-  dbTableBgColor: DBTableBgColor;
-  projectsBgColor: ProjectsBgColor;
-  surfingBookmarkBarHide: boolean;
-  colorfulCheckbox: boolean;
-}
-
 /** UI 细节模块设置 */
 export interface UIDetailSettings {
   settingItemTitleIconRemove: boolean;
@@ -274,7 +254,6 @@ export interface BannerSettings {
   enabled: boolean;
   yamlKey: string;
   height: number;
-  style: string;
   position: string;
 }
 
@@ -311,8 +290,6 @@ export interface HomepageSettings {
   weatherEnabled: boolean;
   /** 天气位置（城市名或 lat,lon） */
   weatherLocation: string;
-  /** 每日笔记分类文件夹（逗号分隔） */
-  dailyNoteFolders: string;
   /** 项目看板开关 */
   projectBoardEnabled: boolean;
   /** 项目分类列表 */
@@ -360,7 +337,6 @@ export interface PluginSettings {
   scrollbar: ScrollbarSettings;
   outline: OutlineSettings;
   mobile: MobileSettings;
-  pluginCompat: PluginCompatSettings;
   uiDetail: UIDetailSettings;
   fileTree: FileTreeSettings;
   iconSystem: IconSystemSettings;
@@ -384,7 +360,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   },
   cardLayout: {
     enabled: true,
-    canvasBorder: "2px solid",
+    canvasBorderWidth: 2,
     canvasMenu: "center",
     mediaEmbedBorderOff: false,
   },
@@ -523,7 +499,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     decorationThickness: "auto",
     externalDecoration: "underline",
     externalDecorationHover: "underline",
-    externalFilter: "none",
   },
   image: {
     centerAlign: false,
@@ -532,9 +507,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   },
   embed: {
     seamless: false,
-    padding: "",
     borderRadius: "",
-    fontStyle: "",
     maxHeight: "",
   },
   checkbox: {
@@ -543,22 +516,11 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   rainbowFolder: {
     enabled: false,
     opacity: 0.4,
-    colors: [
-      "var(--color-red)",
-      "var(--color-orange)",
-      "var(--color-yellow)",
-      "var(--color-green)",
-      "var(--color-cyan)",
-      "var(--color-blue)",
-      "var(--color-purple)",
-      "var(--color-pink)",
-    ],
-    iconSize: 16,
   },
   newTab: {
     buttonStyle: "default",
     imageStyle: "default",
-    imageUrl: 'url(" ")',
+    imageUrl: "",
   },
   canvas: {
     immersive: false,
@@ -573,13 +535,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   mobile: {
     cardLayoutPad: false,
     drawerPhoneFullWidth: false,
-  },
-  pluginCompat: {
-    dbTableFullWidthOff: false,
-    dbTableBgColor: "default",
-    projectsBgColor: "default",
-    surfingBookmarkBarHide: false,
-    colorfulCheckbox: false,
   },
   uiDetail: {
     settingItemTitleIconRemove: false,
@@ -619,7 +574,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     enabled: false,
     yamlKey: "banner",
     height: 250,
-    style: "fade-bottom",
     position: "center",
   },
   homepage: {
@@ -627,7 +581,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     userName: "",
     weatherEnabled: false,
     weatherLocation: "",
-    dailyNoteFolders: "",
     projectBoardEnabled: true,
     projectCategories: [
       { number: "10", name: "课程" },

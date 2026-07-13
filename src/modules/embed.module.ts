@@ -8,6 +8,7 @@ import type { PluginSettings } from "../types/settings.types";
 import { ClassTracker, setCSSVar, removeCSSVar } from "../utils/dom";
 
 const CSS_VARS = [
+  "--embed-border-radius",
   "--embed-max-height",
 ];
 
@@ -34,6 +35,8 @@ export class EmbedModule implements IFeatureModule {
 
   private apply(s: PluginSettings["embed"]): void {
     this.classes.toggle("seamless-embeds", s.seamless);
+    if (s.borderRadius) setCSSVar(document.body, "--embed-border-radius", s.borderRadius);
+    else removeCSSVar(document.body, "--embed-border-radius");
     setCSSVar(document.body, "--embed-max-height", s.maxHeight);
   }
 }

@@ -1,10 +1,10 @@
 {
   "id": "zendian",
   "name": "ZENdian",
-  "version": "2.2.17Beta",
+  "version": "3.0.01",
   "minAppVersion": "1.12.7",
-  "description": "A comprehensive Obsidian UI beautification plugin. Integrates Border theme, Phycat Apple-style colors, enhanced Markdown rendering, and Style Settings.",
+  "description": "A personal workspace for Obsidian with dashboards, project management, tasks, timelines, snapshots, analytics, and an integrated writing experience.",
   "author": "Junkey",
-  "authorUrl": "https://github.com/Junkey",
+  "authorUrl": "https://github.com/iJunkey-max",
   "isDesktopOnly": false
 }

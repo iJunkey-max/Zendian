@@ -1,274 +1,115 @@
-# 🚀 ZENdian
+# ZENdian
 
-**ZENdian** 是一款致力于为 Obsidian 带来极致视觉享受与沉浸式输入体验的 UI 全面美化与增强插件。
+ZENdian 是面向 Obsidian 的个人知识与项目工作区插件。它以智能主页为入口，将项目、任务、时间轴、文件快照和数据洞察连接在同一套工作流中，同时保留专注写作与界面增强能力。
 
-本插件深度融合了 [**Border Theme**](https://github.com/Akifyss/obsidian-border "null") 的底层架构优势与 **Phycat Apple 设计语言** 的优雅配色。通过「核心 JS 框架 + 独立功能模块」的全新架构，不仅重塑了界面的视觉质感，还实现了诸多原生 CSS 无法完成的高级交互增强。
+当前正式版本：`V3.0.01`
+最低 Obsidian 版本：`1.12.7`
 
-当前版本：`V2.2.17Beta` | 最低 Obsidian 版本：`1.12.7`
+> V3 是一次产品定位升级：ZENdian 的重点已从 UI 美化转向知识工作与项目推进。插件不提供第三方插件或第三方主题适配。
 
-## ✨ 核心特性
+## 核心能力
 
-### 🍎 视觉重塑与毛玻璃美学
+### 智能主页
 
-- **Apple 风格设计语言**：全局引入清透配色与排版叠加层，带来犹如原生 macOS 般的视觉体验。
-    
-- **卡片式布局**：圆角卡片提升视觉层次，配合背景网格纹理，带来真实的“书写纸”质感。
-    
-- **图片渲染优化**：自动应用 12px 圆角与微阴影，Hover 时平滑放大并提升亮度，图注（Figcaption）居中变色显示。
-    
+- 在统一入口查看项目、待办、最近笔记、书签、天气、活动热力图与月度统计。
+- 支持项目分类、项目子文件夹和归档目录配置。
+- 主页模块可按需开启，减少不需要的信息干扰。
 
-### 🧘 沉浸式写作：专注模式与打字机
+### 项目管理
 
-- **景深毛玻璃专注模式**：非活动行自动降噪并施加 `blur(0.5px)` 局部模糊；当前活动行平滑放大，配合毛玻璃（Backdrop-filter）与柔和阴影，瞬间聚焦视线。
-    
-- **原生打字机滚动**：底层注入 CM6 ViewPlugin 实现平滑打字机模式，输入时光标始终完美固定在窗口 3/4 处，彻底告别频繁的视线跳动。
-    
-- **智能焦点指示器**：左侧悬浮指示线智能识别当前行，并支持显示代码块行号与列表嵌套层级。
-    
-- **智能自动隐藏**：Tab 栏、侧边栏、状态栏等 UI 元素按需隐藏，最大化阅读与写作空间。
-    
+- 使用项目控制台集中查看项目简介、状态、进度、任务和近期活动。
+- 支持规划中、实施中、复核中、已结束和暂停等明确状态。
+- 项目分类和目录结构由设置驱动，便于建立稳定的工作区约定。
 
-### 🎨 Markdown 元素全面增强
+### 任务协同
 
-- **多维标题系统 (H1-H6)**：高度自定义标题排版（对齐、字号、前后间距）。H2 支持「线条」与「方框/胶囊」风格无缝切换，暗色模式下自带绚丽径向渐变光晕。
-    
-- **沉浸式 Callout 标注**：全面重绘标注样式，Hover 时平滑浮起并伴有 Emoji 放大发光动效。
-    
-- **YAML Frontmatter 重塑**：完美适配 Obsidian 1.4+ 属性面板，替换为虚线边框、主色淡背景的精美卡片。
-    
-- **细节打磨**：重新定义行高、字间距、段落间距，深度优化脚注、表格、链接霓虹发光、及代码块的视觉表现。
-    
+- 支持任务优先级、标签、截止日期与时间。
+- 主页和项目控制台共享任务数据，减少重复维护。
+- 提供逾期识别、完成状态和趋势统计。
 
-### 🌈 灵动的文件树与侧边栏
+### 时间轴与项目快照
 
-- **动态彩虹文件夹**：采用全新的 JS + CSS 变量混合渲染方案，自底向上计算文件夹深度。遮罩浓度按指数衰减（`opacity * Math.pow(0.6, level)`），并由 MutationObserver 实时监听拖拽与折叠状态自动刷新。
+- 按时间记录文件、任务和项目状态事件。
+- 为受支持的文本文件生成内容快照并进行哈希去重。
+- 支持手动检查点、版本差异预览、删除文件恢复与安全回档。
 
-- **Active 激活状态指示**：当前打开的文件在侧边栏拥有专属左侧边框、背景高亮与字重加粗。
+### 数据洞察
 
-### 🎯 数据驱动的动态图标系统
+- 提供活动热力图、任务趋势、完成率和项目健康度等视图。
+- 通过统一数据服务与缓存机制降低重复扫描开销。
 
-- **正则匹配引擎**：文件树图标由数据规则驱动，根据文件后缀自动匹配对应的 Lucide 图标（如 `.md` → file-text、`.pdf` → file-text、图片 → image 等），文件夹自动使用 folder 图标。
-    
-- **第三方图标库**：预置 Boxicons、Coolicons、Tabler Icons 三大图标库，设置面板一键勾选即可自动下载安装，支持自定义图标库扩展。
-    
-- **图标选择器弹窗**：基于 Modal 的 CSS Grid 多列图标网格，支持库切换下拉、实时搜索过滤、点击选中。
-    
-- **右键自定义图标**：文件树右键菜单一键为单个文件指定专属图标，支持「恢复默认」回退到正则匹配。
-    
-- **标签页图标**：开启后在工作区标签页标题前自动显示对应的文件图标，随文件切换实时刷新。
-    
+### 写作与界面
 
-### ⚙️ 优雅而强大的控制台
+- 专注模式、打字机滚动、阅读宽度、段落与标题排版。
+- 代码块、引用、标注、列表、表格、嵌入、图像和页眉设置。
+- 文件树图标、彩虹文件夹、自动隐藏、卡片布局与移动端布局。
+- 明暗模式下使用独立可读性令牌，改善辅助文字和小字号内容的辨识度。
 
-- **全新设置面板**：彻底告别冗长的下拉列表！采用顶部横排 Tab 导航布局，提供 7 大选项卡，支持鼠标滚轮和拖拽横向滑动浏览。
-    
-- **深度中文化**：超 40 个非基础设置项附带详尽中文说明，轻松掌控每一个开关。
-    
+## V3 设置中心
 
-## 📥 安装指南
+- 顶部横向分类导航，默认首先展示“关于”。
+- 分类包括工作区、编辑与阅读、标题与内容、文件与图标、主页和设备。
+- 支持搜索、条件展开、基础/高级设置、单组重置和全部重置。
+- 设置项与运行时功能保持一致，旧版无效字段会在加载时自动清理。
+- “第三方插件适配”目前仅为“敬请期待”占位，不包含兼容代码。
 
-### 方法一：普通用户安装（推荐）
+## 安装
 
-1. 确保已在 Obsidian 中安装 [**Obsidian42 - BRAT**](https://github.com/TfTHacker/obsidian42-brat "null") 插件。
-    
-2. 启用 BRAT，在命令面板中输入 `BRAT: Add a beta plugin for testing`。
-    
-3. 粘贴本仓库的 GitHub 地址 `https://github.com/Junkey/zendian` 并添加。
-    
-4. 在社区插件列表中启用 **ZENdian**。
-    
+### 从 GitHub Release 安装
 
-### 方法二：从源码构建（面向开发者）
+1. 打开最新的 [GitHub Release](https://github.com/iJunkey-max/Zendian/releases/latest)。
+2. 下载 `main.js`、`styles.css` 和 `manifest.json`。
+3. 创建目录：`<Vault>/.obsidian/plugins/zendian/`。
+4. 将三个文件放入该目录。
+5. 重启 Obsidian，在“设置 → 第三方插件”中启用 ZENdian。
 
-```
-git clone [https://github.com/Junkey/zendian.git](https://github.com/Junkey/zendian.git)
-cd zendian
+### 使用 BRAT
+
+1. 安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)。
+2. 执行命令 `BRAT: Add a beta plugin for testing`。
+3. 输入仓库地址：`https://github.com/iJunkey-max/Zendian`。
+
+### 从源码构建
+
+```bash
+git clone https://github.com/iJunkey-max/Zendian.git
+cd Zendian
 npm install
 npm run build
 ```
 
-编译完成后，将生成的产物复制到你的 Obsidian 仓库中：
+常用命令：
 
-```
-# Windows
-cp dist/main.js dist/styles.css manifest.json "C:\path\to\your\vault\.obsidian\plugins\zendian\"
+| 命令 | 用途 |
+| --- | --- |
+| `npm run typecheck` | TypeScript 类型检查 |
+| `npm run check:settings` | 设置字段、面板与消费者契约检查 |
+| `npm run build:css` | 构建 `dist/styles.css` |
+| `npm run build:js` | 构建 `dist/main.js` |
+| `npm run build` | 完整生产构建 |
+| `npm run dev` | 开发监听模式 |
 
-# macOS / Linux
-cp dist/main.js dist/styles.css manifest.json /path/to/your/vault/.obsidian/plugins/zendian/
-```
+## V2 升级到 V3
 
-然后在 Obsidian 中按 `Ctrl+R` 重新加载，并在「第三方插件」中启用。
+- 现有有效插件设置会继续保留并迁移。
+- Style Settings 元数据入口已移除，所有设置统一在 ZENdian 设置面板管理。
+- 已废弃或没有消费者的字段会从保存数据中清理。
+- DB Folder、Projects、Surfing、Kanban、Calendar、Make.md、Checklist 等第三方插件适配代码已移除。
+- 若升级后界面仍显示旧样式，请执行 `Ctrl+R` 或完全重启 Obsidian。
 
-|命令|说明|
-|---|---|
-|`npm run build`|构建 CSS + JS（生产模式）|
-|`npm run build:css`|仅构建 CSS|
-|`npm run build:js`|仅构建 JS|
-|`npm run dev`|监听模式，文件变更时自动重建|
+完整变化请查看 [CHANGELOG.md](CHANGELOG.md) 和 [V3.0.01 Release Notes](RELEASE_NOTES_3.0.01.md)。
 
-## 🏗️ 技术架构
+## 支持范围
 
-本插件从 V2.0 版本开始，全面重构为 **「核心框架 + 功能模块」** 架构，将传统的纯 CSS 主题转变为动态可控的工程化系统。
+- 支持 Obsidian `1.12.7` 及以上版本。
+- 支持桌面、平板和手机布局。
+- 支持 Obsidian 原生浅色与暗色模式。
+- 不承诺第三方插件或第三方主题的视觉与行为兼容。
 
-### 项目结构
+## 反馈
 
-```
-zendian/
-├── src/
-│   ├── main.ts                 # 插件入口
-│   ├── core/
-│   │   ├── event-bus.ts        # 事件总线 (EventBus)
-│   │   ├── settings-manager.ts # 结构化设置管理
-│   │   └── module-manager.ts   # 模块生命周期管理
-│   ├── modules/                # 23 个独立功能模块 (如专注模式, 彩虹文件夹, 图标系统等)
-│   └── ui/
-│       ├── settings-tab.ts     # 顶部横排 Tab 式设置面板 UI
-│       └── icon-picker-modal.ts # 图标选择器弹窗
-├── css/
-│   ├── base/
-│   │   └── border-theme.css    # 核心主题：HSL 强调色、工作区布局、卡片
-│   ├── overlays/
-│   │   └── phycat-overlay.css  # Apple 风格覆盖层
-│   ├── settings-blocks/
-│   │   ├── border-settings.css # 旧版 @settings 定义
-│   │   └── phycat-settings.css # Phycat 专属设置
-│   └── ui/
-│       └── style-settings-ui.css # 设置面板样式
-├── scripts/
-│   └── build-css.mjs           # CSS 合并与压缩脚本
-├── dist/                       # 构建产物
-├── manifest.json
-└── package.json
-```
+请通过 [GitHub Issues](https://github.com/iJunkey-max/Zendian/issues) 提交缺陷和功能建议。报告问题时建议附上 Obsidian 版本、操作系统、复现步骤和必要截图。
 
-### 运行时流程
+## 许可
 
-1. **核心初始化**：插件加载，初始化 `EventBus` 和 `SettingsManager`。`SettingsManager` 会自动解析 `styles.css` 中的 `@settings` 块。
-    
-2. **数据迁移与绑定**：将旧版扁平的 `groupId@@settingId` 数据无缝迁移为结构化的 PluginSettings 对象。
-    
-3. **环境监听**：监听系统主题与 Obsidian `css-change` 事件，自动读取原生强调色并重算 `--accent-h/s/l`。
-    
-4. **模块按需加载**：`ModuleManager` 初始化并加载所有功能模块，各模块独立管理自身的 DOM Class 注入、CSS 变量配置及 CM6 Extension 的挂载。
-    
-
-### 颜色系统
-
-ZENdian 的全站颜色均派生自三个基础 HSL 根变量，确保在任何主题色下都能保持视觉和谐：
-
-```
---accent-h  /* 色相，0-360 */
---accent-s  /* 饱和度，0-100% */
---accent-l  /* 亮度，0-100% */
-```
-
-派生变量示例：
-
-- `--color-accent` — 原始强调色
-    
-- `--color-accent-1/2/3` — 偏移变体
-    
-- `--background-primary/secondary/tertiary` — 带有主色调的底层表面
-    
-- `--text-normal/muted/faint` — 带有主色调的文本颜色
-    
-- `--background-modifier-border` — 去饱和边框
-    
-
-### @settings 系统
-
-为了与旧有的 Style Settings 生态兼容并支持无缝迁移，设置元数据依然以 YAML 风格定义在 CSS 注释中：
-
-```
-/* @settings
-name: 我的设置组
-id: my-group
-settings:
-    -
-        id: my-toggle
-        title: Enable Feature
-        title.zh: 启用功能
-        type: class-toggle
-        default: true
-*/
-```
-
-_支持类型：`class-toggle`、`class-select`、`variable-number`、`variable-number-slider`、`variable-text`、`heading`、`info-text` 等。_
-
-## 🛠️ 开发指南
-
-### 添加新设置
-
-1. 在 `css/settings-blocks/border-settings.css` 添加定义：
-    
-
-```
--
-    id: my-new-setting
-    title: My New Setting
-    title.zh: 我的新设置
-    type: class-toggle
-    default: true
-```
-
-2. 根据类型添加对应的 CSS 规则：
-    
-
-```
-/* 对于 class-toggle */
-body.my-new-setting .some-element {
-    /* 你的样式 */
-}
-
-/* 对于 variable 类型 */
-.some-element {
-    property: var(--my-new-setting);
-}
-```
-
-3. 运行 `npm run build`，在 Obsidian 中重新加载。
-    
-
-### 关键文件定位
-
-- **卡片布局** — `css/base/border-theme.css`
-    
-    - 浅色模式：搜索 `card-layout-open-light`
-        
-    - 暗色模式：搜索 `card-layout-open-dark`
-        
-    - 阴影与圆角：`--card-shadow-light` / `--card-border-radius-light`
-        
-- **强调色派生** — `css/base/border-theme.css`
-    
-    - 浅色主题请查阅 `.theme-light` 块，暗色主题请查阅 `.theme-dark` 块。
-        
-
-### 调试设置数据
-
-设置数据持久化存储在插件目录下的 `data.json` 中，键格式采用兼容旧版的 `{groupId}@@{settingId}`：
-
-```
-{
-  "Components@@autohide": true,
-  "Appearance-light@@card-layout-open-light": true,
-  "Editor@@phycat-spacing@@line-height-customize": 2.2
-}
-```
-
-## 🤝 鸣谢与许可
-
-**许可证:** MIT License
-
-本项目的架构与美学理念离不开社区优秀开源项目的启发与支持，特别感谢：
-
-- [**obsidian-border**](https://github.com/Akifyss/obsidian-border "null") by Akifyss (基于此主题进行的深度二次开发)
-    
-- [**obsidian-style-settings**](https://github.com/mgmeyers/obsidian-style-settings "null") by mgmeyers (启发了本插件的设置变量解析机制)
-    
-- **Phycat** (Apple 风格配色与排版设计理念)
-    
-
-## 🐛 反馈与支持
-
-如果在享受 ZENdian 的过程中遇到任何 Bug，或有新的功能建议，欢迎在 [Issues](../../issues "null") 区提交反馈！
+[MIT License](LICENSE)

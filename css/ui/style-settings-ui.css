@@ -1212,3 +1212,464 @@
     border-color: var(--interactive-accent);
     color: var(--text-normal);
 }
+
+/* ============================================================
+   Settings UI v3 — Apple card workspace
+   ============================================================ */
+
+.zendian-settings-wrapper {
+    --zd-settings-card: color-mix(in srgb, var(--background-secondary) 88%, transparent);
+    --zd-settings-line: color-mix(in srgb, var(--background-modifier-border) 82%, transparent);
+    --zd-settings-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 9px 30px rgba(0, 0, 0, 0.035);
+    --text-muted: var(--zd-text-secondary);
+    --text-faint: var(--zd-text-tertiary);
+    display: block;
+    max-width: 1080px;
+    min-height: 520px;
+    margin: 0 auto;
+    padding: 8px 4px 40px;
+    color: var(--text-normal);
+    font-family: var(--font-interface);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+.zendian-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+    padding: 4px 4px 18px;
+    border-bottom: 1px solid var(--zd-settings-line);
+}
+
+.zendian-toolbar-identity h2,
+.zendian-page-title {
+    margin: 0;
+    color: var(--text-normal);
+    font-family: var(--font-interface);
+    font-size: 22px;
+    font-weight: 680;
+    letter-spacing: -0.025em;
+}
+
+.zendian-toolbar-identity p {
+    max-width: 520px;
+    margin: 5px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.zendian-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.zendian-search {
+    width: 220px;
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--zd-settings-line);
+    border-radius: 10px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.025);
+}
+
+.zendian-search:focus-visible,
+.zendian-reset-all:focus-visible,
+.zendian-card-reset:focus-visible,
+.zendian-nav-item:focus-visible,
+.zendian-mobile-nav:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+}
+
+.zendian-input-invalid {
+    border-color: var(--text-error) !important;
+    box-shadow: 0 0 0 1px var(--text-error) !important;
+}
+
+.zendian-reset-all,
+.zendian-card-reset {
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.zendian-reset-all:hover,
+.zendian-card-reset:hover {
+    color: var(--text-accent);
+}
+
+.zendian-settings-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+}
+
+.zendian-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    margin-bottom: 18px;
+    padding: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid var(--zd-settings-line);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--background-secondary) 92%, transparent);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.045);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    scrollbar-width: none;
+    cursor: default;
+}
+
+.zendian-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.zendian-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex: 1 0 auto;
+    justify-content: center;
+    width: auto;
+    min-width: max-content;
+    min-height: 36px;
+    padding: 7px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.zendian-nav-item svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    stroke-width: 1.8;
+}
+
+.zendian-nav-item:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.zendian-nav-item.active {
+    background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-primary));
+    color: var(--text-accent);
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+}
+
+.zendian-mobile-nav {
+    display: none;
+}
+
+.zendian-content {
+    min-width: 0;
+}
+
+.zendian-page-title {
+    margin: 1px 2px 14px;
+    font-size: 18px;
+}
+
+.zendian-section-card {
+    position: relative;
+    margin-bottom: 14px;
+    overflow: clip;
+    border: 1px solid var(--zd-settings-line);
+    border-radius: 14px;
+    background: var(--zd-settings-card);
+    box-shadow: var(--zd-settings-shadow);
+}
+
+.zendian-section-card::before {
+    content: "";
+    position: absolute;
+    inset: 12px auto 12px 0;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--interactive-accent);
+    opacity: 0.72;
+}
+
+.zendian-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 48px;
+    padding: 11px 16px 10px 18px;
+    border-bottom: 1px solid var(--zd-settings-line);
+}
+
+.zendian-section-heading h3 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: var(--text-normal);
+    font-size: 13px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+}
+
+.zendian-section-context {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-faint);
+    font-size: 11px;
+}
+
+.zendian-section-content {
+    padding: 0 16px 6px 18px;
+}
+
+.zendian-section-content > .setting-item,
+.zendian-advanced > .setting-item,
+.zendian-icon-section .setting-item {
+    min-height: 52px;
+    padding: 10px 0;
+    border-top: 1px solid var(--zd-settings-line);
+}
+
+.zendian-section-content > .setting-item:first-child {
+    border-top: 0;
+}
+
+.zendian-section-content .setting-item-name {
+    color: var(--text-normal);
+    font-size: 12.5px;
+    font-weight: 560;
+}
+
+.zendian-section-content .setting-item-description {
+    max-width: 540px;
+    padding-top: 3px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.zendian-section-content .setting-item-control {
+    gap: 7px;
+}
+
+.zendian-section-content input[type="text"],
+.zendian-section-content input[type="number"],
+.zendian-section-content select,
+.zendian-mobile-nav {
+    min-height: 30px;
+    border-radius: 8px;
+    font-size: 11.5px;
+}
+
+.zendian-slider-value {
+    width: 58px !important;
+    min-width: 58px;
+    text-align: center;
+}
+
+.zendian-advanced {
+    margin: 4px 0 7px;
+    border-top: 1px solid var(--zd-settings-line);
+}
+
+.zendian-advanced > summary {
+    padding: 10px 0;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
+
+.zendian-advanced[open] > summary {
+    color: var(--text-accent);
+}
+
+.zendian-heading-top-row {
+    gap: 10px;
+    margin: 12px 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.zendian-heading-group {
+    padding: 10px 12px;
+    border: 1px solid var(--zd-settings-line);
+    border-radius: 10px;
+    background: var(--background-primary);
+}
+
+.zendian-heading-tabs {
+    margin: 10px 0;
+    border: 0;
+    background: var(--background-primary);
+}
+
+.zendian-heading-tab-btn {
+    min-height: 34px;
+    border-radius: 7px;
+}
+
+.zendian-heading-tab-btn.active {
+    background: var(--interactive-accent);
+}
+
+.zendian-empty-state {
+    padding: 48px 20px;
+    border: 1px dashed var(--zd-settings-line);
+    border-radius: 14px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.zendian-coming-soon {
+    display: grid;
+    min-height: 112px;
+    place-items: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+}
+
+.zendian-about {
+    max-width: 640px;
+    padding: 0 0 24px;
+}
+
+.zendian-about-hero {
+    padding: 18px 8px 22px;
+    text-align: left;
+}
+
+.zendian-about-glow {
+    display: none;
+}
+
+.zendian-about-icon {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 8px;
+    animation: none;
+}
+
+.zendian-about-icon svg {
+    width: 36px;
+    height: 36px;
+}
+
+.zendian-about-title {
+    margin-bottom: 5px;
+    background: none;
+    color: var(--text-normal);
+    font-size: 28px;
+    text-align: left;
+    animation: none;
+    -webkit-text-fill-color: currentColor;
+}
+
+.zendian-about-version {
+    margin: 0 8px 0 0;
+}
+
+.zendian-about-author {
+    display: inline;
+}
+
+.zendian-about-card,
+.zendian-about-feature-card {
+    border-color: var(--zd-settings-line);
+    background: var(--zd-settings-card);
+    box-shadow: var(--zd-settings-shadow);
+}
+
+@media (max-width: 760px) {
+    .zendian-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .zendian-toolbar-actions {
+        width: 100%;
+    }
+
+    .zendian-search {
+        flex: 1;
+        width: auto;
+    }
+
+    .zendian-nav {
+        display: flex;
+        position: relative;
+        margin-bottom: 14px;
+    }
+
+    .zendian-heading-top-row {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 520px) {
+    .zendian-toolbar-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .zendian-reset-all {
+        min-height: 36px;
+        border: 1px solid var(--zd-settings-line);
+        border-radius: 9px;
+    }
+
+    .zendian-section-heading,
+    .zendian-section-content {
+        padding-left: 14px;
+        padding-right: 12px;
+    }
+
+    .zendian-section-content .setting-item {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .zendian-section-content .setting-item-control {
+        justify-content: flex-end;
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .zendian-settings-wrapper *,
+    .zendian-settings-wrapper *::before,
+    .zendian-settings-wrapper *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

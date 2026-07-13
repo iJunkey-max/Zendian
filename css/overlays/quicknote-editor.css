@@ -3,10 +3,15 @@
    ══════════════════════════════════════════════════════════ */
 
 .quicknote-editor-modal {
+  --text-muted: var(--zd-text-secondary);
+  --text-faint: var(--zd-text-tertiary);
   width: 90vw;
   max-width: 1200px;
   height: 80vh;
   padding: 0;
+  font-family: var(--font-interface);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .quicknote-editor-modal .modal-content {

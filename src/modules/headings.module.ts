@@ -49,6 +49,7 @@ export class HeadingsModule implements IFeatureModule {
     this.classes.cleanup();
     for (const lv of LEVELS) {
       removeCSSVar(document.body, `--${lv}-weight`);
+      removeCSSVar(document.body, `--${lv}-font`);
       removeCSSVar(document.body, `--${lv}-text-transform`);
       removeCSSVar(document.body, `--${lv}-spacing-scale-start`);
       removeCSSVar(document.body, `--${lv}-spacing-scale-end`);
@@ -56,6 +57,8 @@ export class HeadingsModule implements IFeatureModule {
     }
     removeCSSVar(document.body, "--inline-title-size");
     removeCSSVar(document.body, "--inline-title-weight");
+    removeCSSVar(document.body, "--inline-title-font");
+    removeCSSVar(document.body, "--inline-title-text-transform");
   }
 
   onSettingsChanged(changedKeys: string[], settings: PluginSettings): void {
@@ -73,15 +76,23 @@ export class HeadingsModule implements IFeatureModule {
     this.classes.toggle("inline-title-divider-remove", s.inlineTitle.dividerRemove);
     setCSSVar(document.body, "--inline-title-size", s.inlineTitle.size);
     setCSSVar(document.body, "--inline-title-weight", String(s.inlineTitle.weight));
+    setCSSVar(document.body, "--inline-title-font", s.inlineTitle.font || "inherit");
+    setCSSVar(document.body, "--inline-title-text-transform", s.inlineTitle.textTransform || "unset");
 
     // H1-H6 通用设置
     for (const lv of LEVELS) {
       const h = s[lv] as any;
       this.classes.toggle(`${lv}-divider-on`, h.divider);
+      setCSSVar(document.body, `--${lv}-font`, h.font || "inherit");
       setCSSVar(document.body, `--${lv}-weight`, String(h.weight));
       setCSSVar(document.body, `--${lv}-text-transform`, h.textTransform || "");
-      setCSSVar(document.body, `--${lv}-spacing-scale-start`, String(h.spacingStart));
-      setCSSVar(document.body, `--${lv}-spacing-scale-end`, String(h.spacingEnd));
+      if (lv !== "h1") {
+        setCSSVar(document.body, `--${lv}-spacing-scale-start`, String(h.spacingStart));
+        setCSSVar(document.body, `--${lv}-spacing-scale-end`, String(h.spacingEnd));
+      } else {
+        removeCSSVar(document.body, "--h1-spacing-scale-start");
+        removeCSSVar(document.body, "--h1-spacing-scale-end");
+      }
       setCSSVar(document.body, `--${lv}-size`, `${h.size}em`);
 
       // alignment: class-select

@@ -16,7 +16,13 @@ const STYLE_CLASSES = [
 ];
 
 const CSS_VARS = [
+  "--callout-border-width",
   "--callout-border-opacity",
+  "--callout-padding",
+  "--callout-title-padding",
+  "--callout-title-size",
+  "--callout-content-padding",
+  "--callout-content-radius",
 ];
 
 export class CalloutModule implements IFeatureModule {
@@ -44,5 +50,17 @@ export class CalloutModule implements IFeatureModule {
     for (const cls of STYLE_CLASSES) this.classes.remove(cls);
     this.classes.add(`callout-style-${s.style}`);
     setCSSVar(document.body, "--callout-border-opacity", String(s.borderOpacity));
+    const customVars: Array<[string, string]> = [
+      ["--callout-border-width", s.borderWidth],
+      ["--callout-padding", s.padding],
+      ["--callout-title-padding", s.titlePadding],
+      ["--callout-title-size", s.titleSize],
+      ["--callout-content-padding", s.contentPadding],
+      ["--callout-content-radius", s.contentRadius],
+    ];
+    for (const [name, value] of customVars) {
+      if (s.style === "customize" && value) setCSSVar(document.body, name, value);
+      else removeCSSVar(document.body, name);
+    }
   }
 }

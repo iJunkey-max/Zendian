@@ -13,17 +13,22 @@ export class BannerModule implements IFeatureModule {
 
     async load(ctx: ModuleContext): Promise<void> {
         this.ctx = ctx;
-        if (!ctx.getSettings().banner.enabled) return;
+        if (ctx.getSettings().banner.enabled) this.start();
+    }
 
-        // 绑定环境事件（标记为需要更新，而不是立即渲染）
+    private start(): void {
+        if (this.eventRefs.length > 0) {
+            this.renderAllBanners();
+            return;
+        }
         this.eventRefs.push(
-            ctx.app.workspace.on('file-open', () => {
+            this.ctx.app.workspace.on('file-open', () => {
                 this.needsUpdate = true;
             }),
-            ctx.app.workspace.on('layout-change', () => {
+            this.ctx.app.workspace.on('layout-change', () => {
                 this.needsUpdate = true;
             }),
-            ctx.app.metadataCache.on('changed', (file: TFile) => {
+            this.ctx.app.metadataCache.on('changed', (file: TFile) => {
                 const activeFile = this.ctx.app.workspace.getActiveFile();
                 if (file === activeFile) {
                     this.needsUpdate = true;
@@ -31,18 +36,17 @@ export class BannerModule implements IFeatureModule {
             })
         );
 
-        // 优化轮询：降低频率到 5 秒，并添加脏检查
         this.pollTimer = setInterval(() => {
             if (this.needsUpdate) {
                 this.renderAllBanners();
                 this.needsUpdate = false;
             }
-        }, 5000); // 1秒 → 5秒
+        }, 5000);
 
         this.renderAllBanners();
     }
 
-    unload(): void {
+    private stop(): void {
         this.eventRefs.forEach(ref => this.ctx.app.workspace.offref(ref));
         this.eventRefs = [];
         if (this.pollTimer) {
@@ -53,12 +57,16 @@ export class BannerModule implements IFeatureModule {
         this.cleanup();
     }
 
+    unload(): void {
+        this.stop();
+    }
+
     onSettingsChanged(changedKeys: string[], settings: PluginSettings): void {
         if (changedKeys.includes("banner")) {
             if (settings.banner.enabled) {
-                this.needsUpdate = true;
+                this.start();
             } else {
-                this.cleanup();
+                this.stop();
             }
         }
     }

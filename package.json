@@ -1,16 +1,17 @@
 {
   "name": "zendian",
-  "version": "2.2.17Beta",
-  "description": "A comprehensive Obsidian UI beautification plugin.",
+  "version": "3.0.01",
+  "description": "A personal knowledge and project workspace for Obsidian.",
   "main": "dist/main.js",
   "scripts": {
     "build": "npm run build:css && npm run build:js",
     "build:js": "node esbuild.config.mjs production",
     "build:css": "node scripts/build-css.mjs",
     "dev": "node esbuild.config.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:settings": "node scripts/check-settings-contract.mjs"
   },
-  "keywords": ["obsidian", "theme", "ui", "beautification"],
+  "keywords": ["obsidian", "productivity", "project-management", "tasks", "knowledge-management"],
   "author": "Junkey",
   "license": "MIT",
   "devDependencies": {
