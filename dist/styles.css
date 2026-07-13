@@ -113,32 +113,35 @@ settings:
 /* 深色主题 */
 .theme-dark {
   /* 背景色 */
-  --zd-bg-primary: #111827;
-  --zd-bg-secondary: #1f2937;
-  --zd-bg-tertiary: #374151;
-  --zd-bg-hover: rgba(255, 255, 255, 0.06);
-  --zd-bg-active: rgba(255, 255, 255, 0.1);
+  --zd-bg-primary: var(--background-primary);
+  --zd-bg-secondary: var(--background-primary-alt);
+  --zd-bg-tertiary: var(--background-secondary);
+  --zd-bg-hover: var(--background-modifier-hover);
+  --zd-bg-active: var(--background-modifier-active-hover);
 
   /* 文本颜色 */
-  --zd-text-primary: #f9fafb;
-  --zd-text-secondary: #d1d5db;
-  --zd-text-tertiary: #9ca3af;
-  --zd-text-inverse: #111827;
+  --zd-text-primary: var(--text-normal);
+  --zd-text-secondary: var(--text-muted);
+  --zd-text-tertiary: var(--text-faint);
+  --zd-text-inverse: var(--text-on-accent);
 
   /* 边框颜色 */
-  --zd-border-default: #374151;
-  --zd-border-hover: #4b5563;
+  --zd-border-default: var(--background-modifier-border);
+  --zd-border-hover: var(--background-modifier-border-hover);
   --zd-border-focus: var(--zd-primary);
 
   /* 阴影 */
-  --zd-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --zd-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --zd-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --zd-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-  --zd-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --zd-shadow-xs: 0 0 0 1px var(--background-modifier-border);
+  --zd-shadow-sm: var(--card-shadow-dark, 0 0 0 1px var(--background-modifier-border));
+  --zd-shadow-md: 0 0 0 1px var(--background-modifier-border-hover), 0 4px 12px rgba(0, 0, 0, 0.22);
+  --zd-shadow-lg: 0 0 0 1px var(--background-modifier-border-hover), 0 8px 24px rgba(0, 0, 0, 0.26);
+  --zd-shadow-xl: 0 0 0 1px var(--background-modifier-border-hover), 0 14px 36px rgba(0, 0, 0, 0.3);
 
   /* 分割线 */
-  --zd-divider: #374151;
+  --zd-divider: var(--divider-color);
+
+  /* 暗色模式下强调色仅作为低透明度状态层，不生成高亮浅色块 */
+  --zd-primary-light: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.16);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -10577,15 +10580,14 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 /* ── 暗色主题 ────────────────────────────────────────────── */
 
 .theme-dark .zendian-homepage {
-  --bg: #0c0e14;
-  --surface: #161921;
-  --text-main: #e5e7eb;
-  --text-muted: #8b91a5;
-  --text-lighter: #5c6278;
+  --bg: var(--background-primary);
+  --surface: var(--background-primary-alt);
+  --text-main: var(--text-normal);
+  --text-lighter: color-mix(in srgb, var(--text-muted) 82%, var(--text-normal));
 
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 28px -4px rgba(0, 0, 0, 0.25);
-  --shadow-note: 0 2px 8px -1px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.25), 0 14px 36px -4px rgba(0, 0, 0, 0.35);
+  --shadow-card: var(--card-shadow-dark, 0 0 0 1px var(--background-modifier-border));
+  --shadow-note: 0 0 0 1px var(--background-modifier-border), 0 2px 8px rgba(0, 0, 0, 0.18);
+  --shadow-card-hover: 0 0 0 1px var(--background-modifier-border-hover), 0 8px 24px rgba(0, 0, 0, 0.24);
 
   --hp-sticky-yellow: rgba(254, 249, 227, 0.06);
   --hp-sticky-blue-start: rgba(238, 242, 255, 0.04);
@@ -10593,23 +10595,23 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   --hp-sticky-green-start: rgba(236, 253, 245, 0.04);
   --hp-sticky-green-end: rgba(209, 250, 229, 0.06);
 
-  --hp-search-bg: #1a1e2a;
-  --hp-search-border: #282e3e;
+  --hp-search-bg: var(--background-primary-alt);
+  --hp-search-border: var(--background-modifier-border);
 
-  --hp-progress-bg: #232838;
+  --hp-progress-bg: var(--background-primary-alt);
 
-  --hp-border: rgba(255, 255, 255, 0.07);
-  --hp-divider: rgba(255, 255, 255, 0.06);
+  --hp-border: var(--background-modifier-border);
+  --hp-divider: var(--background-modifier-border-muted);
 
-  --hp-hover-bg: rgba(255, 255, 255, 0.04);
+  --hp-hover-bg: var(--background-modifier-hover);
 
-  --hp-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 28px -4px rgba(0, 0, 0, 0.25);
-  --hp-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --hp-shadow: var(--shadow-card);
+  --hp-shadow-sm: var(--shadow-note);
 
-  --hp-heat-0: #1a1e2a;
-  --hp-heat-1: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.12);
-  --hp-heat-2: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
-  --hp-heat-3: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.45);
+  --hp-heat-0: var(--background-modifier-border-muted);
+  --hp-heat-1: color-mix(in srgb, var(--primary) 24%, var(--background-primary-alt));
+  --hp-heat-2: color-mix(in srgb, var(--primary) 44%, var(--background-primary-alt));
+  --hp-heat-3: color-mix(in srgb, var(--primary) 70%, var(--background-primary-alt));
   --hp-heat-4: var(--primary);
 
   --hp-tag-blue-bg: rgba(59, 130, 246, 0.12);
@@ -11272,7 +11274,11 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .theme-dark .zendian-homepage .homepage-review-quote-text {
-  color: #a5b4fc;
+  color: var(--text-normal);
+}
+
+.theme-dark .zendian-homepage .homepage-review-quote-author {
+  color: var(--text-accent);
 }
 
 .zendian-homepage .homepage-review-quote-author {
@@ -12333,7 +12339,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   display: flex;
   justify-content: space-between;
   font-size: 0.6875rem;
-  color: var(--text-lighter);
+  color: var(--text-muted);
   margin-bottom: 0.25rem;
   padding-left: 1.25rem;
   padding-right: 0.25rem;
@@ -12352,8 +12358,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-size: 8px;
-  color: var(--text-lighter);
+  font-size: 0.5625rem;
+  color: var(--text-muted);
   padding: 0;
   flex-shrink: 0;
   gap: 2px;
@@ -12370,18 +12376,21 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zendian-homepage .homepage-heatmap-cell {
+  box-sizing: border-box;
   width: 11px;
   height: 11px;
-  border-radius: 2px;
-  transition: transform 0.15s, box-shadow 0.15s;
+  border-radius: 3px;
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .zendian-homepage .homepage-heatmap-cell:hover {
-  transform: scale(1.3);
-  box-shadow: 0 0 0 2px hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.2);
-  border-radius: 2.5px;
+  transform: scale(1.22);
+  box-shadow: 0 0 0 1px var(--surface), 0 2px 8px rgba(0, 0, 0, 0.2);
+  filter: brightness(1.12);
+  position: relative;
+  z-index: 1;
 }
 
 .zendian-homepage .homepage-heatmap-cell[data-level="0"] { background: var(--hp-heat-0); }
@@ -13518,12 +13527,22 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   --zc-accent-h: var(--accent-h);
   --zc-accent-s: var(--accent-s);
   --zc-accent-l: var(--accent-l);
+  --zc-surface: var(--background-secondary);
+  --zc-surface-hover: var(--background-modifier-hover);
+  --zc-border: var(--background-modifier-border);
 
   position: relative;
   padding: 0 !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   font-family: inherit;
+  background: var(--background-primary);
+}
+
+.theme-dark .zc-root {
+  --zc-surface: var(--background-primary-alt);
+  --zc-surface-hover: var(--background-modifier-hover);
+  --zc-border: var(--background-modifier-border);
   background: var(--background-primary);
 }
 
@@ -13571,7 +13590,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   height: 550px;
   top: -12%;
   right: -6%;
-  background: hsla(var(--zc-accent-h), var(--zc-accent-s), 35%, 0.25);
+  background: hsla(var(--zc-accent-h), var(--zc-accent-s), 35%, 0.1);
   filter: blur(100px);
   animation: zc-breathe 12s ease-in-out infinite;
 }
@@ -13581,7 +13600,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   height: 450px;
   bottom: -3%;
   left: -8%;
-  background: hsla(calc(var(--zc-accent-h) + 40), var(--zc-accent-s), 30%, 0.2);
+  background: hsla(calc(var(--zc-accent-h) + 40), var(--zc-accent-s), 30%, 0.07);
   filter: blur(120px);
   animation: zc-breathe-2 15s ease-in-out infinite;
 }
@@ -13598,7 +13617,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 .theme-dark .zc-root .zc-breath-bg {
   background: radial-gradient(
     ellipse 400px 400px at 30% 60%,
-    hsla(calc(var(--zc-accent-h) + 80), var(--zc-accent-s), 25%, 0.15),
+    hsla(calc(var(--zc-accent-h) + 80), var(--zc-accent-s), 25%, 0.05),
     transparent
   );
 }
@@ -13770,8 +13789,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zc-root .zc-stat-card {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background: var(--zc-surface);
+  border: 1px solid var(--zc-border);
   border-radius: var(--zc-r);
   padding: 20px;
   transition: all 0.2s ease;
@@ -13846,8 +13865,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 /* ── 内容区块 ────────────────────────────────── */
 
 .zc-root .zc-section {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background: var(--zc-surface);
+  border: 1px solid var(--zc-border);
   border-radius: var(--zc-r);
   overflow: hidden;
   margin-bottom: 28px;
@@ -13936,7 +13955,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 }
 
 .zc-root .zc-row:hover {
-  background: var(--background-modifier-hover);
+  background: var(--zc-surface-hover);
 }
 
 .zc-root .zc-row.is-done {
@@ -14127,8 +14146,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background: var(--zc-surface);
+  border: 1px solid var(--zc-border);
   border-radius: var(--zc-r-sm);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -14188,8 +14207,8 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   gap: 16px;
   padding: 16px;
   margin-bottom: 16px;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background: var(--surface);
+  border: 1px solid var(--hp-border);
   border-radius: var(--hp-radius-sm);
 }
 
@@ -14236,25 +14255,9 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   box-shadow: 0 0 0 2px hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15);
 }
 
-.homepage-project-count {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: var(--text-muted);
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--hp-radius-xs);
-}
-
-.homepage-project-count span {
-  font-weight: 500;
-}
-
 /* 深色模式优化 */
 .theme-dark .homepage-filter-select {
-  background: var(--background-secondary);
+  background: var(--background-primary-alt);
 }
 
 .theme-dark .homepage-filter-select:hover {
@@ -14397,7 +14400,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   gap: 20px;
   padding: 16px;
   margin-top: 16px;
-  background: var(--background-secondary);
+  background: var(--zc-surface);
   border-radius: 8px;
   font-size: 12px;
   color: var(--text-muted);
@@ -14594,14 +14597,14 @@ body.theme-dark .codeblock-customizer-line-number-specific {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: var(--background-secondary);
+  background: var(--zc-surface);
   border-radius: 8px;
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--zc-border);
   transition: all 0.2s;
 }
 
 .zc-root .zc-analytics-card:hover {
-  background: var(--background-modifier-hover);
+  background: var(--zc-surface-hover);
   transform: translateY(-2px);
 }
 
@@ -14649,7 +14652,7 @@ body.theme-dark .codeblock-customizer-line-number-specific {
 
 /* 图表容器 */
 .zc-root .zc-chart-container {
-  background: var(--background-secondary);
+  background: var(--zc-surface);
   border-radius: 8px;
   padding: 16px;
   overflow: hidden;

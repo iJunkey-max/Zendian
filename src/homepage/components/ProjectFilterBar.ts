@@ -142,16 +142,3 @@ function createSelect(
 
   return select;
 }
-
-/**
- * 更新项目计数显示
- */
-export function updateProjectCount(container: HTMLElement, filteredCount: number, totalCount: number): void {
-  const existing = container.querySelector(".homepage-project-count");
-  if (existing) existing.remove();
-
-  const countEl = container.createDiv({ cls: "homepage-project-count" });
-  countEl.createSpan({
-    text: `显示 ${filteredCount} / ${totalCount} 个项目`,
-  });
-}

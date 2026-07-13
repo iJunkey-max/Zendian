@@ -76,32 +76,35 @@
 /* 深色主题 */
 .theme-dark {
   /* 背景色 */
-  --zd-bg-primary: #111827;
-  --zd-bg-secondary: #1f2937;
-  --zd-bg-tertiary: #374151;
-  --zd-bg-hover: rgba(255, 255, 255, 0.06);
-  --zd-bg-active: rgba(255, 255, 255, 0.1);
+  --zd-bg-primary: var(--background-primary);
+  --zd-bg-secondary: var(--background-primary-alt);
+  --zd-bg-tertiary: var(--background-secondary);
+  --zd-bg-hover: var(--background-modifier-hover);
+  --zd-bg-active: var(--background-modifier-active-hover);
 
   /* 文本颜色 */
-  --zd-text-primary: #f9fafb;
-  --zd-text-secondary: #d1d5db;
-  --zd-text-tertiary: #9ca3af;
-  --zd-text-inverse: #111827;
+  --zd-text-primary: var(--text-normal);
+  --zd-text-secondary: var(--text-muted);
+  --zd-text-tertiary: var(--text-faint);
+  --zd-text-inverse: var(--text-on-accent);
 
   /* 边框颜色 */
-  --zd-border-default: #374151;
-  --zd-border-hover: #4b5563;
+  --zd-border-default: var(--background-modifier-border);
+  --zd-border-hover: var(--background-modifier-border-hover);
   --zd-border-focus: var(--zd-primary);
 
   /* 阴影 */
-  --zd-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --zd-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --zd-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --zd-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-  --zd-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --zd-shadow-xs: 0 0 0 1px var(--background-modifier-border);
+  --zd-shadow-sm: var(--card-shadow-dark, 0 0 0 1px var(--background-modifier-border));
+  --zd-shadow-md: 0 0 0 1px var(--background-modifier-border-hover), 0 4px 12px rgba(0, 0, 0, 0.22);
+  --zd-shadow-lg: 0 0 0 1px var(--background-modifier-border-hover), 0 8px 24px rgba(0, 0, 0, 0.26);
+  --zd-shadow-xl: 0 0 0 1px var(--background-modifier-border-hover), 0 14px 36px rgba(0, 0, 0, 0.3);
 
   /* 分割线 */
-  --zd-divider: #374151;
+  --zd-divider: var(--divider-color);
+
+  /* 暗色模式下强调色仅作为低透明度状态层，不生成高亮浅色块 */
+  --zd-primary-light: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.16);
 }
 
 /* ═══════════════════════════════════════════════════════════

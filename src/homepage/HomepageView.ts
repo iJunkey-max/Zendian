@@ -21,7 +21,7 @@ import { PROJECT_TYPE_COLORS } from "./types";
 import { Events } from "../core/event-bus";
 import type { EventBus } from "../core/event-bus";
 import type { SettingsManager } from "../core/settings-manager";
-import { renderProjectFilterBar, updateProjectCount, DEFAULT_FILTER, type ProjectFilter } from "./components/ProjectFilterBar";
+import { renderProjectFilterBar, DEFAULT_FILTER, type ProjectFilter } from "./components/ProjectFilterBar";
 import { applyFilterAndSort } from "./utils/ProjectFilterUtils";
 import { ProjectTimelineService, type TimelineEvent, type ProjectStats } from "./services/ProjectTimelineService";
 import type { Task } from "../services/TaskSyncService";
@@ -1012,12 +1012,6 @@ export class HomepageView extends ItemView {
 
     // 应用筛选和排序
     const filtered = applyFilterAndSort(this.allProjects, this.currentProjectFilter);
-
-    // 更新计数
-    const section = this.containerEl.querySelector('[data-section="projects"]');
-    if (section) {
-      updateProjectCount(section as HTMLElement, filtered.length, this.allProjects.length);
-    }
 
     if (filtered.length === 0) {
       list.createDiv({ cls: "homepage-empty-text", text: "暂无符合条件的项目" });

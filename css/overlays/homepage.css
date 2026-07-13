@@ -97,15 +97,14 @@
 /* ── 暗色主题 ────────────────────────────────────────────── */
 
 .theme-dark .zendian-homepage {
-  --bg: #0c0e14;
-  --surface: #161921;
-  --text-main: #e5e7eb;
-  --text-muted: #8b91a5;
-  --text-lighter: #5c6278;
+  --bg: var(--background-primary);
+  --surface: var(--background-primary-alt);
+  --text-main: var(--text-normal);
+  --text-lighter: color-mix(in srgb, var(--text-muted) 82%, var(--text-normal));
 
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 28px -4px rgba(0, 0, 0, 0.25);
-  --shadow-note: 0 2px 8px -1px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.25), 0 14px 36px -4px rgba(0, 0, 0, 0.35);
+  --shadow-card: var(--card-shadow-dark, 0 0 0 1px var(--background-modifier-border));
+  --shadow-note: 0 0 0 1px var(--background-modifier-border), 0 2px 8px rgba(0, 0, 0, 0.18);
+  --shadow-card-hover: 0 0 0 1px var(--background-modifier-border-hover), 0 8px 24px rgba(0, 0, 0, 0.24);
 
   --hp-sticky-yellow: rgba(254, 249, 227, 0.06);
   --hp-sticky-blue-start: rgba(238, 242, 255, 0.04);
@@ -113,23 +112,23 @@
   --hp-sticky-green-start: rgba(236, 253, 245, 0.04);
   --hp-sticky-green-end: rgba(209, 250, 229, 0.06);
 
-  --hp-search-bg: #1a1e2a;
-  --hp-search-border: #282e3e;
+  --hp-search-bg: var(--background-primary-alt);
+  --hp-search-border: var(--background-modifier-border);
 
-  --hp-progress-bg: #232838;
+  --hp-progress-bg: var(--background-primary-alt);
 
-  --hp-border: rgba(255, 255, 255, 0.07);
-  --hp-divider: rgba(255, 255, 255, 0.06);
+  --hp-border: var(--background-modifier-border);
+  --hp-divider: var(--background-modifier-border-muted);
 
-  --hp-hover-bg: rgba(255, 255, 255, 0.04);
+  --hp-hover-bg: var(--background-modifier-hover);
 
-  --hp-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 28px -4px rgba(0, 0, 0, 0.25);
-  --hp-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --hp-shadow: var(--shadow-card);
+  --hp-shadow-sm: var(--shadow-note);
 
-  --hp-heat-0: #1a1e2a;
-  --hp-heat-1: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.12);
-  --hp-heat-2: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
-  --hp-heat-3: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.45);
+  --hp-heat-0: var(--background-modifier-border-muted);
+  --hp-heat-1: color-mix(in srgb, var(--primary) 24%, var(--background-primary-alt));
+  --hp-heat-2: color-mix(in srgb, var(--primary) 44%, var(--background-primary-alt));
+  --hp-heat-3: color-mix(in srgb, var(--primary) 70%, var(--background-primary-alt));
   --hp-heat-4: var(--primary);
 
   --hp-tag-blue-bg: rgba(59, 130, 246, 0.12);
@@ -792,7 +791,11 @@
 }
 
 .theme-dark .zendian-homepage .homepage-review-quote-text {
-  color: #a5b4fc;
+  color: var(--text-normal);
+}
+
+.theme-dark .zendian-homepage .homepage-review-quote-author {
+  color: var(--text-accent);
 }
 
 .zendian-homepage .homepage-review-quote-author {
@@ -1853,7 +1856,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.6875rem;
-  color: var(--text-lighter);
+  color: var(--text-muted);
   margin-bottom: 0.25rem;
   padding-left: 1.25rem;
   padding-right: 0.25rem;
@@ -1872,8 +1875,8 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-size: 8px;
-  color: var(--text-lighter);
+  font-size: 0.5625rem;
+  color: var(--text-muted);
   padding: 0;
   flex-shrink: 0;
   gap: 2px;
@@ -1890,18 +1893,21 @@
 }
 
 .zendian-homepage .homepage-heatmap-cell {
+  box-sizing: border-box;
   width: 11px;
   height: 11px;
-  border-radius: 2px;
-  transition: transform 0.15s, box-shadow 0.15s;
+  border-radius: 3px;
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .zendian-homepage .homepage-heatmap-cell:hover {
-  transform: scale(1.3);
-  box-shadow: 0 0 0 2px hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.2);
-  border-radius: 2.5px;
+  transform: scale(1.22);
+  box-shadow: 0 0 0 1px var(--surface), 0 2px 8px rgba(0, 0, 0, 0.2);
+  filter: brightness(1.12);
+  position: relative;
+  z-index: 1;
 }
 
 .zendian-homepage .homepage-heatmap-cell[data-level="0"] { background: var(--hp-heat-0); }
@@ -3038,12 +3044,22 @@
   --zc-accent-h: var(--accent-h);
   --zc-accent-s: var(--accent-s);
   --zc-accent-l: var(--accent-l);
+  --zc-surface: var(--background-secondary);
+  --zc-surface-hover: var(--background-modifier-hover);
+  --zc-border: var(--background-modifier-border);
 
   position: relative;
   padding: 0 !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   font-family: inherit;
+  background: var(--background-primary);
+}
+
+.theme-dark .zc-root {
+  --zc-surface: var(--background-primary-alt);
+  --zc-surface-hover: var(--background-modifier-hover);
+  --zc-border: var(--background-modifier-border);
   background: var(--background-primary);
 }
 
@@ -3091,7 +3107,7 @@
   height: 550px;
   top: -12%;
   right: -6%;
-  background: hsla(var(--zc-accent-h), var(--zc-accent-s), 35%, 0.25);
+  background: hsla(var(--zc-accent-h), var(--zc-accent-s), 35%, 0.1);
   filter: blur(100px);
   animation: zc-breathe 12s ease-in-out infinite;
 }
@@ -3101,7 +3117,7 @@
   height: 450px;
   bottom: -3%;
   left: -8%;
-  background: hsla(calc(var(--zc-accent-h) + 40), var(--zc-accent-s), 30%, 0.2);
+  background: hsla(calc(var(--zc-accent-h) + 40), var(--zc-accent-s), 30%, 0.07);
   filter: blur(120px);
   animation: zc-breathe-2 15s ease-in-out infinite;
 }
@@ -3118,7 +3134,7 @@
 .theme-dark .zc-root .zc-breath-bg {
   background: radial-gradient(
     ellipse 400px 400px at 30% 60%,
-    hsla(calc(var(--zc-accent-h) + 80), var(--zc-accent-s), 25%, 0.15),
+    hsla(calc(var(--zc-accent-h) + 80), var(--zc-accent-s), 25%, 0.05),
     transparent
   );
 }
@@ -3290,8 +3306,8 @@
 }
 
 .zc-root .zc-stat-card {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background: var(--zc-surface);
+  border: 1px solid var(--zc-border);
   border-radius: var(--zc-r);
   padding: 20px;
   transition: all 0.2s ease;
@@ -3366,8 +3382,8 @@
 /* ── 内容区块 ────────────────────────────────── */
 
 .zc-root .zc-section {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background: var(--zc-surface);
+  border: 1px solid var(--zc-border);
   border-radius: var(--zc-r);
   overflow: hidden;
   margin-bottom: 28px;
@@ -3456,7 +3472,7 @@
 }
 
 .zc-root .zc-row:hover {
-  background: var(--background-modifier-hover);
+  background: var(--zc-surface-hover);
 }
 
 .zc-root .zc-row.is-done {
@@ -3647,8 +3663,8 @@
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background: var(--zc-surface);
+  border: 1px solid var(--zc-border);
   border-radius: var(--zc-r-sm);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3708,8 +3724,8 @@
   gap: 16px;
   padding: 16px;
   margin-bottom: 16px;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background: var(--surface);
+  border: 1px solid var(--hp-border);
   border-radius: var(--hp-radius-sm);
 }
 
@@ -3756,25 +3772,9 @@
   box-shadow: 0 0 0 2px hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15);
 }
 
-.homepage-project-count {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: var(--text-muted);
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--hp-radius-xs);
-}
-
-.homepage-project-count span {
-  font-weight: 500;
-}
-
 /* 深色模式优化 */
 .theme-dark .homepage-filter-select {
-  background: var(--background-secondary);
+  background: var(--background-primary-alt);
 }
 
 .theme-dark .homepage-filter-select:hover {
@@ -3917,7 +3917,7 @@
   gap: 20px;
   padding: 16px;
   margin-top: 16px;
-  background: var(--background-secondary);
+  background: var(--zc-surface);
   border-radius: 8px;
   font-size: 12px;
   color: var(--text-muted);
@@ -4114,14 +4114,14 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: var(--background-secondary);
+  background: var(--zc-surface);
   border-radius: 8px;
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--zc-border);
   transition: all 0.2s;
 }
 
 .zc-root .zc-analytics-card:hover {
-  background: var(--background-modifier-hover);
+  background: var(--zc-surface-hover);
   transform: translateY(-2px);
 }
 
@@ -4169,7 +4169,7 @@
 
 /* 图表容器 */
 .zc-root .zc-chart-container {
-  background: var(--background-secondary);
+  background: var(--zc-surface);
   border-radius: 8px;
   padding: 16px;
   overflow: hidden;
