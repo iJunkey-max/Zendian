@@ -1,7 +1,7 @@
 {
   "id": "zendian",
   "name": "ZENdian",
-  "version": "2.2.12BETA",
+  "version": "2.2.14BETA",
   "minAppVersion": "1.12.7",
   "description": "A comprehensive Obsidian UI beautification plugin. Integrates Border theme, Phycat Apple-style colors, enhanced Markdown rendering, and Style Settings.",
   "author": "Junkey",

@@ -288,6 +288,19 @@ export interface IconSystemSettings {
   customIcons: Record<string, string>;
 }
 
+/** 项目分类。项目文件夹名称固定为 `{number}_{name}`。 */
+export interface ProjectCategory {
+  number: string;
+  name: string;
+}
+
+/** 新建项目时使用的自定义一级子文件夹模板。 */
+export interface ProjectSubfolderTemplate {
+  number: string;
+  name: string;
+  icon: string;
+}
+
 /** 主页模块设置 */
 export interface HomepageSettings {
   /** 是否启用主页替换新标签页 */
@@ -302,8 +315,10 @@ export interface HomepageSettings {
   dailyNoteFolders: string;
   /** 项目看板开关 */
   projectBoardEnabled: boolean;
-  /** 项目类型文件夹（逗号分隔） */
-  projectTypeFolders: string;
+  /** 项目分类列表 */
+  projectCategories: ProjectCategory[];
+  /** 新建项目时创建的一级子文件夹；空数组表示不创建。 */
+  projectSubfolders: Record<string, ProjectSubfolderTemplate[]>;
   /** 项目归档文件夹名 */
   projectArchiveFolder: string;
   /** 热力图开关 */
@@ -614,7 +629,14 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     weatherLocation: "",
     dailyNoteFolders: "",
     projectBoardEnabled: true,
-    projectTypeFolders: "10_课程,20_竞赛,30_研究,40_技能,50_生活",
+    projectCategories: [
+      { number: "10", name: "课程" },
+      { number: "20", name: "竞赛" },
+      { number: "30", name: "研究" },
+      { number: "40", name: "技能" },
+      { number: "50", name: "生活" },
+    ],
+    projectSubfolders: {},
     projectArchiveFolder: "99_归档",
     heatmapEnabled: true,
     monthlyStatsEnabled: true,

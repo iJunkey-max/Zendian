@@ -102,6 +102,10 @@ export class SettingsManager {
         }
         // 如果 oldData 中没有某个 key，保留 DEFAULT_SETTINGS 的默认值
       }
+      // 早期测试版曾使用全局数组；分类独立配置启用后不再沿用该方案。
+      if (Array.isArray((settings.homepage as any).projectSubfolders)) {
+        settings.homepage.projectSubfolders = {};
+      }
       return settings;
     }
 

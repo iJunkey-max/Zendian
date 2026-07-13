@@ -3,7 +3,7 @@
  *
  * 功能：
  * - 按状态筛选（全部/进行中/暂停/完成）
- * - 按类型筛选（全部/学习/工作/创作/生活/研究）
+ * - 按用户配置的项目分类动态筛选
  * - 按优先级筛选（全部/高/中/低）
  * - 多种排序方式（活跃度/优先级/时间/名称）
  * - 显示符合条件的项目数
@@ -11,7 +11,7 @@
 
 export interface ProjectFilter {
   status: "all" | "active" | "paused" | "completed";
-  type: "all" | "学习" | "工作" | "创作" | "生活" | "研究";
+  type: string;
   priority: "all" | "high" | "medium" | "low";
   sortBy: "activity" | "priority" | "time" | "name";
 }
@@ -29,6 +29,7 @@ export const DEFAULT_FILTER: ProjectFilter = {
 export function renderProjectFilterBar(
   container: HTMLElement,
   currentFilter: ProjectFilter,
+  projectTypes: readonly string[],
   onFilterChange: (filter: ProjectFilter) => void
 ): void {
   container.empty();
@@ -59,11 +60,7 @@ export function renderProjectFilterBar(
     "类型",
     [
       { value: "all", label: "全部" },
-      { value: "学习", label: "学习" },
-      { value: "工作", label: "工作" },
-      { value: "创作", label: "创作" },
-      { value: "生活", label: "生活" },
-      { value: "研究", label: "研究" },
+      ...projectTypes.map((type) => ({ value: type, label: type })),
     ],
     currentFilter.type,
     (value) => {

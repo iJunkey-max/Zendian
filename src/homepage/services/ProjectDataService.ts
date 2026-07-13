@@ -121,7 +121,7 @@ export class ProjectDataService {
       type: data.type,
       description: data.description,
       createdAt: data.createdAt,
-      path: findProjectHomeFile(this.app, projectPath)?.path || `${projectPath}/00 控制台/${data.name}.home`,
+      path: findProjectHomeFile(this.app, projectPath)?.path || `${projectPath}/${data.name}.home`,
       folderPath: projectPath,
     };
   }
@@ -267,6 +267,7 @@ export class ProjectDataService {
       completed: false,
       created: new Date().toISOString().slice(0, 10),
       due: task.due,
+      dueTime: task.dueTime,
     };
 
     data.tasks.push(newTask);
@@ -284,6 +285,7 @@ export class ProjectDataService {
     if (updates.text !== undefined) task.text = updates.text;
     if (updates.completed !== undefined) task.completed = updates.completed;
     if (updates.due !== undefined) task.due = updates.due;
+    if (updates.dueTime !== undefined) task.dueTime = updates.dueTime;
 
     return await this.saveProjectConsoleData(projectPath, data);
   }
@@ -406,6 +408,7 @@ export class ProjectDataService {
       completed: task.completed,
       created: task.created || "",
       due: task.due,
+      dueTime: task.dueTime,
       priority: task.priority,
       tags: task.tags || [],
     };

@@ -65,17 +65,8 @@ export interface HomepageTaskRadarResult {
 // 主页新增业务类型
 // ============================================================
 
-/** 项目类型标签（对应 vault 一级文件夹） */
-export type ProjectType = "学习" | "工作" | "创作" | "生活" | "研究";
-
-/** 项目类型配色 */
-export const PROJECT_TYPE_COLORS: Record<ProjectType, string> = {
-  "学习": "#3b82f6",
-  "工作": "#f59e0b",
-  "创作": "#8b5cf6",
-  "生活": "#10b981",
-  "研究": "#06b6d4",
-};
+/** 用户可在设置中自由定义的项目类型标签。 */
+export type ProjectType = string;
 
 /** 项目内最近文件 */
 export interface ProjectRecentFile {
@@ -90,6 +81,7 @@ export interface ProjectTask {
   completed: boolean;
   created?: string;
   due?: string;
+  dueTime?: string;
   line: number;
 }
 
@@ -209,14 +201,6 @@ export interface ProjectConsoleData {
 /** 任务优先级 */
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
 
-/** 任务优先级配色 */
-export const TASK_PRIORITY_COLORS: Record<TaskPriority, string> = {
-  "P0": "#ef4444",  // 紧急 - 红色
-  "P1": "#f59e0b",  // 重要 - 橙色
-  "P2": "#3b82f6",  // 普通 - 蓝色
-  "P3": "#6b7280",  // 低优 - 灰色
-};
-
 /** 任务优先级标签 */
 export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
   "P0": "紧急",
@@ -231,6 +215,7 @@ export interface ProjectConsoleTask {
   completed: boolean;
   created?: string;           // YYYY-MM-DD
   due?: string;               // YYYY-MM-DD
+  dueTime?: string;           // HH:mm
   priority?: TaskPriority;    // 优先级
   tags?: string[];            // 标签
   subtasks?: ProjectConsoleSubtask[]; // 子任务

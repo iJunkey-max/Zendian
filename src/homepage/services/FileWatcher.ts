@@ -178,9 +178,6 @@ export class FileWatcher extends Events {
     if (file.name === "Timeline.md") {
       return "timeline";
     }
-    if (file.path.includes("/30 交付物/")) {
-      return "deliverable";
-    }
     if (file.extension === "md") {
       return "file";
     }

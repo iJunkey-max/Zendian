@@ -823,6 +823,279 @@
 
 /* ─── Icon System Settings ─── */
 
+/* ─── Project Category Settings ─── */
+
+.zendian-project-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.zendian-project-category-help {
+    margin: 0 0 2px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.5;
+}
+
+.zendian-project-category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.zendian-project-category-row {
+    display: grid;
+    grid-template-columns: 72px minmax(110px, 1fr) minmax(150px, 1.25fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+}
+
+.zendian-project-category-add-row {
+    display: grid;
+    grid-template-columns: 72px minmax(110px, 1fr) minmax(150px, 1.25fr) 32px;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+}
+
+.zendian-project-category-row {
+    padding: 5px 6px 5px 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+}
+
+.zendian-project-category-folder,
+.zendian-project-category-preview {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-faint);
+    font-family: var(--font-monospace);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.zendian-project-category-number-input,
+.zendian-project-category-name-input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    padding: 4px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+}
+
+.zendian-project-category-number-input {
+    font-family: var(--font-monospace);
+}
+
+.zendian-project-category-number-input:focus,
+.zendian-project-category-name-input:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+}
+
+.zendian-project-category-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.zendian-project-category-save,
+.zendian-project-category-delete,
+.zendian-project-category-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 17px;
+    line-height: 1;
+}
+
+.zendian-project-category-save {
+    width: auto;
+    min-width: 48px;
+    padding: 0 9px;
+    border: 1px solid var(--interactive-accent);
+    background: transparent;
+    color: var(--text-accent);
+    font-size: 12px;
+}
+
+.zendian-project-category-save:hover:not(:disabled) {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.zendian-project-category-save:disabled {
+    border-color: var(--background-modifier-border);
+    color: var(--text-faint);
+    cursor: default;
+    opacity: 0.65;
+}
+
+.zendian-project-category-delete {
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.zendian-project-category-delete:hover {
+    background: var(--background-modifier-error-hover);
+    color: var(--text-error);
+}
+
+.zendian-project-category-add {
+    border: 1px solid var(--interactive-accent);
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.zendian-project-category-empty {
+    padding: 10px;
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    text-align: center;
+}
+
+.zendian-project-subfolder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.zendian-project-subfolder-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 2px 0 10px;
+    padding: 4px;
+    overflow-x: auto;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    background: var(--background-secondary);
+    scrollbar-width: thin;
+}
+
+.zendian-project-subfolder-tab {
+    flex: 0 0 auto;
+    height: 30px;
+    margin: 0;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    box-shadow: none;
+    font-size: var(--font-ui-smaller);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.zendian-project-subfolder-tab:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.zendian-project-subfolder-tab.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.zendian-project-subfolder-tab:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+}
+
+.zendian-project-subfolder-row,
+.zendian-project-subfolder-add-row {
+    display: grid;
+    grid-template-columns: 34px 72px minmax(110px, 1fr) minmax(130px, 1.15fr) auto;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+}
+
+.zendian-project-subfolder-row {
+    padding: 5px 6px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+}
+
+.zendian-project-subfolder-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-muted);
+    box-shadow: none;
+    cursor: pointer;
+}
+
+.zendian-project-subfolder-icon:hover,
+.zendian-project-subfolder-icon:focus-visible {
+    border-color: var(--interactive-accent);
+    color: var(--interactive-accent);
+}
+
+.zendian-project-subfolder-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.zendian-project-subfolder-icon span {
+    overflow: hidden;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+    .zendian-project-category-row {
+        grid-template-columns: 64px minmax(100px, 1fr) auto;
+    }
+
+    .zendian-project-category-add-row {
+        grid-template-columns: 64px minmax(100px, 1fr) 32px;
+    }
+
+    .zendian-project-category-folder,
+    .zendian-project-category-preview {
+        display: none;
+    }
+
+    .zendian-project-subfolder-row,
+    .zendian-project-subfolder-add-row {
+        grid-template-columns: 34px 64px minmax(100px, 1fr) auto;
+    }
+
+    .zendian-project-subfolder-row .zendian-project-category-folder,
+    .zendian-project-subfolder-add-row .zendian-project-category-preview {
+        display: none;
+    }
+}
+
 .zendian-icon-section {
     margin-bottom: 24px;
 }

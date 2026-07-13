@@ -624,7 +624,45 @@
 .zendian-homepage .homepage-card-title-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.375rem;
+}
+
+.zendian-homepage .homepage-card-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--hp-divider);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.zendian-homepage .homepage-card-icon-btn:hover {
+  border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
+  background: var(--background-modifier-hover);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.zendian-homepage .homepage-card-icon-btn.is-primary {
+  border-color: transparent;
+  background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.1);
+  color: var(--primary);
+}
+
+.zendian-homepage .homepage-card-icon-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.zendian-homepage .homepage-card-icon-btn svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
 }
 
 /* ── 8. 环形进度条 ──────────────────────────────────────── */
@@ -1030,6 +1068,9 @@
   color: var(--text-muted);
   flex-shrink: 0;
   transition: all 0.15s;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .hp-detail-close:hover {
@@ -1384,10 +1425,47 @@
   width: 30rem;
 }
 
+.hp-all-todo-panel {
+  width: 38rem;
+}
+
+.hp-all-sticky-panel {
+  width: 46rem;
+}
+
 .hp-all-body {
   flex: 1;
   overflow-y: auto;
   padding: 0 1.25rem 1rem 1.25rem;
+}
+
+.zendian-homepage .hp-all-todo-body {
+  padding: 1rem 1.25rem 1.25rem;
+  gap: 0.75rem;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.zendian-homepage .hp-all-sticky-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem 1.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.zendian-homepage .hp-all-sticky-body .homepage-sticky-note {
+  min-height: 7.5rem;
+  flex: none;
+}
+
+@media (max-width: 640px) {
+  .zendian-homepage .hp-all-sticky-body {
+    grid-template-columns: 1fr;
+  }
 }
 
 .hp-all-group {
@@ -1502,6 +1580,9 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 0.25rem;
 }
 
 .zendian-homepage .homepage-todo-item {
@@ -1572,18 +1653,351 @@
   flex-shrink: 0;
 }
 
-.zendian-homepage .homepage-todo-tag {
-  font-size: 10px;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  text-align: center;
-  width: 2.25rem;
-}
-
 .zendian-homepage .homepage-todo-date {
   font-size: 0.75rem;
-  width: 2rem;
+  min-width: 2rem;
   text-align: right;
+  white-space: nowrap;
+}
+
+/* 新建代办：与 ZENdian 表单一致的日期 / 时间组合控件。 */
+.zendian-task-schedule-controls {
+  display: grid;
+  grid-template-columns: 10rem 7.25rem;
+  align-items: center;
+  justify-content: end;
+  gap: 0.625rem;
+  width: min(100%, 17.875rem);
+}
+
+.zendian-task-schedule-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2.125rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.625rem;
+  box-sizing: border-box;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 0.5rem;
+  background: var(--background-modifier-form-field);
+  color: var(--text-normal);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.zendian-task-schedule-trigger:hover {
+  border-color: var(--background-modifier-border-hover);
+  background: var(--background-modifier-form-field-highlighted, var(--background-modifier-hover));
+}
+
+.zendian-task-schedule-trigger:focus-visible,
+.zendian-task-schedule-trigger[aria-expanded="true"] {
+  outline: none;
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-form-field);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+}
+
+.zendian-task-schedule-trigger__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+.zendian-task-schedule-trigger__icon svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.zendian-task-schedule-trigger__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zendian-task-schedule-trigger__value.is-placeholder {
+  color: var(--text-faint);
+}
+
+.zendian-schedule-popover {
+  position: fixed;
+  z-index: 10000;
+  box-sizing: border-box;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 0.75rem;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-family: var(--font-interface);
+  animation: zendian-schedule-popover-in 140ms ease-out;
+}
+
+.zendian-schedule-popover--date {
+  width: 18.25rem;
+  padding: 0.75rem;
+}
+
+.zendian-schedule-popover--time {
+  width: 17.5rem;
+  padding: 0.75rem 0.75rem 0.625rem;
+}
+
+@keyframes zendian-schedule-popover-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.zendian-calendar-header {
+  display: grid;
+  grid-template-columns: 2rem 1fr 2rem;
+  align-items: center;
+  margin-bottom: 0.625rem;
+}
+
+.zendian-calendar-month,
+.zendian-time-title {
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-weight: 650;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.zendian-picker-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.zendian-picker-icon-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.zendian-picker-icon-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
+.zendian-picker-icon-btn svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.zendian-calendar-weekdays,
+.zendian-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.1875rem;
+}
+
+.zendian-calendar-weekdays {
+  margin-bottom: 0.25rem;
+}
+
+.zendian-calendar-weekdays span {
+  color: var(--text-faint);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+  text-align: center;
+}
+
+.zendian-calendar-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-normal);
+  box-shadow: none;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.zendian-calendar-day:hover {
+  background: var(--background-modifier-hover);
+}
+
+.zendian-calendar-day.is-outside {
+  color: var(--text-faint);
+  opacity: 0.55;
+}
+
+.zendian-calendar-day.is-today {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 48%, transparent);
+  color: var(--interactive-accent);
+  font-weight: 650;
+}
+
+.zendian-calendar-day.is-selected,
+.zendian-calendar-day.is-selected:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.zendian-calendar-day:focus-visible,
+.zendian-time-option:focus-visible,
+.zendian-picker-text-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+.zendian-time-title {
+  margin: 0.125rem 0 0.75rem;
+}
+
+.zendian-time-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+
+.zendian-time-column-label {
+  margin-bottom: 0.375rem;
+  color: var(--text-faint);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.zendian-time-column {
+  height: 12rem;
+  padding: 0.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 0.625rem;
+  background: var(--background-secondary);
+}
+
+.zendian-time-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1.875rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.zendian-time-option:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.zendian-time-option.is-selected {
+  background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+  color: var(--interactive-accent);
+  font-weight: 700;
+}
+
+.zendian-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  margin-top: 0.625rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.zendian-picker-text-btn {
+  min-width: auto;
+  height: 1.875rem;
+  margin: 0;
+  padding: 0 0.625rem;
+  border: 0;
+  border-radius: 0.4375rem;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.zendian-picker-text-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.zendian-picker-text-btn.is-accent {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.zendian-picker-text-btn.is-accent:hover {
+  background: var(--interactive-accent-hover);
+}
+
+@media (max-width: 520px) {
+  .zendian-task-schedule-setting {
+    align-items: stretch;
+  }
+
+  .zendian-task-schedule-controls {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .zendian-schedule-popover--date,
+  .zendian-schedule-popover--time {
+    max-width: calc(100vw - 1.25rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zendian-schedule-popover {
+    animation: none;
+  }
 }
 
 .zendian-homepage .homepage-todo-date--urgent {
@@ -1594,29 +2008,33 @@
   color: var(--text-muted);
 }
 
-.zendian-homepage .homepage-todo-tag--work {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-  font-weight: 500;
+/* 主页与项目主页共用的任务优先级标识：彩色方框 + 中文文字 */
+.zendian-homepage .zd-task-priority,
+.zc-root .zd-task-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.zendian-homepage .homepage-todo-tag--study {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  font-weight: 500;
+.zendian-homepage .zd-task-priority__swatch,
+.zc-root .zd-task-priority__swatch {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 0.125rem;
+  background: var(--zd-task-priority-color);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--zd-task-priority-color) 28%, transparent);
 }
 
-.zendian-homepage .homepage-todo-tag--life {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-  font-weight: 500;
-}
-
-.zendian-homepage .homepage-todo-tag--default {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
-  font-weight: 500;
-}
+.zd-task-priority--p0 { --zd-task-priority-color: #ef4444; }
+.zd-task-priority--p1 { --zd-task-priority-color: #f59e0b; }
+.zd-task-priority--p2 { --zd-task-priority-color: #3b82f6; }
+.zd-task-priority--p3 { --zd-task-priority-color: #6b7280; }
 
 /* ── 标签通用 ──────────────────────────────────────────── */
 
@@ -1647,6 +2065,168 @@
 }
 
 /* ── 14. 便签 ──────────────────────────────────────────── */
+
+/* 新建便签：文件夹联想与绑定路径预览 */
+.zendian-quicknote-create-modal {
+  overflow: visible;
+}
+
+.modal:has(.zendian-quicknote-create-modal),
+.modal-content:has(.zendian-quicknote-create-modal) {
+  overflow: visible;
+}
+
+.zendian-quicknote-create-modal > h2 {
+  margin-bottom: 0.375rem;
+}
+
+.zendian-quicknote-create-intro {
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+
+.zendian-quicknote-folder-setting {
+  overflow: visible;
+}
+
+.zendian-quicknote-folder-control {
+  position: relative;
+  width: min(100%, 19rem);
+  overflow: visible;
+}
+
+.zendian-quicknote-folder-input {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.zendian-quicknote-folder-suggestions {
+  position: absolute;
+  z-index: 10020;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  left: 0;
+  max-height: 14.5rem;
+  padding: 0.375rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 0.625rem;
+  background: var(--background-primary);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16), 0 2px 7px rgba(0, 0, 0, 0.07);
+  animation: zendian-folder-suggestions-in 120ms ease-out;
+}
+
+@keyframes zendian-folder-suggestions-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.zendian-quicknote-folder-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.4375rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.zendian-quicknote-folder-option:hover,
+.zendian-quicknote-folder-option.is-active {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.zendian-quicknote-folder-option.is-active {
+  box-shadow: inset 2px 0 0 var(--interactive-accent);
+}
+
+.zendian-quicknote-folder-icon,
+.zendian-quicknote-path-preview-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--interactive-accent);
+}
+
+.zendian-quicknote-folder-icon svg,
+.zendian-quicknote-path-preview-icon svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.zendian-quicknote-folder-path {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zendian-quicknote-folder-empty {
+  padding: 0.75rem 0.625rem;
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.zendian-quicknote-path-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0.125rem 0 0.625rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 20%, var(--background-modifier-border));
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--interactive-accent) 5%, var(--background-secondary));
+}
+
+.zendian-quicknote-path-preview-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1875rem;
+}
+
+.zendian-quicknote-path-preview-caption {
+  color: var(--text-faint);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.zendian-quicknote-path-preview-value {
+  overflow: hidden;
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 0.6875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .zendian-quicknote-folder-setting {
+    align-items: stretch;
+  }
+
+  .zendian-quicknote-folder-control {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zendian-quicknote-folder-suggestions {
+    animation: none;
+  }
+}
 
 .zendian-homepage .homepage-sticky-grid {
   display: flex;
@@ -1830,6 +2410,9 @@
   cursor: pointer;
   transition: opacity 0.15s, background 0.15s;
   z-index: 10;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .zendian-homepage .homepage-sticky-note:hover .homepage-sticky-delete {
@@ -2872,6 +3455,39 @@
 }
 
 /* ── 新建项目弹窗 ────────────────────────────────────────── */
+
+.homepage-project-name-control {
+  display: grid;
+  grid-template-columns: 76px minmax(180px, 1fr);
+  gap: 8px;
+  flex: 0 0 320px;
+  width: 320px;
+}
+
+.homepage-project-name-control .homepage-project-number-input,
+.homepage-project-name-control .homepage-project-name-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.homepage-project-name-control .homepage-project-number-input {
+  font-family: var(--font-monospace);
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .homepage-project-name-setting {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .homepage-project-name-control {
+    grid-template-columns: 64px minmax(120px, 1fr);
+    flex-basis: auto;
+    width: 100%;
+  }
+}
 
 .homepage-project-modal-overlay {
   position: fixed;
@@ -3978,37 +4594,6 @@
 }
 
 /* 优先级标签 */
-.zc-root .zc-priority {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-}
-
-.zc-root .zc-priority-P0 {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
-.zc-root .zc-priority-P1 {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-}
-
-.zc-root .zc-priority-P2 {
-  background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
-}
-
-.zc-root .zc-priority-P3 {
-  background: rgba(107, 114, 128, 0.15);
-  color: #6b7280;
-}
-
 /* 标签容器 */
 .zc-root .zc-tags {
   display: flex;

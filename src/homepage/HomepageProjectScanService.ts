@@ -13,7 +13,13 @@ import type {
   ProjectTask,
   ProjectConsoleData,
 } from "./types";
-import { findProjectHomeFile } from "./services/ProjectHomeFileResolver";
+import type { ProjectCategory } from "../types/settings.types";
+import {
+  findProjectHomeFile,
+  findProjectTimelineFile,
+  getProjectSystemDirectory,
+} from "./services/ProjectHomeFileResolver";
+import { getProjectCategoryFolder } from "./project-categories";
 
 const TASK_REGEX = /^- \[([ x])\] (.+)$/;
 
@@ -30,6 +36,7 @@ function parseTaskLine(line: string, lineNum: number): ProjectTask | null {
 
   let created: string | undefined;
   let due: string | undefined;
+  let dueTime: string | undefined;
 
   const createdMatch = rawText.match(/@created\(([^)]*)\)/);
   if (createdMatch) {
@@ -43,24 +50,19 @@ function parseTaskLine(line: string, lineNum: number): ProjectTask | null {
     rawText = rawText.replace(dueMatch[0], "").trim();
   }
 
-  return { text: rawText, completed, created, due, line: lineNum };
-}
+  const dueTimeMatch = rawText.match(/@time\(((?:[01]\d|2[0-3]):[0-5]\d)\)/);
+  if (dueTimeMatch) {
+    dueTime = dueTimeMatch[1];
+    rawText = rawText.replace(dueTimeMatch[0], "").trim();
+  }
 
-/**
- * 从文件夹名提取类型标签
- * "10.学习" → "学习"，"20_竞赛" → "竞赛"，"30.创作" → "创作"
- */
-function extractTypeLabel(folderName: string): ProjectType {
-  const dotIdx = folderName.indexOf(".");
-  if (dotIdx !== -1) return folderName.slice(dotIdx + 1) as ProjectType;
-  const underIdx = folderName.indexOf("_");
-  if (underIdx !== -1) return folderName.slice(underIdx + 1) as ProjectType;
-  return folderName as ProjectType;
+  return { text: rawText, completed, created, due, dueTime, line: lineNum };
 }
 
 export class HomepageProjectScanService {
   private cache = new Map<string, HomepageProject>();
   private lastScanTime = 0;
+  private lastScanKey = "";
   private readonly CACHE_TTL = 30000; // 30秒缓存有效期
 
   constructor(private app: App) {}
@@ -78,28 +80,30 @@ export class HomepageProjectScanService {
   /**
    * 获取所有活跃项目（带智能缓存）
    */
-  async getProjects(typeFolders: string, archiveFolder: string): Promise<HomepageProject[]> {
+  async getProjects(categories: ProjectCategory[], archiveFolder: string): Promise<HomepageProject[]> {
     const now = Date.now();
+    const scanKey = JSON.stringify([categories, archiveFolder]);
 
     // 如果缓存未过期，直接返回
-    if (this.cache.size > 0 && (now - this.lastScanTime) < this.CACHE_TTL) {
+    if (this.cache.size > 0 && scanKey === this.lastScanKey && (now - this.lastScanTime) < this.CACHE_TTL) {
       return Array.from(this.cache.values()).sort((a, b) => b.updatedAt - a.updatedAt);
     }
 
     const projects: HomepageProject[] = [];
-    const folders = typeFolders.split(",").map((f) => f.trim()).filter(Boolean);
+    const scannedPaths = new Set<string>();
 
-    for (const typeFolderName of folders) {
-      const typeLabel = extractTypeLabel(typeFolderName);
-      if (!typeLabel) continue;
+    for (const category of categories) {
+      const typeFolderName = getProjectCategoryFolder(category);
+      const typeLabel: ProjectType = category.name;
 
       const typeFolder = this.app.vault.getAbstractFileByPath(typeFolderName);
       if (!(typeFolder instanceof TFolder)) continue;
 
       for (const child of typeFolder.children) {
         if (!(child instanceof TFolder)) continue;
-        // 跳过归档文件夹（支持 99.归档 和 99_归档）
+        // 跳过当前分类下的归档文件夹
         if (child.name === archiveFolder || child.name.startsWith("99")) continue;
+        scannedPaths.add(child.path);
 
         // 增量更新：检查缓存是否有效
         const cached = this.cache.get(child.path);
@@ -119,7 +123,11 @@ export class HomepageProjectScanService {
       }
     }
 
+    for (const cachedPath of this.cache.keys()) {
+      if (!scannedPaths.has(cachedPath)) this.cache.delete(cachedPath);
+    }
     this.lastScanTime = now;
+    this.lastScanKey = scanKey;
     return projects.sort((a, b) => b.updatedAt - a.updatedAt);
   }
 
@@ -150,13 +158,14 @@ export class HomepageProjectScanService {
    */
   private async scanProject(folder: TFolder, type: ProjectType): Promise<HomepageProject | null> {
     const folderPath = folder.path;
-    const name = folder.name;
-    const consolePath = `${folderPath}/00 控制台`;
+    const fallbackName = folder.name.replace(/^\d+_/, "") || folder.name;
+    const systemPath = getProjectSystemDirectory(this.app, folderPath);
 
     // 优先从 .home 文件读取
-    const homeData = await this.readHomeFile(folderPath, name);
-    const timelineFile = this.app.vault.getAbstractFileByPath(`${consolePath}/Timeline.md`);
-    const timelineData = await this.parseTimeline(consolePath);
+    const homeData = await this.readHomeFile(folderPath, fallbackName);
+    const name = homeData?.name || fallbackName;
+    const timelineFile = findProjectTimelineFile(this.app, folderPath);
+    const timelineData = await this.parseTimeline(systemPath);
 
     let description: string;
     let taskTotal: number;
@@ -178,11 +187,11 @@ export class HomepageProjectScanService {
         progress = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
         pendingTasks = homeData.tasks
           .filter((t) => !t.completed)
-          .map((t, i) => ({ text: t.text, completed: false, created: t.created, due: t.due, line: i }));
+          .map((t, i) => ({ text: t.text, completed: false, created: t.created, due: t.due, dueTime: t.dueTime, line: i }));
       }
     } else {
       // 降级：从 Overview.md + Timeline.md 读取
-      description = await this.readFirstParagraph(consolePath, "Overview.md");
+      description = await this.readFirstParagraph(systemPath, "Overview.md");
       taskTotal = timelineData.taskTotal;
       taskDone = timelineData.taskDone;
       progress = timelineData.progress;
@@ -214,7 +223,7 @@ export class HomepageProjectScanService {
   }
 
   /**
-   * 在 00 控制台/ 中查找 .home 文件并解析
+   * 在项目根目录或旧版控制台目录中查找 .home 文件并解析
    */
   private async readHomeFile(projectPath: string, projectName: string): Promise<ProjectConsoleData | null> {
     const file = findProjectHomeFile(this.app, projectPath, projectName);

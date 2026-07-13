@@ -11,7 +11,7 @@
 
 import { App, TFile, TFolder } from "obsidian";
 import { CacheManager } from "./CacheManager";
-import { findProjectHomeFile } from "./ProjectHomeFileResolver";
+import { findProjectHomeFile, findProjectTimelineFile } from "./ProjectHomeFileResolver";
 import type { TimelineEvent, TimelineData, FileActivity } from "./types";
 import type { ProjectConsoleData } from "../types";
 import type { TaskSyncService } from "../../services/TaskSyncService";
@@ -169,8 +169,8 @@ export class TimelineService {
    */
   private async extractTaskEvents(projectPath: string): Promise<TimelineEvent[]> {
     const events: TimelineEvent[] = [];
-    const file = this.app.vault.getAbstractFileByPath(`${projectPath}/00 控制台/Timeline.md`);
-    if (!(file instanceof TFile) || !this.taskSyncService) return events;
+    const file = findProjectTimelineFile(this.app, projectPath);
+    if (!file || !this.taskSyncService) return events;
 
     try {
       const tasks = await this.taskSyncService.getTasks(projectPath);

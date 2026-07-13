@@ -2,7 +2,7 @@
  * ProjectConsoleView — 项目控制台视图（仪表盘风格）
  */
 
-import { FileView, type WorkspaceLeaf, type App, TFile, TFolder, getIcon, Modal, Setting, Notice } from "obsidian";
+import { FileView, type WorkspaceLeaf, type App, TFile, getIcon, Modal, Setting, Notice } from "obsidian";
 import type {
   ProjectConsoleData,
   ProjectConsoleTask,
@@ -10,13 +10,21 @@ import type {
   ProjectRecentFile,
   ProjectType,
 } from "./types";
-import { PROJECT_TYPE_COLORS } from "./types";
+import { getProjectTypeColor } from "./project-categories";
 import { getServiceManager } from "./services";
 import type { ServiceManager, ProjectStatistics, ProjectHealth } from "./services";
 import { LineChart, HeatmapChart } from "./components/charts";
 import type { Task } from "../services/TaskSyncService";
 import { TaskSyncService } from "../services/TaskSyncService";
 import type { DataChangeCallback } from "./services/types";
+import { renderTaskPriorityLabel } from "./components/TaskPriorityLabel";
+import { createTaskSchedulePicker } from "./components/TaskSchedulePicker";
+import type { SettingsManager } from "../core/settings-manager";
+import {
+  findProjectTimelineFile,
+  getProjectSystemDirectory,
+  LEGACY_PROJECT_CONSOLE_FOLDER,
+} from "./services/ProjectHomeFileResolver";
 
 export const VIEW_TYPE_PROJECT_CONSOLE = "zendian-project-console";
 
@@ -33,7 +41,6 @@ const SVG = {
   checkSquare: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>`,
   package: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`,
   fileStack: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7h-3a2 2 0 0 1-2-2V2"/><path d="M21 6v6.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-9c0-.8.7-1.5 1.5-1.5H17Z"/><path d="M7 8v8.8c0 .3.2.6.4.8.2.2.5.4.8.4H15"/><path d="M3 12v8.8c0 .3.2.6.4.8.2.2.5.4.8.4H11"/></svg>`,
-  arrowRight: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`,
   filePlus: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>`,
   fileEdit: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12h4"/><path d="M10 16h4"/></svg>`,
   check: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
@@ -69,14 +76,16 @@ function relTime(mtime: number): string {
 // ── AddTaskModal ──────────────────────────────────────
 
 import type { TaskPriority } from "./types";
-import { TASK_PRIORITY_COLORS, TASK_PRIORITY_LABELS } from "./types";
+import { TASK_PRIORITY_LABELS } from "./types";
 
 class AddTaskModal extends Modal {
   private text = "";
   private due = "";
+  private dueTime = "";
   private priority: TaskPriority = "P2";
   private tags: string[] = [];
   private tagInput = "";
+  private destroySchedulePicker: (() => void) | null = null;
   private cb: (t: ProjectConsoleTask) => void;
 
   constructor(app: App, cb: (t: ProjectConsoleTask) => void) { super(app); this.cb = cb; }
@@ -91,9 +100,13 @@ class AddTaskModal extends Modal {
     );
 
     // 截止日期
-    new Setting(c).setName("截止日期").addText((t) =>
-      t.setPlaceholder("YYYY-MM-DD（可选）").onChange((v) => (this.due = v))
-    );
+    const scheduleSetting = new Setting(c).setName("截止时间");
+    scheduleSetting.settingEl.addClass("zendian-task-schedule-setting");
+    scheduleSetting.controlEl.addClass("zendian-task-schedule-controls");
+    this.destroySchedulePicker = createTaskSchedulePicker(scheduleSetting.controlEl, { date: this.due, time: this.dueTime }, (value) => {
+      this.due = value.date;
+      this.dueTime = value.time;
+    });
 
     // 优先级
     const prioritySetting = new Setting(c).setName("优先级");
@@ -133,11 +146,16 @@ class AddTaskModal extends Modal {
       b.setButtonText("添加").setCta().onClick(() => {
         const v = this.text.trim();
         if (!v) return;
+        if (this.dueTime && !this.due) {
+          new Notice("填写时间前请先选择截止日期");
+          return;
+        }
         this.cb({
           text: v,
           completed: false,
           created: new Date().toISOString().slice(0, 10),
           due: this.due.trim() || undefined,
+          dueTime: this.dueTime.trim() || undefined,
           priority: this.priority,
           tags: this.tags.length > 0 ? this.tags : undefined,
         });
@@ -164,7 +182,11 @@ class AddTaskModal extends Modal {
     }
   }
 
-  onClose() { this.contentEl.empty(); }
+  onClose() {
+    this.destroySchedulePicker?.();
+    this.destroySchedulePicker = null;
+    this.contentEl.empty();
+  }
 }
 
 // ── 主视图 ──────────────────────────────────────────
@@ -179,7 +201,11 @@ export class ProjectConsoleView extends FileView {
   private projectStats: ProjectStatistics | null = null;
   private health: ProjectHealth | null = null;
 
-  constructor(l: WorkspaceLeaf, private taskSyncService: TaskSyncService) {
+  constructor(
+    l: WorkspaceLeaf,
+    private taskSyncService: TaskSyncService,
+    private settingsManager: SettingsManager,
+  ) {
     super(l);
     this.services = getServiceManager(this.app, taskSyncService);
   }
@@ -190,8 +216,10 @@ export class ProjectConsoleView extends FileView {
   getExtension() { return "home"; }
 
   async onLoadFile(file: TFile) {
-    const p = file.path.split("/");
-    this.projPath = p.slice(0, -2).join("/");
+    const parent = file.parent;
+    if (!parent) this.projPath = "";
+    else if (parent.name === LEGACY_PROJECT_CONSOLE_FOLDER) this.projPath = parent.parent?.path || parent.path;
+    else this.projPath = parent.path;
     await this.loadProjectData();
 
     // 开始监听文件变更
@@ -233,8 +261,7 @@ export class ProjectConsoleView extends FileView {
     this.data = await this.services.projectData.getProjectConsoleData(this.projPath);
     if (!this.data) return;
 
-    const timelinePath = `${this.projPath}/00 控制台/Timeline.md`;
-    const hasTimeline = this.app.vault.getAbstractFileByPath(timelinePath) instanceof TFile;
+    const hasTimeline = Boolean(findProjectTimelineFile(this.app, this.projPath));
     if (hasTimeline) {
       this.timelineTasks = await this.taskSyncService.getTasks(this.projPath);
       this.data.tasks = this.timelineTasks.map((task) => ({
@@ -242,6 +269,7 @@ export class ProjectConsoleView extends FileView {
         completed: task.completed,
         created: task.created,
         due: task.due,
+        dueTime: task.dueTime,
         priority: this.toDisplayPriority(task.priority),
         tags: task.tags,
       }));
@@ -289,17 +317,16 @@ export class ProjectConsoleView extends FileView {
       const w = c.createDiv({ cls: "zc-wrapper" });
       this.hero(w);
       this.tabsArea(w);
-      this.renderDossierFooter(w);
     } catch (e) {
       console.error("[ZENdian] 控制台渲染失败:", e);
       c.createDiv({ cls: "zc-error", text: `渲染出错: ${e}` });
     }
   }
 
-  /** Hero 区域 */
+  /** 项目信息区 */
   private hero(p: HTMLElement) {
     const d = this.data!;
-    const color = PROJECT_TYPE_COLORS[d.type as ProjectType] || "#3b82f6";
+    const color = getProjectTypeColor(d.type || "未分类");
     const breadcrumb = p.createDiv({ cls: "zc-breadcrumb" });
     breadcrumb.createSpan({ text: "项目" });
     breadcrumb.createSpan({ cls: "zc-breadcrumb-separator", text: "/" });
@@ -308,33 +335,29 @@ export class ProjectConsoleView extends FileView {
     breadcrumb.createSpan({ cls: "is-current", text: d.name });
 
     const sec = p.createDiv({ cls: "zc-hero" });
-
-    // 图标
-    const icon = sec.createDiv({ cls: "zc-hero-icon" });
-    this.renderIcon(icon, d.icon);
-
-    // 文字
     const info = sec.createDiv({ cls: "zc-hero-info" });
-    info.createEl("h1", { cls: "zc-hero-title", text: d.name });
+    const title = info.createEl("h1", { cls: "zc-hero-title" });
+    const icon = title.createSpan({
+      cls: "zc-hero-icon zc-hero-title-icon",
+      attr: { "aria-hidden": "true" },
+    });
+    this.renderIcon(icon, d.icon);
+    title.createSpan({ cls: "zc-hero-title-text", text: d.name });
     const meta = info.createDiv({ cls: "zc-hero-meta" });
     meta.createSpan({ cls: "zc-hero-tag", text: d.type || "未分类", attr: { style: `--tag-color:${color}` } });
     if (d.createdAt) {
-      const s = meta.createSpan({ cls: "zc-hero-date" });
-      s.appendChild(svg("calendar"));
-      s.createSpan({ text: fmtDate(d.createdAt) });
+      const date = meta.createSpan({ cls: "zc-hero-date" });
+      date.appendChild(svg("calendar"));
+      date.createSpan({ text: fmtDate(d.createdAt) });
     }
-    // 简介（可编辑）
+
     const descEl = info.createDiv({ cls: "zc-hero-desc" });
-    if (d.description) {
-      descEl.createSpan({ cls: "zc-hero-desc-text", text: d.description });
-    } else {
-      descEl.createSpan({ cls: "zc-hero-desc-placeholder", text: "点击添加项目简介..." });
-    }
+    if (d.description) descEl.createSpan({ cls: "zc-hero-desc-text", text: d.description });
+    else descEl.createSpan({ cls: "zc-hero-desc-placeholder", text: "点击添加项目简介..." });
     const editBtn = descEl.createSpan({ cls: "zc-hero-desc-edit" });
     editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
     descEl.addEventListener("click", () => this.editDescription(descEl));
 
-    // 导出按钮
     const exportBtn = sec.createDiv({ cls: "zc-hero-export" });
     exportBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
     exportBtn.createSpan({ text: "导出" });
@@ -352,31 +375,17 @@ export class ProjectConsoleView extends FileView {
     }
   }
 
-  /** 显示导出菜单 */
   private showExportMenu(anchor: HTMLElement) {
     const menu = document.createElement("div");
     menu.addClass("zc-export-menu");
     menu.innerHTML = `
-      <div class="zc-export-option" data-format="markdown">
-        <span class="zc-export-icon">📄</span>
-        <span class="zc-export-label">Markdown 报告</span>
-      </div>
-      <div class="zc-export-option" data-format="json">
-        <span class="zc-export-icon">📊</span>
-        <span class="zc-export-label">JSON 数据</span>
-      </div>
-      <div class="zc-export-option" data-format="csv">
-        <span class="zc-export-icon">📋</span>
-        <span class="zc-export-label">CSV 表格</span>
-      </div>
+      <div class="zc-export-option" data-format="markdown"><span class="zc-export-icon">📄</span><span class="zc-export-label">Markdown 报告</span></div>
+      <div class="zc-export-option" data-format="json"><span class="zc-export-icon">📊</span><span class="zc-export-label">JSON 数据</span></div>
+      <div class="zc-export-option" data-format="csv"><span class="zc-export-icon">📋</span><span class="zc-export-label">CSV 表格</span></div>
     `;
-
-    // 定位菜单
     const rect = anchor.getBoundingClientRect();
     menu.style.top = `${rect.bottom + 4}px`;
     menu.style.right = `${window.innerWidth - rect.right}px`;
-
-    // 添加点击事件
     menu.querySelectorAll(".zc-export-option").forEach((option) => {
       option.addEventListener("click", async () => {
         const format = option.getAttribute("data-format") as "markdown" | "json" | "csv";
@@ -384,30 +393,24 @@ export class ProjectConsoleView extends FileView {
         menu.remove();
       });
     });
-
-    // 点击外部关闭
-    const closeMenu = (e: MouseEvent) => {
-      if (!menu.contains(e.target as Node)) {
+    const closeMenu = (event: MouseEvent) => {
+      if (!menu.contains(event.target as Node)) {
         menu.remove();
         document.removeEventListener("click", closeMenu);
       }
     };
-
     document.body.appendChild(menu);
     setTimeout(() => document.addEventListener("click", closeMenu), 10);
   }
 
-  /** 导出项目 */
   private async exportProject(format: "markdown" | "json" | "csv") {
     try {
       const { ExportService } = await import("./services/ExportService");
       const exportService = new ExportService(this.app);
-
       const timestamp = new Date().toISOString().slice(0, 10);
       const fileName = `${this.data!.name}_报告_${timestamp}`;
       const extension = format === "markdown" ? "md" : format;
-      const outputPath = `${this.projPath}/00 控制台/${fileName}.${extension}`;
-
+      const outputPath = `${getProjectSystemDirectory(this.app, this.projPath)}/${fileName}.${extension}`;
       await exportService.exportToFile(this.projPath, outputPath, {
         format,
         includeStats: true,
@@ -421,7 +424,6 @@ export class ProjectConsoleView extends FileView {
     }
   }
 
-  /** 编辑简介 */
   private editDescription(container: HTMLElement) {
     const d = this.data!;
     container.empty();
@@ -431,15 +433,16 @@ export class ProjectConsoleView extends FileView {
     });
     input.focus();
     input.select();
-
     const save = async () => {
       d.description = input.value.trim();
       await this.save();
       this.render();
     };
-
-    input.addEventListener("keydown", (e) => { if (e.key === "Enter") save(); if (e.key === "Escape") this.render(); });
-    input.addEventListener("blur", save);
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") void save();
+      if (event.key === "Escape") this.render();
+    });
+    input.addEventListener("blur", () => void save());
   }
 
   /** 统计卡片行 */
@@ -523,7 +526,7 @@ export class ProjectConsoleView extends FileView {
 
     const aside = layout.createEl("aside", { cls: "zc-workspace-aside" });
     this.renderStats(aside);
-    this.actions(aside);
+    this.renderRecentActivity(aside);
   }
 
   private tabBody(c: HTMLElement) {
@@ -587,6 +590,7 @@ export class ProjectConsoleView extends FileView {
       const success = await this.taskSyncService.addTask(this.projPath, task.text, {
         created: task.created,
         due: task.due,
+        dueTime: task.dueTime,
         priority: this.toStoragePriority(task.priority),
         tags: task.tags,
       });
@@ -631,12 +635,7 @@ export class ProjectConsoleView extends FileView {
 
     // 优先级标签
     if (t.priority) {
-      const priorityEl = firstLine.createSpan({
-        cls: `zc-priority zc-priority-${t.priority}`,
-        text: t.priority,
-      });
-      priorityEl.style.backgroundColor = TASK_PRIORITY_COLORS[t.priority] + "20";
-      priorityEl.style.color = TASK_PRIORITY_COLORS[t.priority];
+      renderTaskPriorityLabel(firstLine, t.priority);
     }
 
     // 第二行：标签 + 截止日期
@@ -654,7 +653,7 @@ export class ProjectConsoleView extends FileView {
     if (t.due) {
       const dueEl = secondLine.createSpan({ cls: "zc-due" });
       dueEl.appendChild(svg("clock"));
-      dueEl.createSpan({ text: t.due });
+      dueEl.createSpan({ text: t.dueTime ? `${t.due} ${t.dueTime}` : t.due });
 
       // 检查是否逾期
       const today = new Date().toISOString().slice(0, 10);
@@ -731,31 +730,11 @@ export class ProjectConsoleView extends FileView {
     }
   }
 
-  /** 底部快捷操作 */
-  private actions(p: HTMLElement) {
-    const section = p.createDiv({ cls: "zc-workspace-index" });
-    section.createDiv({ cls: "zc-aside-title", text: "工作区索引" });
-    const grid = section.createDiv({ cls: "zc-grid" });
-    const map: [string, string][] = [["10 笔记流", "笔记流"], ["20 工作区", "工作区"], ["30 交付物", "交付物"], ["90 资源库", "资源库"]];
-    for (const [folder, label] of map) {
-      const path = `${this.projPath}/${folder}`;
-      if (!(this.app.vault.getAbstractFileByPath(path) instanceof TFolder)) continue;
-      const card = grid.createDiv({ cls: "zc-grid-card" });
-      const ic = card.createDiv({ cls: "zc-grid-icon" });
-      ic.innerHTML = SVG.folder;
-      card.createDiv({ cls: "zc-grid-label", text: label });
-      const arrow = card.createDiv({ cls: "zc-grid-arrow" });
-      arrow.innerHTML = SVG.arrowRight;
-      card.addEventListener("click", () => this.openFolder(path));
-    }
-  }
-
-  private renderDossierFooter(p: HTMLElement): void {
-    const footer = p.createDiv({ cls: "zc-dossier-footer" });
-
-    const activity = footer.createDiv({ cls: "zc-dossier-summary" });
-    activity.createDiv({ cls: "zc-summary-title", text: "近期活动" });
-    const recentFiles = this.recent(3);
+  /** 右侧近期活动 */
+  private renderRecentActivity(parent: HTMLElement): void {
+    const activity = parent.createDiv({ cls: "zc-workspace-index zc-recent-activity" });
+    activity.createDiv({ cls: "zc-aside-title", text: "近期活动" });
+    const recentFiles = this.recent(5);
     if (recentFiles.length === 0) {
       activity.createDiv({ cls: "zc-summary-empty", text: "项目活动会显示在这里" });
     } else {
@@ -768,25 +747,6 @@ export class ProjectConsoleView extends FileView {
         copy.createSpan({ cls: "zc-summary-secondary", text: "最近编辑" });
         row.createSpan({ cls: "zc-summary-time", text: relTime(file.mtime) });
         row.addEventListener("click", () => this.openRel(file.path));
-      }
-    }
-
-    const outputs = footer.createDiv({ cls: "zc-dossier-summary" });
-    outputs.createDiv({ cls: "zc-summary-title", text: "交付物" });
-    const deliverables = this.data!.deliverables.slice(0, 3);
-    if (deliverables.length === 0) {
-      outputs.createDiv({ cls: "zc-summary-empty", text: "尚未登记交付物" });
-    } else {
-      const labels: Record<string, string> = { pending: "待开始", "in-progress": "进行中", done: "已完成" };
-      for (const item of deliverables) {
-        const row = outputs.createDiv({ cls: "zc-summary-row zc-clickable" });
-        const mark = row.createSpan({ cls: "zc-summary-mark" });
-        mark.innerHTML = SVG.package;
-        row.createSpan({ cls: "zc-summary-primary", text: item.name });
-        const label = labels[item.status] || item.status;
-        const status = row.createSpan({ cls: `zc-summary-status is-${item.status}`, text: label });
-        status.setAttribute("aria-label", `状态：${label}`);
-        row.addEventListener("click", () => this.openRel(item.path));
       }
     }
   }
@@ -1061,23 +1021,42 @@ export class ProjectConsoleView extends FileView {
     });
   }
 
-  private async openFolder(path: string) {
-    const folder = this.app.vault.getAbstractFileByPath(path);
-    if (!(folder instanceof TFolder)) return;
-    const fe = (this.app as any).internalPlugins?.getPluginById?.("file-explorer");
-    const first = this.first(folder);
-    if (fe?.instance?.revealInFolder && first) fe.instance.revealInFolder(first);
-  }
-
-  private first(d: TFolder): TFile | null {
-    for (const c of d.children) { if (c instanceof TFile) return c; if (c instanceof TFolder) { const f = this.first(c); if (f) return f; } }
-    return null;
-  }
-
   private renderIcon(el: HTMLElement, id: string) {
-    if (id?.startsWith("lucide-")) { const s = getIcon(id.slice(7)); if (s) { el.innerHTML = ""; el.appendChild(s); return; } }
-    el.innerHTML = SVG.folder;
+    const customIcons = this.settingsManager.getSettings().iconSystem.customIcons;
+    const customIcon = customIcons[this.projPath] || customIcons[this.file?.path || ""];
+    const iconId = customIcon || id;
+    let icon: SVGElement | null = null;
+
+    if (iconId?.startsWith("lucide-")) {
+      icon = getIcon(iconId.slice(7));
+    }
+
+    el.empty();
+    if (icon) {
+      el.appendChild(icon);
+    } else {
+      el.innerHTML = SVG.folder;
+      icon = el.querySelector("svg");
+    }
+
+    if (icon) {
+      icon.classList.add("zc-project-title-svg");
+      icon.setAttribute("aria-hidden", "true");
+      icon.removeAttribute("width");
+      icon.removeAttribute("height");
+
+      // Border/Phycat 对内联 SVG 有全局规则；将项目图标转为元素级蒙版变量，
+      // 由 CSS 负责着色，避免图标被主题级 SVG 样式隐藏。
+      const iconData = encodeURIComponent(icon.outerHTML);
+      el.style.setProperty(
+        "--zc-project-icon-mask",
+        `url("data:image/svg+xml,${iconData}")`,
+      );
+    }
+
+    el.dataset.iconId = iconId || "lucide-folder";
   }
+
 }
 
 export function createDefaultConsoleData(name: string, icon: string, type: ProjectType, desc = ""): ProjectConsoleData {

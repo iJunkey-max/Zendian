@@ -25,21 +25,21 @@ const __dirname = path.dirname(__filename);
 // ============================================================
 
 const TYPE_FOLDERS = [
-  { name: '10.学习', type: '学习' },
-  { name: '20.工作', type: '工作' },
-  { name: '30.创作', type: '创作' },
-  { name: '40.生活', type: '生活' },
-  { name: '50.研究', type: '研究' },
+  { name: '10_课程', type: '课程' },
+  { name: '20_竞赛', type: '竞赛' },
+  { name: '30_研究', type: '研究' },
+  { name: '40_技能', type: '技能' },
+  { name: '50_生活', type: '生活' },
 ];
 
 const PROJECTS = [
-  { type: '学习', name: '前端架构设计', priority: 'high', status: 'active' },
-  { type: '学习', name: 'TypeScript 进阶', priority: 'medium', status: 'active' },
-  { type: '学习', name: 'Obsidian 插件开发', priority: 'high', status: 'active' },
-  { type: '工作', name: 'Q2 产品迭代', priority: 'urgent', status: 'active' },
-  { type: '工作', name: '客户需求分析', priority: 'high', status: 'paused' },
-  { type: '创作', name: '博客写作计划', priority: 'medium', status: 'active' },
-  { type: '创作', name: '开源项目', priority: 'medium', status: 'active' },
+  { type: '课程', name: '前端架构设计', priority: 'high', status: 'active' },
+  { type: '课程', name: 'TypeScript 进阶', priority: 'medium', status: 'active' },
+  { type: '技能', name: 'Obsidian 插件开发', priority: 'high', status: 'active' },
+  { type: '竞赛', name: 'Q2 产品迭代', priority: 'urgent', status: 'active' },
+  { type: '竞赛', name: '客户需求分析', priority: 'high', status: 'paused' },
+  { type: '研究', name: '博客写作计划', priority: 'medium', status: 'active' },
+  { type: '技能', name: '开源项目', priority: 'medium', status: 'active' },
   { type: '生活', name: '健康管理', priority: 'medium', status: 'active' },
   { type: '研究', name: 'AI 工具调研', priority: 'high', status: 'active' },
   { type: '研究', name: 'Rust 生态探索', priority: 'low', status: 'paused' },
@@ -555,25 +555,25 @@ function generateReadme(baseDir) {
 
 ## 项目列表
 
-### 学习
+### 课程
 1. 前端架构设计
 2. TypeScript 进阶
-3. Obsidian 插件开发
 
-### 工作
+### 竞赛
 4. Q2 产品迭代
 5. 客户需求分析
 
-### 创作
+### 研究
 6. 博客写作计划
+9. AI 工具调研
+10. Rust 生态探索
+
+### 技能
+3. Obsidian 插件开发
 7. 开源项目
 
 ### 生活
 8. 健康管理
-
-### 研究
-9. AI 工具调研
-10. Rust 生态探索
 
 ## 使用方法
 

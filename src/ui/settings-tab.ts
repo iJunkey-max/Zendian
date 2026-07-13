@@ -3,13 +3,15 @@
  * 精简版：无字体设置、无颜色设置，text 输入改为 select/slider
  */
 
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, getIcon, Notice, PluginSettingTab, Setting, TFolder } from "obsidian";
 import type ZENdianPlugin from "../main";
 import type { SettingsManager } from "../core/settings-manager";
 import type { ModuleManager } from "../core/module-manager";
 import type { PluginSettings } from "../types/settings.types";
+import { getProjectCategoryFolder } from "../homepage/project-categories";
 import { BUILTIN_LIBRARIES, type IconSystemModule } from "../modules/icon-system.module";
 import { IconPickerModal } from "./icon-picker-modal";
+import { getProjectSubfolderName, validateProjectSubfolderTemplate } from "../homepage/project-subfolders";
 
 // ============================================================
 // 设置项定义
@@ -38,6 +40,8 @@ interface SectionDef {
   settings?: SettingDef[];
   headingTabs?: boolean;
   iconSystem?: boolean;
+  projectCategories?: boolean;
+  projectSubfolders?: boolean;
 }
 
 interface TabDef {
@@ -436,6 +440,14 @@ const MENU_CONFIG: TabDef[] = [
         ],
       },
       {
+        id: "homepage-project-categories", title: "Project Categories", titleZh: "项目分类",
+        projectCategories: true,
+      },
+      {
+        id: "homepage-project-subfolders", title: "Project Subfolders", titleZh: "项目子文件夹",
+        projectSubfolders: true,
+      },
+      {
         id: "homepage-modules", title: "Modules", titleZh: "模块开关",
         settings: [
           toggle("homepage-weather", "天气模块", (s) => s.homepage.weatherEnabled, (s, v) => ({ homepage: { ...s.homepage, weatherEnabled: v } }), "在主页显示天气信息"),
@@ -710,12 +722,525 @@ export class ZENdianSettingTab extends PluginSettingTab {
         renderHeadingTabs(sectionContent, this.settingsManager);
       } else if (section.iconSystem) {
         this.renderIconSystem(sectionContent);
+      } else if (section.projectCategories) {
+        this.renderProjectCategories(sectionContent);
+      } else if (section.projectSubfolders) {
+        this.renderProjectSubfolders(sectionContent);
       } else {
         for (const def of section.settings ?? []) {
           this.renderSetting(sectionContent, def);
         }
       }
     }
+  }
+
+  private renderProjectCategories(containerEl: HTMLElement): void {
+    const section = containerEl.createDiv("zendian-project-categories");
+    section.createEl("p", {
+      cls: "zendian-project-category-help",
+      text: "新增分类会创建“编号_名称”文件夹；修改后保存会同步重命名文件夹。删除分类仅移除设置，已有文件夹和项目会保留。",
+    });
+
+    const list = section.createDiv("zendian-project-category-list");
+
+    const validateCategory = (
+      number: string,
+      name: string,
+      categories: Array<{ number: string; name: string }>,
+      ignoreIndex = -1,
+    ): { message: string; field: "number" | "name" } | null => {
+      if (!/^\d+$/.test(number)) return { message: "标签编号只能包含数字", field: "number" };
+      if (!name || /[\\/:*?"<>|]/.test(name) || name === "." || name === "..") {
+        return { message: "请输入有效的标签名字，不能包含 \\ / : * ? \" < > |", field: "name" };
+      }
+      if (categories.some((category, index) => index !== ignoreIndex && category.number === number)) {
+        return { message: `标签编号 ${number} 已存在`, field: "number" };
+      }
+      if (categories.some((category, index) => index !== ignoreIndex && category.name === name)) {
+        return { message: `标签名字“${name}”已存在`, field: "name" };
+      }
+      return null;
+    };
+
+    const renderList = () => {
+      list.empty();
+      const categories = this.settingsManager.getSettings().homepage.projectCategories;
+
+      if (categories.length === 0) {
+        list.createDiv({ cls: "zendian-project-category-empty", text: "暂无项目分类，请在下方添加。" });
+      }
+
+      for (let i = 0; i < categories.length; i++) {
+        const category = categories[i];
+        const row = list.createDiv("zendian-project-category-row");
+        const editNumber = row.createEl("input", {
+          cls: "zendian-project-category-number-input",
+          type: "text",
+          value: category.number,
+          attr: { inputmode: "numeric", "aria-label": `${category.name} 的分类编号` },
+        });
+        const editName = row.createEl("input", {
+          cls: "zendian-project-category-name-input",
+          type: "text",
+          value: category.name,
+          attr: { "aria-label": `${category.name} 的分类名称` },
+        });
+        const folderPreview = row.createSpan({
+          cls: "zendian-project-category-folder",
+          text: getProjectCategoryFolder(category),
+        });
+
+        const actions = row.createDiv("zendian-project-category-actions");
+        const saveButton = actions.createEl("button", {
+          cls: "zendian-project-category-save",
+          text: "保存",
+          attr: { "aria-label": `保存项目分类 ${category.name}`, disabled: "true" },
+        });
+
+        const deleteButton = actions.createEl("button", {
+          cls: "zendian-project-category-delete",
+          text: "×",
+          attr: { "aria-label": `删除项目分类 ${category.name}` },
+        });
+        deleteButton.addEventListener("click", async () => {
+          const current = this.settingsManager.getSettings();
+          const projectCategories = current.homepage.projectCategories.filter((_, index) => index !== i);
+          const projectSubfolders = { ...current.homepage.projectSubfolders };
+          delete projectSubfolders[category.number];
+          await this.settingsManager.update("homepage", { projectCategories, projectSubfolders });
+          new Notice(`已删除分类“${category.name}”，文件夹 ${getProjectCategoryFolder(category)} 已保留`);
+          this.display();
+        });
+
+        const updateEditState = () => {
+          const number = editNumber.value.trim();
+          const name = editName.value.trim();
+          folderPreview.textContent = `${number || "编号"}_${name || "标签名字"}`;
+          saveButton.disabled = number === category.number && name === category.name;
+        };
+        editNumber.addEventListener("input", updateEditState);
+        editName.addEventListener("input", updateEditState);
+
+        const saveCategory = async () => {
+          if (saveButton.disabled) return;
+          const number = editNumber.value.trim();
+          const name = editName.value.trim();
+          const current = this.settingsManager.getSettings();
+          const validation = validateCategory(number, name, current.homepage.projectCategories, i);
+          if (validation) {
+            new Notice(validation.message);
+            (validation.field === "number" ? editNumber : editName).focus();
+            return;
+          }
+
+          const updatedCategory = { number, name };
+          const oldFolderPath = getProjectCategoryFolder(category);
+          const newFolderPath = getProjectCategoryFolder(updatedCategory);
+          const oldFolder = this.app.vault.getAbstractFileByPath(oldFolderPath);
+          const target = this.app.vault.getAbstractFileByPath(newFolderPath);
+          let renamed = false;
+
+          if (oldFolderPath !== newFolderPath) {
+            if (oldFolder && !(oldFolder instanceof TFolder)) {
+              new Notice(`无法修改分类：${oldFolderPath} 不是文件夹`);
+              return;
+            }
+            if (oldFolder && target) {
+              new Notice(`无法重命名：目标 ${newFolderPath} 已存在`);
+              return;
+            }
+            if (!oldFolder && target && !(target instanceof TFolder)) {
+              new Notice(`无法修改分类：仓库根目录已有同名文件 ${newFolderPath}`);
+              return;
+            }
+          }
+
+          saveButton.disabled = true;
+          try {
+            if (oldFolderPath !== newFolderPath && oldFolder instanceof TFolder) {
+              await this.app.vault.rename(oldFolder, newFolderPath);
+              renamed = true;
+            } else if (oldFolderPath !== newFolderPath && !target) {
+              await this.app.vault.createFolder(newFolderPath);
+            }
+
+            const projectCategories = [...current.homepage.projectCategories];
+            projectCategories[i] = updatedCategory;
+            const projectSubfolders = { ...current.homepage.projectSubfolders };
+            if (category.number !== number) {
+              projectSubfolders[number] = projectSubfolders[category.number] ?? [];
+              delete projectSubfolders[category.number];
+            }
+
+            const customIcons = Object.fromEntries(
+              Object.entries(current.iconSystem.customIcons).map(([path, iconId]) => {
+                if (path === oldFolderPath || path.startsWith(`${oldFolderPath}/`)) {
+                  return [`${newFolderPath}${path.slice(oldFolderPath.length)}`, iconId];
+                }
+                return [path, iconId];
+              })
+            );
+
+            await this.settingsManager.updateMultiple({
+              homepage: { ...current.homepage, projectCategories, projectSubfolders },
+              iconSystem: { ...current.iconSystem, customIcons },
+            });
+
+            const categoryFolder = this.app.vault.getAbstractFileByPath(newFolderPath);
+            const metadataUpdates = categoryFolder instanceof TFolder
+              ? categoryFolder.children
+                .filter((child): child is TFolder => child instanceof TFolder && !child.name.startsWith("99"))
+                .map(async (projectFolder) => {
+                  const metadata = await this.zendianPlugin.projectMetadataService.getMetadata(projectFolder.path);
+                  if (metadata && metadata.type !== name) {
+                    await this.zendianPlugin.projectMetadataService.updateType(projectFolder.path, name);
+                  }
+                })
+              : [];
+            const metadataResults = await Promise.allSettled(metadataUpdates);
+            const failedMetadataUpdates = metadataResults.filter((result) => result.status === "rejected").length;
+
+            if (failedMetadataUpdates > 0) {
+              console.warn(`[ZENdian] ${failedMetadataUpdates} 个项目的分类元数据同步失败`);
+              new Notice(`分类已更新，但有 ${failedMetadataUpdates} 个项目的 .home 类型同步失败`);
+            } else {
+              new Notice(`已更新分类并同步文件夹为 ${newFolderPath}`);
+            }
+            this.display();
+          } catch (error) {
+            if (renamed && oldFolder instanceof TFolder) {
+              try {
+                await this.app.vault.rename(oldFolder, oldFolderPath);
+              } catch (rollbackError) {
+                console.error("[ZENdian] 回滚分类文件夹失败:", rollbackError);
+              }
+            }
+            console.error("[ZENdian] 更新项目分类失败:", error);
+            new Notice(`更新项目分类失败：${newFolderPath}`);
+            saveButton.disabled = false;
+          }
+        };
+
+        saveButton.addEventListener("click", saveCategory);
+        for (const input of [editNumber, editName]) {
+          input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") saveCategory();
+          });
+        }
+      }
+    };
+
+    const addRow = section.createDiv("zendian-project-category-add-row");
+    const numberInput = addRow.createEl("input", {
+      cls: "zendian-project-category-number-input",
+      type: "text",
+      placeholder: "编号，如 10",
+      attr: { inputmode: "numeric", "aria-label": "项目分类编号" },
+    });
+    const nameInput = addRow.createEl("input", {
+      cls: "zendian-project-category-name-input",
+      type: "text",
+      placeholder: "标签名字，如 课程",
+      attr: { "aria-label": "项目分类名称" },
+    });
+    const folderPreview = addRow.createSpan({
+      cls: "zendian-project-category-preview",
+      text: "编号_标签名字",
+    });
+    const addButton = addRow.createEl("button", {
+      cls: "zendian-project-category-add",
+      text: "+",
+      attr: { "aria-label": "新增项目分类" },
+    });
+
+    const updatePreview = () => {
+      const number = numberInput.value.trim();
+      const name = nameInput.value.trim();
+      folderPreview.textContent = number || name ? `${number || "编号"}_${name || "标签名字"}` : "编号_标签名字";
+    };
+    numberInput.addEventListener("input", updatePreview);
+    nameInput.addEventListener("input", updatePreview);
+
+    const addCategory = async () => {
+      const number = numberInput.value.trim();
+      const name = nameInput.value.trim();
+      const current = this.settingsManager.getSettings();
+      const categories = current.homepage.projectCategories;
+      const validation = validateCategory(number, name, categories);
+      if (validation) {
+        new Notice(validation.message);
+        (validation.field === "number" ? numberInput : nameInput).focus();
+        return;
+      }
+
+      const category = { number, name };
+      const folderPath = getProjectCategoryFolder(category);
+      const existing = this.app.vault.getAbstractFileByPath(folderPath);
+      if (existing && !(existing instanceof TFolder)) {
+        new Notice(`无法创建分类：仓库根目录已有同名文件 ${folderPath}`);
+        return;
+      }
+
+      try {
+        if (!existing) await this.app.vault.createFolder(folderPath);
+        await this.settingsManager.update("homepage", {
+          projectCategories: [...categories, category],
+        });
+        numberInput.value = "";
+        nameInput.value = "";
+        updatePreview();
+        renderList();
+        new Notice(existing ? `已添加分类并关联文件夹 ${folderPath}` : `已添加分类并创建文件夹 ${folderPath}`);
+        this.display();
+      } catch (error) {
+        console.error("[ZENdian] 创建项目分类失败:", error);
+        new Notice(`创建项目分类失败：${folderPath}`);
+      }
+    };
+
+    addButton.addEventListener("click", addCategory);
+    for (const input of [numberInput, nameInput]) {
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") addCategory();
+      });
+    }
+
+    renderList();
+  }
+
+  private renderProjectSubfolders(containerEl: HTMLElement): void {
+    const section = containerEl.createDiv("zendian-project-subfolders");
+    section.createEl("p", {
+      cls: "zendian-project-category-help",
+      text: "按项目分类分别设置子文件夹。模板仅用于以后新建的项目；修改或删除不会改动已有项目。",
+    });
+    const categories = this.settingsManager.getSettings().homepage.projectCategories;
+    if (!categories.length) {
+      section.createDiv({ cls: "zendian-project-category-empty", text: "请先添加项目分类，再配置该分类的子文件夹。" });
+      return;
+    }
+    let activeCategoryNumber = categories[0].number;
+    const tabs = section.createDiv({ cls: "zendian-project-subfolder-tabs", attr: { role: "tablist" } });
+    const list = section.createDiv("zendian-project-subfolder-list");
+
+    const setIconButton = (button: HTMLButtonElement, iconId: string): void => {
+      button.empty();
+      const lucideName = iconId.startsWith("lucide-") ? iconId.slice(7) : iconId;
+      const icon = getIcon(lucideName);
+      if (icon) button.appendChild(icon);
+      else button.createSpan({ text: iconId || "选择图标" });
+      button.title = iconId || "选择图标";
+    };
+
+    const openIconPicker = (currentIcon: string, onSelect: (iconId: string) => void): void => {
+      const settings = this.settingsManager.getSettings();
+      const libraries = ["Lucide", ...settings.iconSystem.installedLibraries];
+      new IconPickerModal(this.app, libraries, (iconId) => {
+        if (iconId !== null) onSelect(iconId || currentIcon);
+      }).open();
+    };
+
+    const renderList = (): void => {
+      list.empty();
+      const templates = this.settingsManager.getSettings().homepage.projectSubfolders[activeCategoryNumber] ?? [];
+      if (!templates.length) {
+        list.createDiv({
+          cls: "zendian-project-category-empty",
+          text: "暂未设置子文件夹，新建项目时不会创建任何子文件夹。",
+        });
+      }
+
+      templates.forEach((template, index) => {
+        const row = list.createDiv("zendian-project-subfolder-row");
+        let selectedIcon = template.icon || "lucide-folder";
+        const iconButton = row.createEl("button", {
+          cls: "zendian-project-subfolder-icon",
+          attr: { type: "button", "aria-label": `修改 ${template.name} 的文件夹图标` },
+        });
+        setIconButton(iconButton, selectedIcon);
+        const numberInput = row.createEl("input", {
+          cls: "zendian-project-category-number-input",
+          type: "text",
+          value: template.number,
+          attr: { inputmode: "numeric", "aria-label": `${template.name} 的文件夹编号` },
+        });
+        const nameInput = row.createEl("input", {
+          cls: "zendian-project-category-name-input",
+          type: "text",
+          value: template.name,
+          attr: { "aria-label": `${template.name} 的文件夹名称` },
+        });
+        const preview = row.createSpan({
+          cls: "zendian-project-category-folder",
+          text: getProjectSubfolderName(template),
+        });
+        const actions = row.createDiv("zendian-project-category-actions");
+        const saveButton = actions.createEl("button", {
+          cls: "zendian-project-category-save",
+          text: "保存",
+          attr: { type: "button", disabled: "true", "aria-label": `保存子文件夹模板 ${template.name}` },
+        });
+        const deleteButton = actions.createEl("button", {
+          cls: "zendian-project-category-delete",
+          text: "×",
+          attr: { type: "button", "aria-label": `删除子文件夹模板 ${template.name}` },
+        });
+
+        const updateState = (): void => {
+          const number = numberInput.value.trim();
+          const name = nameInput.value.trim();
+          preview.textContent = `${number || "编号"}_${name || "名称"}`;
+          saveButton.disabled = number === template.number && name === template.name && selectedIcon === template.icon;
+        };
+        numberInput.addEventListener("input", updateState);
+        nameInput.addEventListener("input", updateState);
+        iconButton.addEventListener("click", () => {
+          openIconPicker(selectedIcon, (iconId) => {
+            selectedIcon = iconId;
+            setIconButton(iconButton, selectedIcon);
+            updateState();
+          });
+        });
+
+        const saveTemplate = async (): Promise<void> => {
+          if (saveButton.disabled) return;
+          const number = numberInput.value.trim();
+          const name = nameInput.value.trim();
+          const current = this.settingsManager.getSettings();
+          const templates = current.homepage.projectSubfolders[activeCategoryNumber] ?? [];
+          const validation = validateProjectSubfolderTemplate(number, name, templates, index);
+          if (validation) {
+            new Notice(validation.message);
+            (validation.field === "number" ? numberInput : nameInput).focus();
+            return;
+          }
+          const projectSubfolders = { ...current.homepage.projectSubfolders };
+          const updatedTemplates = [...templates];
+          updatedTemplates[index] = { number, name, icon: selectedIcon };
+          projectSubfolders[activeCategoryNumber] = updatedTemplates;
+          await this.settingsManager.update("homepage", { projectSubfolders });
+          new Notice(`已更新子文件夹模板 ${number}_${name}，已有项目不会改变`);
+          renderList();
+        };
+        saveButton.addEventListener("click", saveTemplate);
+        for (const input of [numberInput, nameInput]) {
+          input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") saveTemplate();
+          });
+        }
+        deleteButton.addEventListener("click", async () => {
+          const current = this.settingsManager.getSettings();
+          const projectSubfolders = { ...current.homepage.projectSubfolders };
+          const templates = projectSubfolders[activeCategoryNumber] ?? [];
+          projectSubfolders[activeCategoryNumber] = templates.filter((_, itemIndex) => itemIndex !== index);
+          await this.settingsManager.update("homepage", { projectSubfolders });
+          new Notice(`已删除子文件夹模板“${template.name}”，已有项目文件夹不会被删除`);
+          renderList();
+        });
+      });
+    };
+
+    const addRow = section.createDiv("zendian-project-subfolder-add-row");
+    let newIcon = "lucide-folder";
+    const iconButton = addRow.createEl("button", {
+      cls: "zendian-project-subfolder-icon",
+      attr: { type: "button", "aria-label": "选择新子文件夹图标" },
+    });
+    setIconButton(iconButton, newIcon);
+    const numberInput = addRow.createEl("input", {
+      cls: "zendian-project-category-number-input",
+      type: "text",
+      placeholder: "编号，如 10",
+      attr: { inputmode: "numeric", "aria-label": "子文件夹编号" },
+    });
+    const nameInput = addRow.createEl("input", {
+      cls: "zendian-project-category-name-input",
+      type: "text",
+      placeholder: "名称，如 笔记",
+      attr: { "aria-label": "子文件夹名称" },
+    });
+    const preview = addRow.createSpan({ cls: "zendian-project-category-preview", text: "编号_名称" });
+    const addButton = addRow.createEl("button", {
+      cls: "zendian-project-category-add",
+      text: "+",
+      attr: { type: "button", "aria-label": "新增项目子文件夹模板" },
+    });
+
+    iconButton.addEventListener("click", () => {
+      openIconPicker(newIcon, (iconId) => {
+        newIcon = iconId;
+        setIconButton(iconButton, newIcon);
+      });
+    });
+    const updatePreview = (): void => {
+      const number = numberInput.value.trim();
+      const name = nameInput.value.trim();
+      preview.textContent = number || name ? `${number || "编号"}_${name || "名称"}` : "编号_名称";
+    };
+    numberInput.addEventListener("input", updatePreview);
+    nameInput.addEventListener("input", updatePreview);
+
+    const addTemplate = async (): Promise<void> => {
+      const number = numberInput.value.trim();
+      const name = nameInput.value.trim();
+      const current = this.settingsManager.getSettings();
+      const templates = current.homepage.projectSubfolders[activeCategoryNumber] ?? [];
+      const validation = validateProjectSubfolderTemplate(number, name, templates);
+      if (validation) {
+        new Notice(validation.message);
+        (validation.field === "number" ? numberInput : nameInput).focus();
+        return;
+      }
+      await this.settingsManager.update("homepage", {
+        projectSubfolders: {
+          ...current.homepage.projectSubfolders,
+          [activeCategoryNumber]: [...templates, { number, name, icon: newIcon }],
+        },
+      });
+      numberInput.value = "";
+      nameInput.value = "";
+      newIcon = "lucide-folder";
+      setIconButton(iconButton, newIcon);
+      updatePreview();
+      renderList();
+      new Notice(`已添加子文件夹模板 ${number}_${name}`);
+    };
+    addButton.addEventListener("click", addTemplate);
+    for (const input of [numberInput, nameInput]) {
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") addTemplate();
+      });
+    }
+    const renderTabs = (): void => {
+      tabs.empty();
+      const currentCategories = this.settingsManager.getSettings().homepage.projectCategories;
+      if (!currentCategories.some((category) => category.number === activeCategoryNumber)) {
+        activeCategoryNumber = currentCategories[0]?.number || "";
+      }
+      for (const category of currentCategories) {
+        const button = tabs.createEl("button", {
+          cls: `zendian-project-subfolder-tab${category.number === activeCategoryNumber ? " is-active" : ""}`,
+          text: category.name,
+          attr: {
+            type: "button",
+            role: "tab",
+            "aria-selected": String(category.number === activeCategoryNumber),
+          },
+        });
+        button.addEventListener("click", () => {
+          activeCategoryNumber = category.number;
+          numberInput.value = "";
+          nameInput.value = "";
+          newIcon = "lucide-folder";
+          setIconButton(iconButton, newIcon);
+          updatePreview();
+          renderTabs();
+          renderList();
+        });
+      }
+    };
+    renderTabs();
+    renderList();
   }
 
   private renderSetting(containerEl: HTMLElement, def: SettingDef): void {

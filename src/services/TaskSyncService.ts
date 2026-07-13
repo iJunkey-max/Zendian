@@ -6,10 +6,11 @@
  * - 修改 Timeline.md 文件（勾选/取消勾选任务）
  * - 提供统一的任务数据接口
  *
- * 数据来源：{项目路径}/00 控制台/Timeline.md
+ * 数据来源：新项目根目录 Timeline.md；兼容旧项目 00 控制台/Timeline.md
  */
 
 import { App, TFile, TFolder } from "obsidian";
+import { findProjectTimelineFile } from "../homepage/services/ProjectHomeFileResolver";
 
 /** 任务优先级 */
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
@@ -20,6 +21,7 @@ export interface Task {
   completed: boolean;
   created?: string;              // YYYY-MM-DD
   due?: string;                  // YYYY-MM-DD
+  dueTime?: string;              // HH:mm
   priority?: TaskPriority;
   tags?: string[];
   line: number;                  // 所在行号（0-based）
@@ -141,6 +143,7 @@ export class TaskSyncService {
     text: string,
     options?: {
       due?: string;
+      dueTime?: string;
       priority?: TaskPriority;
       created?: string;
       tags?: string[];
@@ -162,6 +165,10 @@ export class TaskSyncService {
 
       if (options?.due) {
         taskLine += ` @due(${options.due})`;
+      }
+
+      if (options?.dueTime) {
+        taskLine += ` @time(${options.dueTime})`;
       }
 
       if (options?.priority) {
@@ -245,6 +252,7 @@ export class TaskSyncService {
       // 解析标记
       let created: string | undefined;
       let due: string | undefined;
+      let dueTime: string | undefined;
       let priority: TaskPriority | undefined;
       let tags: string[] | undefined;
 
@@ -260,6 +268,13 @@ export class TaskSyncService {
       if (dueMatch) {
         due = dueMatch[1];
         text = text.replace(dueMatch[0], "").trim();
+      }
+
+      // 提取 @time(HH:mm)
+      const dueTimeMatch = text.match(/@time\(((?:[01]\d|2[0-3]):[0-5]\d)\)/);
+      if (dueTimeMatch) {
+        dueTime = dueTimeMatch[1];
+        text = text.replace(dueTimeMatch[0], "").trim();
       }
 
       // 提取 @priority(level)
@@ -280,6 +295,7 @@ export class TaskSyncService {
         completed,
         created,
         due,
+        dueTime,
         priority,
         tags,
         line: i,
@@ -356,7 +372,9 @@ export class TaskSyncService {
       if (!a.due && !b.due) return 0;
       if (!a.due) return 1;
       if (!b.due) return -1;
-      return a.due.localeCompare(b.due);
+      const dateOrder = a.due.localeCompare(b.due);
+      if (dateOrder !== 0) return dateOrder;
+      return (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
     });
   }
 
@@ -366,11 +384,7 @@ export class TaskSyncService {
 
   /** 查找项目的 Timeline.md 文件 */
   private findTimelineFile(projectPath: string): TFile | null {
-    const consolePath = `${projectPath}/00 控制台`;
-    const timelinePath = `${consolePath}/Timeline.md`;
-    const file = this.app.vault.getAbstractFileByPath(timelinePath);
-
-    return file instanceof TFile ? file : null;
+    return findProjectTimelineFile(this.app, projectPath);
   }
 
   private getToday(): string {

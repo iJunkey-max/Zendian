@@ -111,6 +111,7 @@ export interface TaskData {
   completed: boolean;
   created: string;
   due?: string;
+  dueTime?: string;
   priority?: "P0" | "P1" | "P2" | "P3";
   tags?: string[];
   subtasks?: TaskData[];

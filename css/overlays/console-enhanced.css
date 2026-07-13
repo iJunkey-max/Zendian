@@ -404,37 +404,6 @@
    6. 优先级和标签优化
    ═══════════════════════════════════════════════════════════ */
 
-.zc-root .zc-priority {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--zd-space-1) var(--zd-space-2);
-  font-size: var(--zd-text-xs);
-  font-weight: var(--zd-font-semibold);
-  border-radius: var(--zd-radius-full);
-  letter-spacing: var(--zd-tracking-wide);
-  transition: var(--zc-transition);
-}
-
-.zc-root .zc-priority-P0 {
-  background: var(--zd-error-light);
-  color: var(--zd-priority-p0);
-}
-
-.zc-root .zc-priority-P1 {
-  background: var(--zd-warning-light);
-  color: var(--zd-priority-p1);
-}
-
-.zc-root .zc-priority-P2 {
-  background: var(--zd-info-light);
-  color: var(--zd-priority-p2);
-}
-
-.zc-root .zc-priority-P3 {
-  background: var(--zd-bg-tertiary);
-  color: var(--zd-priority-p3);
-}
-
 .zc-root .zc-tags {
   display: flex;
   flex-wrap: wrap;
@@ -1245,6 +1214,30 @@
   margin-top: var(--zd-space-8);
 }
 
+.zc-root .zc-recent-activity .zc-summary-row {
+  min-height: 46px;
+  padding: 9px 0;
+}
+
+.zc-root .zc-recent-activity .zc-summary-mark {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.zc-root .zc-recent-activity .zc-summary-primary {
+  font-size: 13px;
+}
+
+.zc-root .zc-recent-activity .zc-summary-secondary,
+.zc-root .zc-recent-activity .zc-summary-time {
+  font-size: 11px;
+}
+
+.zc-root .zc-recent-activity .zc-summary-empty {
+  padding: 14px 0 2px;
+}
+
 .zc-root .zc-grid {
   display: flex;
   flex-direction: column;
@@ -1825,7 +1818,6 @@
   font-size: 13px;
 }
 
-.zc-root .zc-workspace-primary .zc-priority,
 .zc-root .zc-workspace-primary .zc-tag {
   min-height: 24px;
   padding: 4px 8px;
@@ -2423,7 +2415,6 @@
   font-size: 13px;
 }
 
-.zc-root .zc-workspace-primary .zc-priority,
 .zc-root .zc-workspace-primary .zc-tag,
 .zc-root .zc-workspace-primary .zc-due {
   min-height: 27px;
@@ -2639,7 +2630,10 @@
    ============================================================ */
 
 .theme-light .zc-root {
-  --zc-page: #f5f6f8;
+  --zc-page: var(--background-primary);
+  --zc-page-accent-strong: 0.13;
+  --zc-page-accent-soft: 0.065;
+  --zc-page-grid: 0.035;
   --zc-card-surface: #ffffff;
   --zc-card-border: rgba(0, 0, 0, 0.06);
   --zc-card-divider: #eef0f4;
@@ -2650,6 +2644,9 @@
 
 .theme-dark .zc-root {
   --zc-page: var(--background-primary);
+  --zc-page-accent-strong: 0.16;
+  --zc-page-accent-soft: 0.08;
+  --zc-page-grid: 0.055;
   --zc-card-surface: var(--background-primary-alt);
   --zc-card-border: var(--background-modifier-border);
   --zc-card-divider: var(--background-modifier-border-muted);
@@ -2663,10 +2660,16 @@
   --zc-surface-raised: var(--zc-card-surface);
   --zc-rule: var(--zc-card-divider);
   --zc-card-radius: 0.875rem;
-  background: var(--zc-page);
+  background-color: var(--zc-page);
+  background-image:
+    radial-gradient(ellipse 44rem 32rem at 7% -8%, hsla(var(--accent-h), var(--accent-s), var(--accent-l), var(--zc-page-accent-strong)), transparent 72%),
+    radial-gradient(ellipse 36rem 28rem at 96% 18%, hsla(var(--accent-h), var(--accent-s), var(--accent-l), var(--zc-page-accent-soft)), transparent 76%),
+    linear-gradient(hsla(var(--accent-h), var(--accent-s), var(--accent-l), var(--zc-page-grid)) 1px, transparent 1px),
+    linear-gradient(90deg, hsla(var(--accent-h), var(--accent-s), var(--accent-l), var(--zc-page-grid)) 1px, transparent 1px);
+  background-position: center, center, center top, center top;
+  background-size: auto, auto, 36px 36px, 36px 36px;
 }
 
-.zc-root .zc-hero,
 .zc-root .zc-tabs,
 .zc-root .zc-workspace-primary,
 .zc-root .zc-workspace-aside,
@@ -2678,7 +2681,6 @@
   transition: box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
-.zc-root .zc-hero:hover,
 .zc-root .zc-workspace-primary:hover,
 .zc-root .zc-workspace-aside:hover,
 .zc-root .zc-dossier-summary:hover {
@@ -2686,30 +2688,21 @@
   box-shadow: var(--zc-card-shadow-hover);
 }
 
-.theme-dark .zc-root .zc-hero:hover,
 .theme-dark .zc-root .zc-workspace-primary:hover,
 .theme-dark .zc-root .zc-workspace-aside:hover,
 .theme-dark .zc-root .zc-dossier-summary:hover {
   border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.18);
 }
 
-.zc-root .zc-hero::before {
-  width: 4px;
-  border-radius: var(--zc-card-radius) 0 0 var(--zc-card-radius);
-}
-
-.zc-root .zc-hero::after,
 .zc-root .zc-workspace-aside::before {
   display: none;
 }
 
-.zc-root .zc-hero-icon,
 .zc-root .zc-grid-icon,
 .zc-root .zc-summary-mark {
   box-shadow: none;
 }
 
-.zc-root .zc-hero-export,
 .zc-root .zc-add-btn.zc-add-btn--inline {
   box-shadow: none;
 }
@@ -2783,5 +2776,113 @@
 @media (max-width: 900px) {
   .zc-root .zc-workspace-primary .zc-scroll {
     max-height: none;
+  }
+}
+
+/* Project identity stays visible, but is part of the page rather than a card. */
+.zc-root .zc-hero,
+.zc-root .zc-hero:hover {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 8px 0 26px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.zc-root .zc-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  margin-bottom: 9px;
+}
+
+.zc-root .zc-hero-title .zc-hero-title-icon {
+  display: inline-flex;
+  visibility: visible !important;
+  flex: 0 0 48px;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  margin: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 38%, var(--background-modifier-border));
+  border-radius: 14px;
+  opacity: 1 !important;
+  color: var(--interactive-accent) !important;
+  background-color: color-mix(in srgb, var(--interactive-accent) 13%, var(--background-primary)) !important;
+  background-image: none !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+}
+
+.zc-root .zc-hero-title .zc-hero-title-icon .zc-project-title-svg {
+  display: none !important;
+}
+
+.zc-root .zc-hero-title .zc-hero-title-icon::before {
+  content: "" !important;
+  display: block !important;
+  visibility: visible !important;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  opacity: 1 !important;
+  background-color: var(--interactive-accent) !important;
+  -webkit-mask-image: var(--zc-project-icon-mask);
+  mask-image: var(--zc-project-icon-mask);
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.zc-root .zc-hero-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zc-root .zc-hero-info > :is(.zc-hero-meta, .zc-hero-desc) {
+  margin-left: 0;
+}
+
+.zc-root .zc-hero::before,
+.zc-root .zc-hero::after {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .zc-root .zc-hero,
+  .zc-root .zc-hero:hover {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 8px 0 22px;
+  }
+
+  .zc-root .zc-hero-title {
+    gap: 12px;
+  }
+
+  .zc-root .zc-hero-title .zc-hero-title-icon {
+    flex-basis: 40px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+  }
+
+  .zc-root .zc-hero-info > :is(.zc-hero-meta, .zc-hero-desc) {
+    margin-left: 0;
+  }
+
+  .zc-root .zc-hero-export {
+    grid-column: 1;
+    justify-self: start;
+    margin-left: 0;
   }
 }

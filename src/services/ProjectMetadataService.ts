@@ -6,11 +6,11 @@
  * - 管理项目状态、优先级、标签、里程碑
  * - 提供类型安全的 API
  *
- * 数据来源：{项目路径}/00 控制台/{项目名}.home
+ * 数据来源：新项目根目录 {项目名}.home；兼容旧项目控制台目录
  */
 
 import { App, TFile } from "obsidian";
-import { findProjectHomeFile } from "../homepage/services/ProjectHomeFileResolver";
+import { findProjectHomeFile, getProjectSystemDirectory } from "../homepage/services/ProjectHomeFileResolver";
 
 /** 项目状态 */
 export type ProjectStatus = "active" | "paused" | "completed" | "archived";
@@ -18,8 +18,8 @@ export type ProjectStatus = "active" | "paused" | "completed" | "archived";
 /** 项目优先级 */
 export type ProjectPriority = "low" | "medium" | "high" | "urgent";
 
-/** 项目类型 */
-export type ProjectType = "学习" | "工作" | "创作" | "生活" | "研究";
+/** 用户可配置的项目类型 */
+export type ProjectType = string;
 
 /** 里程碑 */
 export interface Milestone {
@@ -134,6 +134,17 @@ export class ProjectMetadataService {
     if (!data) throw new Error("项目元数据不存在");
 
     data.status = status;
+    data.updatedAt = this.getToday();
+
+    await this.save(projectPath, data);
+  }
+
+  /** 更新项目类型，用于分类文件夹改名后的元数据同步。 */
+  async updateType(projectPath: string, type: ProjectType): Promise<void> {
+    const data = await this.getMetadata(projectPath);
+    if (!data) throw new Error("项目元数据不存在");
+
+    data.type = type;
     data.updatedAt = this.getToday();
 
     await this.save(projectPath, data);
@@ -359,8 +370,7 @@ export class ProjectMetadataService {
     const homeFile = this.findHomeFile(projectPath);
     if (!homeFile) {
       // 创建新文件
-      const consolePath = `${projectPath}/00 控制台`;
-      const filePath = `${consolePath}/${data.name}.home`;
+      const filePath = `${getProjectSystemDirectory(this.app, projectPath)}/${data.name}.home`;
       await this.app.vault.create(filePath, JSON.stringify(data, null, 2));
     } else {
       // 更新现有文件
@@ -374,7 +384,7 @@ export class ProjectMetadataService {
       name: data.name || "未命名项目",
       icon: data.icon || "lucide-folder",
       description: data.description || "",
-      type: data.type || "学习",
+      type: data.type || "未分类",
       status: data.status || "active",
       createdAt: data.createdAt || this.getToday(),
       updatedAt: data.updatedAt,

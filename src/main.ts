@@ -124,7 +124,7 @@ export default class ZENdianPlugin extends Plugin {
     // 注册项目控制台 View（.home 文件）
     this.registerView(
       VIEW_TYPE_PROJECT_CONSOLE,
-      (leaf) => new ProjectConsoleView(leaf, this.taskSyncService)
+      (leaf) => new ProjectConsoleView(leaf, this.taskSyncService, this.settingsManager)
     );
     this.registerExtensions(["home"], VIEW_TYPE_PROJECT_CONSOLE);
 

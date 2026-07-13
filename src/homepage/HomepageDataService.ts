@@ -5,7 +5,7 @@
  * 存储路径：.obsidian/plugins/zendian/homepage-data.json
  */
 
-import { App } from "obsidian";
+import { App, TFile } from "obsidian";
 import type { HomepageData, HomepageQuickNote, HomepageQuote } from "./types";
 
 const DATA_FILE = ".obsidian/plugins/zendian/homepage-data.json";
@@ -101,6 +101,12 @@ export class HomepageDataService {
     const note = this.data.quickNotes.find((n) => n.id === id);
     if (note) {
       note.content = content;
+      const file = this.app.vault.getAbstractFileByPath(note.path);
+      if (file instanceof TFile) {
+        await this.app.vault.modify(file, content);
+      } else {
+        await this.app.vault.create(note.path, content);
+      }
       await this.save();
     }
   }

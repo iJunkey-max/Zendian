@@ -1,4 +1,5 @@
 import { App, TFolder, TFile } from "obsidian";
+import { findProjectTimelineFile } from "./ProjectHomeFileResolver";
 
 /**
  * 项目时间轴事件类型
@@ -105,9 +106,8 @@ export class ProjectTimelineService {
     }
 
     // 3. 解析 Timeline.md 中的里程碑和任务完成
-    const timelinePath = `${projectPath}/00 控制台/Timeline.md`;
-    const timelineFile = this.app.vault.getAbstractFileByPath(timelinePath);
-    if (timelineFile instanceof TFile) {
+    const timelineFile = findProjectTimelineFile(this.app, projectPath);
+    if (timelineFile) {
       const content = await this.app.vault.read(timelineFile);
       const milestones = this.extractMilestones(content);
       const completedTasks = this.extractCompletedTasks(content);
@@ -128,31 +128,10 @@ export class ProjectTimelineService {
           type: "task_completed",
           timestamp: task.timestamp,
           title: task.text,
-          filePath: timelinePath,
+          filePath: timelineFile.path,
           icon: "check-circle",
           color: "#10b981",
         });
-      }
-    }
-
-    // 4. 笔记添加事件（01 笔记 目录下的新增笔记）
-    const notesPath = `${projectPath}/01 笔记`;
-    const notesFolder = this.app.vault.getAbstractFileByPath(notesPath);
-    if (notesFolder instanceof TFolder) {
-      for (const child of notesFolder.children) {
-        if (child instanceof TFile && child.extension === "md") {
-          const daysSinceCreated = (Date.now() - child.stat.ctime) / (1000 * 60 * 60 * 24);
-          if (daysSinceCreated <= 30) {
-            events.push({
-              type: "note_added",
-              timestamp: child.stat.ctime,
-              title: `添加笔记 ${child.basename}`,
-              filePath: child.path,
-              icon: "book-open",
-              color: "#6366f1",
-            });
-          }
-        }
       }
     }
 
@@ -164,9 +143,8 @@ export class ProjectTimelineService {
    * 获取项目里程碑
    */
   async getProjectMilestones(projectPath: string): Promise<ProjectMilestone[]> {
-    const timelinePath = `${projectPath}/00 控制台/Timeline.md`;
-    const file = this.app.vault.getAbstractFileByPath(timelinePath);
-    if (!(file instanceof TFile)) return [];
+    const file = findProjectTimelineFile(this.app, projectPath);
+    if (!file) return [];
 
     const content = await this.app.vault.read(file);
     return this.extractMilestones(content);
@@ -213,7 +191,7 @@ export class ProjectTimelineService {
 
     return {
       totalFiles: allFiles.length,
-      totalNotes: allFiles.filter((f) => f.path.includes("/01 笔记/")).length,
+      totalNotes: allFiles.filter((file) => !["Overview.md", "Timeline.md"].includes(file.name)).length,
       totalTasks,
       completedTasks,
       totalWords,
