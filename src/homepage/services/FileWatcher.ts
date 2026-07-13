@@ -59,10 +59,10 @@ export class FileWatcher extends Events {
     this.watchedProjects.delete(projectPath);
 
     // 清理定时器
-    const timer = this.debounceTimers.get(projectPath);
-    if (timer) {
+    for (const [key, timer] of this.debounceTimers) {
+      if (!key.startsWith(`${projectPath}::`)) continue;
       window.clearTimeout(timer);
-      this.debounceTimers.delete(projectPath);
+      this.debounceTimers.delete(key);
     }
 
     console.log(`[FileWatcher] 停止监听项目: ${projectPath}`);
@@ -118,7 +118,7 @@ export class FileWatcher extends Events {
     // 文件重命名
     this.vaultEventRefs.push(this.app.vault.on("rename", (file, oldPath) => {
       if (file instanceof TFile) {
-        this.handleFileChange(file, "update");
+        this.handleFileRename(file, oldPath);
       }
     }));
   }
@@ -135,19 +135,40 @@ export class FileWatcher extends Events {
     }
 
     // 防抖处理
-    this.debounce(projectPath, () => {
+    this.debounce(`${projectPath}::${file.path}`, () => {
       this.emitChangeEvent(file, action, projectPath);
     });
+  }
+
+  private handleFileRename(file: TFile, oldPath: string): void {
+    const oldProjectPath = this.findProjectPath(oldPath);
+    const newProjectPath = this.findProjectPath(file.path);
+
+    if (oldProjectPath) {
+      this.debounce(`${oldProjectPath}::${oldPath}`, () => {
+        this.emitChangeEvent(file, "delete", oldProjectPath, oldPath);
+      });
+    }
+    if (newProjectPath) {
+      this.debounce(`${newProjectPath}::${file.path}`, () => {
+        this.emitChangeEvent(file, "create", newProjectPath);
+      });
+    }
   }
 
   /**
    * 发送变更事件
    */
-  private emitChangeEvent(file: TFile, action: "create" | "update" | "delete", projectPath: string): void {
+  private emitChangeEvent(
+    file: TFile,
+    action: "create" | "update" | "delete",
+    projectPath: string,
+    path = file.path,
+  ): void {
     const event: DataChangeEvent = {
       type: this.getEventType(file),
       action,
-      path: file.path,
+      path,
       timestamp: Date.now(),
       data: {
         name: file.basename,
@@ -157,15 +178,19 @@ export class FileWatcher extends Events {
     };
 
     this.trigger("change", event);
+    void this.dispatchProjectCallbacks(projectPath, event);
+
+    console.log(`[FileWatcher] 文件变更: ${action} ${path}`);
+  }
+
+  private async dispatchProjectCallbacks(projectPath: string, event: DataChangeEvent): Promise<void> {
     for (const callback of this.projectCallbacks.get(projectPath) || []) {
       try {
-        callback(event);
+        await callback(event);
       } catch (error) {
         console.error(`[FileWatcher] 项目回调失败: ${projectPath}`, error);
       }
     }
-
-    console.log(`[FileWatcher] 文件变更: ${action} ${file.path}`);
   }
 
   /**

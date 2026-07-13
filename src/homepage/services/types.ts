@@ -61,12 +61,15 @@ export interface ProjectHealth {
 // ============================================================
 
 export interface TimelineEvent {
-  type: "file-created" | "file-modified" | "task-created" | "task-completed" | "deliverable-added" | "milestone";
+  type: "file-created" | "file-modified" | "file-deleted" | "file-restored" | "task-created" | "task-completed" | "deliverable-added" | "milestone" | "status-changed" | "checkpoint";
   date: string;
   timestamp: number;
   title: string;
   description?: string;
   filePath?: string;
+  snapshotId?: string;
+  checkpointId?: string;
+  approximateTime?: boolean;
   metadata?: Record<string, any>;
 }
 
@@ -178,4 +181,4 @@ export interface DataChangeEvent {
   data?: any;
 }
 
-export type DataChangeCallback = (event: DataChangeEvent) => void;
+export type DataChangeCallback = (event: DataChangeEvent) => void | Promise<void>;

@@ -13,7 +13,8 @@ import { ProjectDataService } from "./ProjectDataService";
 import { TimelineService } from "./TimelineService";
 import { StatisticsService } from "./StatisticsService";
 import { FileWatcher } from "./FileWatcher";
-import type { DataChangeEvent } from "./types";
+import { ProjectSnapshotService } from "./ProjectSnapshotService";
+import type { DataChangeCallback, DataChangeEvent } from "./types";
 import type { TaskSyncService } from "../../services/TaskSyncService";
 
 export class ServiceManager {
@@ -21,17 +22,22 @@ export class ServiceManager {
   public timeline: TimelineService;
   public statistics: StatisticsService;
   public fileWatcher: FileWatcher;
+  public snapshots: ProjectSnapshotService;
 
   private initialized = false;
   private fileWatcherRef: EventRef | null = null;
+  private snapshotCallbacks = new Map<string, DataChangeCallback>();
+  private snapshotTrackingPromises = new Map<string, Promise<void>>();
 
   constructor(private app: App, taskSyncService?: TaskSyncService) {
     this.projectData = new ProjectDataService(app, undefined, taskSyncService);
-    this.timeline = new TimelineService(app, taskSyncService);
+    this.snapshots = new ProjectSnapshotService(app);
+    this.timeline = new TimelineService(app, taskSyncService, this.snapshots);
     this.statistics = new StatisticsService(app);
     this.fileWatcher = new FileWatcher(app);
 
     this.setupFileWatcher();
+    void this.restoreSnapshotTracking();
   }
 
   // ============================================================
@@ -74,6 +80,41 @@ export class ServiceManager {
     this.fileWatcherRef = this.fileWatcher.onChange((event: DataChangeEvent) => {
       this.handleDataChange(event);
     });
+  }
+
+  private async restoreSnapshotTracking(): Promise<void> {
+    try {
+      const projectPaths = await this.snapshots.getTrackedProjectPaths();
+      await Promise.all(projectPaths.map((projectPath) => this.trackProjectSnapshots(projectPath)));
+    } catch (error) {
+      console.error("[ServiceManager] 恢复项目快照监听失败", error);
+    }
+  }
+
+  async trackProjectSnapshots(projectPath: string): Promise<void> {
+    if (!projectPath) return;
+    const existing = this.snapshotTrackingPromises.get(projectPath);
+    if (existing) return existing;
+
+    const tracking = (async () => {
+      const callback: DataChangeCallback = async (event) => {
+        await this.snapshots.captureEvent(event);
+        this.clearProjectCache(projectPath);
+      };
+      this.snapshotCallbacks.set(projectPath, callback);
+      this.fileWatcher.watchProject(projectPath, callback);
+      await this.snapshots.initializeProject(projectPath);
+    })();
+    this.snapshotTrackingPromises.set(projectPath, tracking);
+    try {
+      await tracking;
+    } catch (error) {
+      const callback = this.snapshotCallbacks.get(projectPath);
+      if (callback) this.fileWatcher.unwatchProject(projectPath, callback);
+      this.snapshotCallbacks.delete(projectPath);
+      this.snapshotTrackingPromises.delete(projectPath);
+      throw error;
+    }
   }
 
   /**
@@ -249,6 +290,8 @@ export class ServiceManager {
       this.fileWatcherRef = null;
     }
     this.fileWatcher.destroy();
+    this.snapshotCallbacks.clear();
+    this.snapshotTrackingPromises.clear();
     this.clearAllCache();
     this.initialized = false;
     console.log("[ServiceManager] 已销毁");

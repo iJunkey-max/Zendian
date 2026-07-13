@@ -20,6 +20,7 @@ import {
   getProjectSystemDirectory,
 } from "./services/ProjectHomeFileResolver";
 import { getProjectCategoryFolder } from "./project-categories";
+import { normalizeProjectStatus } from "./project-status";
 
 const TASK_REGEX = /^- \[([ x])\] (.+)$/;
 
@@ -215,7 +216,7 @@ export class HomepageProjectScanService {
       recentFiles,
       pendingTasks,
       updatedAt,
-      status: homeData?.status === "archived" ? "completed" : homeData?.status,
+      status: normalizeProjectStatus(homeData?.status),
       priority: homeData?.metadata?.priority === "urgent" ? "high" : homeData?.metadata?.priority,
       lastActiveTime: updatedAt,
       createdTime: homeData?.createdAt ? new Date(homeData.createdAt).getTime() : 0,

@@ -2,15 +2,17 @@
  * ProjectFilterBar — 项目筛选器组件
  *
  * 功能：
- * - 按状态筛选（全部/进行中/暂停/完成）
+ * - 按项目生命周期状态筛选
  * - 按用户配置的项目分类动态筛选
  * - 按优先级筛选（全部/高/中/低）
  * - 多种排序方式（活跃度/优先级/时间/名称）
  * - 显示符合条件的项目数
  */
 
+import { PROJECT_STATUS_OPTIONS, type ProjectStatus } from "../project-status";
+
 export interface ProjectFilter {
-  status: "all" | "active" | "paused" | "completed";
+  status: "all" | ProjectStatus;
   type: string;
   priority: "all" | "high" | "medium" | "low";
   sortBy: "activity" | "priority" | "time" | "name";
@@ -44,13 +46,11 @@ export function renderProjectFilterBar(
     "状态",
     [
       { value: "all", label: "全部" },
-      { value: "active", label: "进行中" },
-      { value: "paused", label: "暂停" },
-      { value: "completed", label: "完成" },
+      ...PROJECT_STATUS_OPTIONS.map(({ value, label }) => ({ value, label })),
     ],
     currentFilter.status,
     (value) => {
-      onFilterChange({ ...currentFilter, status: value as any });
+      onFilterChange({ ...currentFilter, status: value as ProjectFilter["status"] });
     }
   );
 

@@ -2,7 +2,7 @@
  * ProjectConsoleView — 项目控制台视图（仪表盘风格）
  */
 
-import { FileView, type WorkspaceLeaf, type App, TFile, getIcon, Modal, Setting, Notice } from "obsidian";
+import { FileView, type WorkspaceLeaf, type App, TFile, getIcon, Menu, Modal, Setting, Notice } from "obsidian";
 import type {
   ProjectConsoleData,
   ProjectConsoleTask,
@@ -11,12 +11,19 @@ import type {
   ProjectType,
 } from "./types";
 import { getProjectTypeColor } from "./project-categories";
+import {
+  PROJECT_STATUS_OPTIONS,
+  getProjectStatusOption,
+  normalizeProjectStatus,
+  normalizeStatusBeforePause,
+  type ProjectStatus,
+} from "./project-status";
 import { getServiceManager } from "./services";
 import type { ServiceManager, ProjectStatistics, ProjectHealth } from "./services";
 import { LineChart, HeatmapChart } from "./components/charts";
 import type { Task } from "../services/TaskSyncService";
 import { TaskSyncService } from "../services/TaskSyncService";
-import type { DataChangeCallback } from "./services/types";
+import type { DataChangeCallback, TimelineEvent } from "./services/types";
 import { renderTaskPriorityLabel } from "./components/TaskPriorityLabel";
 import { createTaskSchedulePicker } from "./components/TaskSchedulePicker";
 import type { SettingsManager } from "../core/settings-manager";
@@ -189,6 +196,120 @@ class AddTaskModal extends Modal {
   }
 }
 
+class CreateCheckpointModal extends Modal {
+  private name = "";
+
+  constructor(app: App, private onCreate: (name: string) => Promise<void>) {
+    super(app);
+  }
+
+  onOpen(): void {
+    const container = this.contentEl;
+    container.createEl("h2", { text: "创建项目检查点" });
+    container.createDiv({ cls: "zc-modal-hint", text: "记录当前项目内所有受支持文本文件的版本。" });
+    new Setting(container)
+      .setName("检查点名称")
+      .addText((text) => text
+        .setPlaceholder("例如：主页布局完成")
+        .onChange((value) => { this.name = value; }));
+    new Setting(container).addButton((button) => button
+      .setButtonText("创建检查点")
+      .setCta()
+      .onClick(async () => {
+        button.setDisabled(true);
+        await this.onCreate(this.name);
+        this.close();
+      }));
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+class ConfirmSnapshotRestoreModal extends Modal {
+  constructor(
+    app: App,
+    private filePath: string,
+    private onConfirm: () => Promise<void>,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    const container = this.contentEl;
+    container.createEl("h2", { text: "恢复文件版本" });
+    container.createEl("p", { text: `将 ${this.filePath} 恢复到所选版本。恢复前会自动保存当前内容。` });
+    const actions = new Setting(container);
+    actions.addButton((button) => button.setButtonText("取消").onClick(() => this.close()));
+    actions.addButton((button) => button
+      .setButtonText("确认恢复")
+      .setWarning()
+      .onClick(async () => {
+        button.setDisabled(true);
+        await this.onConfirm();
+        this.close();
+      }));
+  }
+}
+
+class SnapshotDiffModal extends Modal {
+  constructor(
+    app: App,
+    private services: ServiceManager,
+    private versionId: string,
+    private onRestored: () => Promise<void>,
+  ) {
+    super(app);
+  }
+
+  async onOpen(): Promise<void> {
+    const container = this.contentEl;
+    container.addClass("zc-snapshot-modal");
+    const loading = container.createDiv({ cls: "zc-loading", text: "读取版本差异..." });
+    const comparison = await this.services.snapshots.getComparison(this.versionId);
+    loading.remove();
+    if (!comparison) {
+      container.createDiv({ cls: "zc-error", text: "无法读取该快照" });
+      return;
+    }
+
+    container.createEl("h2", { text: comparison.version.filePath.split("/").pop() || comparison.version.filePath });
+    container.createDiv({
+      cls: "zc-snapshot-meta",
+      text: `${new Date(comparison.version.timestamp).toLocaleString()} · +${comparison.added} / -${comparison.removed}`,
+    });
+    const diff = container.createDiv({ cls: "zc-snapshot-diff" });
+    if (!comparison.preview.length) {
+      diff.createDiv({ cls: "zc-snapshot-no-change", text: "该版本与当前内容一致" });
+    } else {
+      for (const line of comparison.preview) {
+        const prefix = line.kind === "added" ? "+" : line.kind === "removed" ? "−" : " ";
+        diff.createDiv({ cls: `zc-snapshot-diff-line is-${line.kind}`, text: `${prefix} ${line.text}` });
+      }
+    }
+
+    const actions = new Setting(container);
+    actions.addButton((button) => button.setButtonText("关闭").onClick(() => this.close()));
+    actions.addButton((button) => button
+      .setButtonText("恢复此版本")
+      .setWarning()
+      .onClick(() => {
+        new ConfirmSnapshotRestoreModal(this.app, comparison.version.filePath, async () => {
+          const restored = await this.services.snapshots.restoreVersion(this.versionId);
+          if (!restored) {
+            new Notice("版本恢复失败");
+            return;
+          }
+          this.services.clearProjectCache(comparison.version.projectPath);
+          await this.onRestored();
+          new Notice("文件已恢复，恢复前版本已安全保存");
+          this.close();
+        }).open();
+      }));
+  }
+}
+
 // ── 主视图 ──────────────────────────────────────────
 
 export class ProjectConsoleView extends FileView {
@@ -200,6 +321,7 @@ export class ProjectConsoleView extends FileView {
   private fileWatcherCallback: DataChangeCallback | null = null;
   private projectStats: ProjectStatistics | null = null;
   private health: ProjectHealth | null = null;
+  private timelineFilter: "all" | "files" | "tasks" | "project" | "checkpoints" = "all";
 
   constructor(
     l: WorkspaceLeaf,
@@ -221,10 +343,13 @@ export class ProjectConsoleView extends FileView {
     else if (parent.name === LEGACY_PROJECT_CONSOLE_FOLDER) this.projPath = parent.parent?.path || parent.path;
     else this.projPath = parent.path;
     await this.loadProjectData();
+    await this.services.trackProjectSnapshots(this.projPath);
+    this.services.timeline.clearCache(this.projPath);
 
     // 开始监听文件变更
     this.fileWatcherCallback = async (event) => {
       console.log("[ProjectConsoleView] 文件变更，刷新数据", event);
+      this.services.timeline.clearCache(this.projPath);
       await this.loadProjectData();
       this.render();
     };
@@ -336,15 +461,17 @@ export class ProjectConsoleView extends FileView {
 
     const sec = p.createDiv({ cls: "zc-hero" });
     const info = sec.createDiv({ cls: "zc-hero-info" });
-    const title = info.createEl("h1", { cls: "zc-hero-title" });
+    const headingRow = info.createDiv({ cls: "zc-hero-heading-row" });
+    const title = headingRow.createEl("h1", { cls: "zc-hero-title" });
     const icon = title.createSpan({
       cls: "zc-hero-icon zc-hero-title-icon",
       attr: { "aria-hidden": "true" },
     });
     this.renderIcon(icon, d.icon);
     title.createSpan({ cls: "zc-hero-title-text", text: d.name });
-    const meta = info.createDiv({ cls: "zc-hero-meta" });
+    const meta = headingRow.createDiv({ cls: "zc-hero-meta" });
     meta.createSpan({ cls: "zc-hero-tag", text: d.type || "未分类", attr: { style: `--tag-color:${color}` } });
+    this.renderProjectStatusButton(meta);
     if (d.createdAt) {
       const date = meta.createSpan({ cls: "zc-hero-date" });
       date.appendChild(svg("calendar"));
@@ -362,17 +489,89 @@ export class ProjectConsoleView extends FileView {
     exportBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
     exportBtn.createSpan({ text: "导出" });
     exportBtn.addEventListener("click", () => this.showExportMenu(exportBtn));
+  }
 
-    const { pct } = this.progress();
-    const spine = p.createDiv({ cls: "zc-progress-spine", attr: { "aria-label": `项目完成度 ${pct}%` } });
-    const phases = ["规划", "实现", "验证"];
-    const activePhase = pct < 20 ? 0 : pct < 85 ? 1 : 2;
-    for (let index = 0; index < phases.length; index++) {
-      const phase = spine.createDiv({ cls: `zc-spine-phase${index === activePhase ? " is-active" : ""}${index < activePhase ? " is-complete" : ""}` });
-      phase.createSpan({ cls: "zc-spine-dot" });
-      phase.createSpan({ cls: "zc-spine-label", text: phases[index] });
-      if (index === activePhase) phase.createSpan({ cls: "zc-spine-value", text: `${pct}%` });
+  private renderProjectStatusButton(container: HTMLElement): void {
+    const status = getProjectStatusOption(this.data?.status);
+    const button = container.createEl("button", {
+      cls: "zd-project-status-tag is-interactive",
+      attr: {
+        type: "button",
+        "data-status": status.value,
+        "aria-haspopup": "menu",
+        "aria-label": `项目状态：${status.label}，点击更改`,
+      },
+    });
+    button.createSpan({ cls: "zd-project-status-dot", attr: { "aria-hidden": "true" } });
+    button.createSpan({ cls: "zd-project-status-label", text: status.label });
+    button.createSpan({ cls: "zd-project-status-chevron", text: "⌄", attr: { "aria-hidden": "true" } });
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      this.showProjectStatusMenu(button);
+    });
+  }
+
+  private showProjectStatusMenu(anchor: HTMLElement): void {
+    const currentStatus = normalizeProjectStatus(this.data?.status);
+    const statusBeforePause = normalizeStatusBeforePause(this.data?.statusBeforePause);
+    const menu = new Menu().setParentElement(anchor);
+
+    if (currentStatus === "paused" && statusBeforePause) {
+      const resumeOption = getProjectStatusOption(statusBeforePause);
+      menu.addItem((item) => item
+        .setTitle(`恢复为${resumeOption.label}`)
+        .setIcon("rotate-ccw")
+        .onClick(() => void this.updateProjectStatus(statusBeforePause)));
+      menu.addSeparator();
     }
+
+    for (const option of PROJECT_STATUS_OPTIONS) {
+      menu.addItem((item) => item
+        .setTitle(option.label)
+        .setIcon(option.icon)
+        .setChecked(option.value === currentStatus)
+        .onClick(() => void this.updateProjectStatus(option.value)));
+    }
+
+    const rect = anchor.getBoundingClientRect();
+    menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 });
+  }
+
+  private async updateProjectStatus(nextStatus: ProjectStatus): Promise<void> {
+    if (!this.data) return;
+    const previousStatus = normalizeProjectStatus(this.data.status);
+    if (previousStatus === nextStatus) return;
+
+    const previousBeforePause = this.data.statusBeforePause;
+    const previousHistory = [...(this.data.statusHistory || [])];
+    const previousUpdatedAt = this.data.updatedAt;
+
+    if (nextStatus === "paused" && previousStatus !== "paused") {
+      this.data.statusBeforePause = previousStatus;
+    } else if (nextStatus !== "paused") {
+      this.data.statusBeforePause = undefined;
+    }
+
+    this.data.status = nextStatus;
+    this.data.updatedAt = new Date().toISOString().slice(0, 10);
+    this.data.statusHistory = [
+      ...previousHistory,
+      { from: previousStatus, to: nextStatus, changedAt: new Date().toISOString() },
+    ];
+
+    const saved = await this.save();
+    if (!saved) {
+      this.data.status = previousStatus;
+      this.data.statusBeforePause = previousBeforePause;
+      this.data.statusHistory = previousHistory;
+      this.data.updatedAt = previousUpdatedAt;
+      new Notice("项目状态保存失败，请检查 .home 文件");
+      this.render();
+      return;
+    }
+
+    new Notice(`项目状态已改为${getProjectStatusOption(nextStatus).label}`);
+    this.render();
   }
 
   private showExportMenu(anchor: HTMLElement) {
@@ -734,12 +933,13 @@ export class ProjectConsoleView extends FileView {
   private renderRecentActivity(parent: HTMLElement): void {
     const activity = parent.createDiv({ cls: "zc-workspace-index zc-recent-activity" });
     activity.createDiv({ cls: "zc-aside-title", text: "近期活动" });
+    const scroll = activity.createDiv({ cls: "zc-recent-activity-scroll" });
     const recentFiles = this.recent(5);
     if (recentFiles.length === 0) {
-      activity.createDiv({ cls: "zc-summary-empty", text: "项目活动会显示在这里" });
+      scroll.createDiv({ cls: "zc-summary-empty", text: "项目活动会显示在这里" });
     } else {
       for (const file of recentFiles) {
-        const row = activity.createDiv({ cls: "zc-summary-row zc-clickable" });
+        const row = scroll.createDiv({ cls: "zc-summary-row zc-clickable" });
         const mark = row.createSpan({ cls: "zc-summary-mark" });
         mark.innerHTML = SVG.fileEdit;
         const copy = row.createDiv({ cls: "zc-summary-copy" });
@@ -753,8 +953,8 @@ export class ProjectConsoleView extends FileView {
 
   // ── 工具 ──────────────────────────────────────────
 
-  private async save() {
-    if (!this.data) return;
+  private async save(): Promise<boolean> {
+    if (!this.data) return false;
     const f = this.file;
     if (f instanceof TFile) {
       let legacyTasks: ProjectConsoleTask[] = [];
@@ -764,8 +964,12 @@ export class ProjectConsoleView extends FileView {
       } catch {
         // Invalid JSON is handled by the view's load state.
       }
-      await this.app.vault.modify(f, JSON.stringify({ ...this.data, tasks: legacyTasks }, null, 2));
+      return this.services.projectData.saveProjectConsoleData(
+        this.projPath,
+        { ...this.data, tasks: legacyTasks },
+      );
     }
+    return false;
   }
 
   private toDisplayPriority(priority: Task["priority"]): import("./types").TaskPriority | undefined {
@@ -789,6 +993,48 @@ export class ProjectConsoleView extends FileView {
     const scroll = c.createDiv({ cls: "zc-scroll" });
     const container = scroll.createDiv({ cls: "zc-timeline-container" });
 
+    const toolbar = container.createDiv({ cls: "zc-timeline-toolbar" });
+    const toolbarCopy = toolbar.createDiv({ cls: "zc-timeline-toolbar-copy" });
+    toolbarCopy.createDiv({ cls: "zc-timeline-heading", text: "项目活动" });
+    toolbarCopy.createDiv({ cls: "zc-timeline-kicker", text: "轻量快照 · 自动记录文本文件版本" });
+    const checkpointButton = toolbar.createEl("button", {
+      cls: "zc-timeline-checkpoint",
+      text: "创建检查点",
+      attr: { type: "button" },
+    });
+    checkpointButton.prepend(svg("flag"));
+    checkpointButton.addEventListener("click", () => {
+      new CreateCheckpointModal(this.app, async (name) => {
+        await this.services.snapshots.createCheckpoint(this.projPath, name);
+        this.services.timeline.clearCache(this.projPath);
+        new Notice("项目检查点已创建");
+        c.empty();
+        await this.timeline(c);
+      }).open();
+    });
+
+    const filters = [
+      { id: "all", label: "全部" },
+      { id: "files", label: "文件版本" },
+      { id: "tasks", label: "任务" },
+      { id: "project", label: "项目事件" },
+      { id: "checkpoints", label: "检查点" },
+    ] as const;
+    const filterBar = container.createDiv({ cls: "zc-timeline-filters" });
+    for (const filter of filters) {
+      const button = filterBar.createEl("button", {
+        cls: `zc-timeline-filter${this.timelineFilter === filter.id ? " is-active" : ""}`,
+        text: filter.label,
+        attr: { type: "button", "aria-pressed": String(this.timelineFilter === filter.id) },
+      });
+      button.addEventListener("click", () => {
+        if (this.timelineFilter === filter.id) return;
+        this.timelineFilter = filter.id;
+        c.empty();
+        void this.timeline(c);
+      });
+    }
+
     // 显示加载状态
     const loading = container.createDiv({ cls: "zc-loading", text: "加载时间轴..." });
 
@@ -799,17 +1045,19 @@ export class ProjectConsoleView extends FileView {
       // 移除加载提示
       loading.remove();
 
-      if (!timelineData.events.length) {
+      const visibleEvents = timelineData.events.filter((event) => this.matchesTimelineFilter(event));
+
+      if (!visibleEvents.length) {
         const e = container.createDiv({ cls: "zc-empty" });
         e.createDiv({ cls: "zc-empty-icon" }).innerHTML = SVG.clock;
-        e.createDiv({ cls: "zc-empty-title", text: "暂无活动" });
-        e.createDiv({ cls: "zc-empty-sub", text: "项目活动记录将显示在这里" });
+        e.createDiv({ cls: "zc-empty-title", text: "当前分类暂无活动" });
+        e.createDiv({ cls: "zc-empty-sub", text: "编辑项目文件或创建检查点后，记录会显示在这里" });
         return;
       }
 
       // 按日期分组
-      const byDate = new Map<string, typeof timelineData.events>();
-      for (const event of timelineData.events) {
+      const byDate = new Map<string, TimelineEvent[]>();
+      for (const event of visibleEvents) {
         if (!byDate.has(event.date)) {
           byDate.set(event.date, []);
         }
@@ -831,9 +1079,18 @@ export class ProjectConsoleView extends FileView {
 
         for (const event of events) {
           const eventEl = eventList.createDiv({ cls: "zc-timeline-event" });
+          eventEl.dataset.eventType = event.type;
+          eventEl.title = new Date(event.timestamp).toLocaleString();
 
-          // 事件图标
-          const iconEl = eventEl.createDiv({ cls: "zc-timeline-icon" });
+          const time = eventEl.createDiv({
+            cls: `zc-timeline-time${event.approximateTime ? " is-approximate" : ""}`,
+            text: `${event.approximateTime ? "约 " : ""}${this.formatTimelineClock(event.timestamp)}`,
+          });
+          time.setAttribute("aria-label", eventEl.title);
+
+          // 连续轨道与事件节点
+          const rail = eventEl.createDiv({ cls: "zc-timeline-rail" });
+          const iconEl = rail.createDiv({ cls: "zc-timeline-icon" });
           iconEl.innerHTML = this.getTimelineIcon(event.type);
 
           // 事件内容
@@ -844,24 +1101,48 @@ export class ProjectConsoleView extends FileView {
             content.createDiv({ cls: "zc-timeline-desc", text: event.description });
           }
 
-          // 如果有文件路径，添加点击跳转
+          const actions = eventEl.createDiv({ cls: "zc-timeline-actions" });
           if (event.filePath) {
-            eventEl.addClass("zc-timeline-clickable");
-            eventEl.addEventListener("click", async () => {
+            const openButton = actions.createEl("button", {
+              cls: "zc-timeline-action",
+              text: "打开",
+              attr: { type: "button" },
+            });
+            openButton.addEventListener("click", async () => {
               const file = this.app.vault.getAbstractFileByPath(event.filePath!);
               if (file instanceof TFile) {
                 await this.app.workspace.getLeaf(false).openFile(file);
+              } else {
+                new Notice("文件当前不存在，可从历史版本恢复");
               }
             });
           }
+          if (event.snapshotId) {
+            const versionButton = actions.createEl("button", {
+              cls: "zc-timeline-action is-primary",
+              text: "版本详情",
+              attr: { type: "button" },
+            });
+            versionButton.addEventListener("click", () => {
+              new SnapshotDiffModal(this.app, this.services, event.snapshotId!, async () => {
+                this.services.timeline.clearCache(this.projPath);
+                await this.loadProjectData();
+                this.render();
+              }).open();
+            });
+          }
+          if (!actions.childElementCount) actions.remove();
         }
       }
 
       // 统计信息
       const statsEl = container.createDiv({ cls: "zc-timeline-stats" });
-      statsEl.createDiv({ text: `共 ${timelineData.stats.totalEvents} 个事件` });
-      statsEl.createDiv({ text: `本周 ${timelineData.stats.eventsThisWeek} 个` });
-      statsEl.createDiv({ text: `本月 ${timelineData.stats.eventsThisMonth} 个` });
+      const now = Date.now();
+      const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+      const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+      statsEl.createDiv({ text: `当前显示 ${visibleEvents.length} 个事件` });
+      statsEl.createDiv({ text: `近 7 天 ${visibleEvents.filter((event) => event.timestamp >= weekAgo).length} 个` });
+      statsEl.createDiv({ text: `近 30 天 ${visibleEvents.filter((event) => event.timestamp >= monthAgo).length} 个` });
 
     } catch (error) {
       loading.remove();
@@ -869,6 +1150,21 @@ export class ProjectConsoleView extends FileView {
       errorEl.createDiv({ text: "加载时间轴失败" });
       console.error("[ProjectConsoleView] 时间轴加载失败:", error);
     }
+  }
+
+  private matchesTimelineFilter(event: TimelineEvent): boolean {
+    if (this.timelineFilter === "all") return true;
+    if (this.timelineFilter === "files") return event.type.startsWith("file-");
+    if (this.timelineFilter === "tasks") return event.type.startsWith("task-");
+    if (this.timelineFilter === "checkpoints") return event.type === "checkpoint";
+    return ["deliverable-added", "milestone", "status-changed"].includes(event.type);
+  }
+
+  private formatTimelineClock(timestamp: number): string {
+    const date = new Date(timestamp);
+    return [date.getHours(), date.getMinutes(), date.getSeconds()]
+      .map((part) => String(part).padStart(2, "0"))
+      .join(":");
   }
 
   /** 格式化时间轴日期 */
@@ -894,10 +1190,14 @@ export class ProjectConsoleView extends FileView {
     const icons: Record<string, string> = {
       "file-created": SVG.filePlus,
       "file-modified": SVG.fileEdit,
+      "file-deleted": SVG.trash,
+      "file-restored": SVG.checkCircle,
       "task-created": SVG.plus,
       "task-completed": SVG.check,
       "deliverable-added": SVG.package,
       "milestone": SVG.flag,
+      "status-changed": SVG.flag,
+      "checkpoint": SVG.flag,
     };
     return icons[type] || SVG.circle;
   }
@@ -1060,5 +1360,15 @@ export class ProjectConsoleView extends FileView {
 }
 
 export function createDefaultConsoleData(name: string, icon: string, type: ProjectType, desc = ""): ProjectConsoleData {
-  return { name, icon, description: desc, type, createdAt: new Date().toISOString().slice(0, 10), tasks: [], deliverables: [] };
+  return {
+    name,
+    icon,
+    description: desc,
+    type,
+    status: "planning",
+    statusHistory: [],
+    createdAt: new Date().toISOString().slice(0, 10),
+    tasks: [],
+    deliverables: [],
+  };
 }

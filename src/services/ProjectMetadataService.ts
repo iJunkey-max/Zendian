@@ -11,9 +11,15 @@
 
 import { App, TFile } from "obsidian";
 import { findProjectHomeFile, getProjectSystemDirectory } from "../homepage/services/ProjectHomeFileResolver";
+import {
+  normalizeProjectStatus,
+  normalizeStatusBeforePause,
+  type ProjectStatus,
+  type ProjectStatusHistoryEntry,
+  type ResumableProjectStatus,
+} from "../homepage/project-status";
 
-/** 项目状态 */
-export type ProjectStatus = "active" | "paused" | "completed" | "archived";
+export type { ProjectStatus } from "../homepage/project-status";
 
 /** 项目优先级 */
 export type ProjectPriority = "low" | "medium" | "high" | "urgent";
@@ -68,6 +74,8 @@ export interface ProjectHomeData {
   description: string;
   type: ProjectType;
   status: ProjectStatus;
+  statusBeforePause?: ResumableProjectStatus;
+  statusHistory: ProjectStatusHistoryEntry[];
   createdAt: string;             // YYYY-MM-DD
   updatedAt?: string;            // 自动更新
 
@@ -133,8 +141,22 @@ export class ProjectMetadataService {
     const data = await this.getMetadata(projectPath);
     if (!data) throw new Error("项目元数据不存在");
 
+    const previousStatus = normalizeProjectStatus(data.status);
+    if (previousStatus === status) return;
+
+    if (status === "paused" && previousStatus !== "paused") {
+      data.statusBeforePause = previousStatus;
+    } else if (status !== "paused") {
+      data.statusBeforePause = undefined;
+    }
+
     data.status = status;
     data.updatedAt = this.getToday();
+    data.statusHistory.push({
+      from: previousStatus,
+      to: status,
+      changedAt: new Date().toISOString(),
+    });
 
     await this.save(projectPath, data);
   }
@@ -343,7 +365,8 @@ export class ProjectMetadataService {
       icon,
       description,
       type,
-      status: "active",
+      status: "planning",
+      statusHistory: [],
       createdAt: this.getToday(),
       updatedAt: this.getToday(),
       metadata: { ...DEFAULT_METADATA },
@@ -385,7 +408,15 @@ export class ProjectMetadataService {
       icon: data.icon || "lucide-folder",
       description: data.description || "",
       type: data.type || "未分类",
-      status: data.status || "active",
+      status: normalizeProjectStatus(data.status),
+      statusBeforePause: normalizeStatusBeforePause(data.statusBeforePause),
+      statusHistory: Array.isArray(data.statusHistory)
+        ? data.statusHistory.map((entry) => ({
+            ...entry,
+            from: normalizeProjectStatus(entry.from),
+            to: normalizeProjectStatus(entry.to),
+          }))
+        : [],
       createdAt: data.createdAt || this.getToday(),
       updatedAt: data.updatedAt,
       metadata: {

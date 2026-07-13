@@ -4,6 +4,12 @@
  * 包含已有 Service 依赖的类型 + 主页新增业务类型
  */
 
+import type {
+  ProjectStatus,
+  ProjectStatusHistoryEntry,
+  ResumableProjectStatus,
+} from "./project-status";
+
 // ============================================================
 // 已有 Service 依赖的类型（从各文件用法推断）
 // ============================================================
@@ -98,7 +104,7 @@ export interface HomepageProject {
   recentFiles: ProjectRecentFile[];
   pendingTasks: ProjectTask[];
   updatedAt: number;
-  status?: "active" | "paused" | "completed";
+  status: ProjectStatus;
   priority?: "high" | "medium" | "low";
   lastActiveTime?: number;
   createdTime?: number;
@@ -186,7 +192,9 @@ export interface ProjectConsoleData {
   type: ProjectType;
   createdAt: string;          // YYYY-MM-DD
   updatedAt?: string;
-  status?: "active" | "paused" | "completed" | "archived";
+  status?: ProjectStatus | "active" | "archived";
+  statusBeforePause?: ResumableProjectStatus | "active" | "archived";
+  statusHistory?: ProjectStatusHistoryEntry[];
   metadata?: {
     priority?: "urgent" | "high" | "medium" | "low";
     tags?: string[];

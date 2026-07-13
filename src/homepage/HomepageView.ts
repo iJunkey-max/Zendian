@@ -19,6 +19,7 @@ import { IconPickerModal } from "../ui/icon-picker-modal";
 import type { HomepageProject, HomepageQuickNote, RecentNoteItem } from "./types";
 import type { ProjectCategory } from "../types/settings.types";
 import { getProjectCategoryFolder, getProjectTypeColor } from "./project-categories";
+import { getProjectStatusOption, type ProjectStatus } from "./project-status";
 import { Events } from "../core/event-bus";
 import type { EventBus } from "../core/event-bus";
 import type { SettingsManager } from "../core/settings-manager";
@@ -1115,6 +1116,7 @@ export class HomepageView extends ItemView {
       text: project.type,
       attr: { style: `background: ${tagColor}18; color: ${tagColor}` },
     });
+    this.renderProjectStatusTag(nameRow, project.status);
 
     // 进度条（使用主题色）
     const progressRow = info.createDiv({ cls: "homepage-project-progress-row" });
@@ -1183,6 +1185,7 @@ export class HomepageView extends ItemView {
     headerInfo.createEl("h2", { text: project.name, cls: "hp-detail-title" });
     const metaRow = headerInfo.createDiv({ cls: "hp-detail-meta" });
     metaRow.createSpan({ cls: "hp-detail-type-tag", text: project.type, attr: { style: `background: ${tagColor}18; color: ${tagColor}` } });
+    this.renderProjectStatusTag(metaRow, project.status);
     metaRow.createSpan({ cls: "hp-detail-meta-text", text: `${project.taskDone}/${project.taskTotal} 任务完成` });
 
     // 关闭按钮
@@ -1379,6 +1382,7 @@ export class HomepageView extends ItemView {
         const iconEl = row.createDiv({ cls: "homepage-project-icon" });
         this.renderProjectIcon(iconEl, p.folderPath);
         row.createSpan({ cls: "hp-all-row-name", text: p.name });
+        this.renderProjectStatusTag(row, p.status);
         row.createSpan({ cls: "hp-all-row-progress", text: `${p.progress}%` });
         row.addEventListener("click", () => { overlay.remove(); this.openProjectDetailPanel(p); });
       }
@@ -1415,6 +1419,21 @@ export class HomepageView extends ItemView {
       const leaf = this.app.workspace.getLeaf("tab");
       await leaf.openFile(overviewFile);
     }
+  }
+
+  private renderProjectStatusTag(container: HTMLElement, projectStatus: ProjectStatus): HTMLElement {
+    const status = getProjectStatusOption(projectStatus);
+    const tag = container.createSpan({
+      cls: "zd-project-status-tag",
+      attr: {
+        "data-status": status.value,
+        title: status.description,
+        "aria-label": `项目状态：${status.label}`,
+      },
+    });
+    tag.createSpan({ cls: "zd-project-status-dot", attr: { "aria-hidden": "true" } });
+    tag.createSpan({ cls: "zd-project-status-label", text: status.label });
+    return tag;
   }
 
   /** 检查项目是否有 .home 文件 */

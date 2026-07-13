@@ -22,6 +22,7 @@ import type {
 } from "./types";
 import type { ProjectConsoleData, ProjectConsoleTask, ProjectConsoleDeliverable } from "../types";
 import type { TaskSyncService } from "../../services/TaskSyncService";
+import { normalizeProjectStatus, normalizeStatusBeforePause } from "../project-status";
 
 export class ProjectDataService {
   private cache: CacheManager;
@@ -396,6 +397,15 @@ export class ProjectDataService {
       type: data.type || "未分类",
       description: data.description || "",
       createdAt: data.createdAt || new Date().toISOString().slice(0, 10),
+      status: normalizeProjectStatus(data.status),
+      statusBeforePause: normalizeStatusBeforePause(data.statusBeforePause),
+      statusHistory: Array.isArray(data.statusHistory)
+        ? data.statusHistory.map((entry) => ({
+            ...entry,
+            from: normalizeProjectStatus(entry.from),
+            to: normalizeProjectStatus(entry.to),
+          }))
+        : [],
       tasks: data.tasks || [],
       deliverables: data.deliverables || [],
     };

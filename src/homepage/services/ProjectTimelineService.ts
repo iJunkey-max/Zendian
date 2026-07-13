@@ -1,5 +1,7 @@
 import { App, TFolder, TFile } from "obsidian";
-import { findProjectTimelineFile } from "./ProjectHomeFileResolver";
+import { findProjectHomeFile, findProjectTimelineFile } from "./ProjectHomeFileResolver";
+import type { ProjectConsoleData } from "../types";
+import { getProjectStatusOption, normalizeProjectStatus } from "../project-status";
 
 /**
  * 项目时间轴事件类型
@@ -10,7 +12,8 @@ export type TimelineEventType =
   | "file_modified"      // 文件重大修改
   | "task_completed"     // 任务完成
   | "milestone"          // 里程碑
-  | "note_added";        // 笔记添加
+  | "note_added"         // 笔记添加
+  | "status_changed";    // 项目状态变更
 
 /**
  * 时间轴事件
@@ -132,6 +135,30 @@ export class ProjectTimelineService {
           icon: "check-circle",
           color: "#10b981",
         });
+      }
+    }
+
+    // 4. 解析 .home 中的手动状态变更历史
+    const homeFile = findProjectHomeFile(this.app, projectPath);
+    if (homeFile) {
+      try {
+        const data = JSON.parse(await this.app.vault.read(homeFile)) as ProjectConsoleData;
+        for (const entry of data.statusHistory || []) {
+          const timestamp = new Date(entry.changedAt).getTime();
+          if (!Number.isFinite(timestamp)) continue;
+          const from = getProjectStatusOption(normalizeProjectStatus(entry.from));
+          const to = getProjectStatusOption(normalizeProjectStatus(entry.to));
+          events.push({
+            type: "status_changed",
+            timestamp,
+            title: `项目状态调整为${to.label}`,
+            description: `从${from.label}调整为${to.label}`,
+            icon: "refresh-cw",
+            color: "#7186d9",
+          });
+        }
+      } catch (error) {
+        console.warn(`[ProjectTimelineService] 解析状态历史失败: ${homeFile.path}`, error);
       }
     }
 

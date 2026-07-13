@@ -124,15 +124,15 @@ settings:
         title: Version
         title.zh: 版本
         type: info-text
-        description: "V2.2.14BETA"
-        description.zh: "V2.2.14BETA"
+        description: "V2.2.17Beta"
+        description.zh: "V2.2.17Beta"
     -
         id: zendian-changelog
         title: Changelog
         title.zh: 版本记录
         type: info-text
-        description: "**V2.2.14BETA** — Project Management Update<br>- Configurable project categories and per-category subfolders<br>- Improved tasks, notes, project homepage, and themed background<br>- Project icons displayed with project titles<br>**V2.2.12BETA** — Project Homepage Redesign<br>- Clear project, task, status, and activity hierarchy"
-        description.zh: "**V2.2.14BETA** — 项目管理更新<br>- 支持自定义项目分类及按分类配置项目子文件夹<br>- 优化代办、便签、项目主页与主题色背景<br>- 项目图标随项目标题显示<br>**V2.2.12BETA** — 项目主页重设计<br>- 重构项目、任务、状态和活动的信息层级"
+        description: "**V2.2.17Beta** — Project Timeline & Snapshots<br>- Precise timeline with continuous rail and event filters<br>- Lightweight project snapshots, checkpoints, diff preview, and safe file restore<br>- Manual project status and compact project homepage layout<br>**V2.2.14BETA** — Project Management Update<br>- Configurable project categories and per-category subfolders"
+        description.zh: "**V2.2.17Beta** — 项目时间轴与轻量快照<br>- 秒级时间、连续轨道与事件分类筛选<br>- 支持项目快照、检查点、差异预览和单文件安全回档<br>- 新增手动项目状态并优化项目主页紧凑布局<br>**V2.2.14BETA** — 项目管理更新<br>- 支持自定义项目分类及按分类配置项目子文件夹"
         markdown: true
 */
 `;

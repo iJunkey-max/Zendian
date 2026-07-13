@@ -30,6 +30,8 @@ export { ProjectDataService } from "./ProjectDataService";
 export { TimelineService } from "./TimelineService";
 export { StatisticsService } from "./StatisticsService";
 export { FileWatcher } from "./FileWatcher";
+export { ProjectSnapshotService } from "./ProjectSnapshotService";
+export type { SnapshotVersion, ProjectCheckpoint, SnapshotComparison } from "./ProjectSnapshotService";
 export { CacheManager } from "./CacheManager";
 export { ServiceManager, getServiceManager, destroyServiceManager } from "./ServiceManager";
 

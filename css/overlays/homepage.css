@@ -898,6 +898,7 @@
 .zendian-homepage .homepage-project-name-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.375rem;
   margin-bottom: 0.25rem;
 }
@@ -921,6 +922,70 @@
   padding: 0.0625rem 0.375rem;
   border-radius: 9999px;
   flex-shrink: 0;
+}
+
+/* 项目状态印记：主页为静态标签，项目主页复用同一语义色。 */
+.zd-project-status-tag {
+  --zd-project-status-color: #7186d9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 22px;
+  padding: 2px 8px;
+  color: var(--zd-project-status-color);
+  background: color-mix(in srgb, var(--zd-project-status-color) 11%, transparent);
+  border: 1px solid color-mix(in srgb, var(--zd-project-status-color) 28%, transparent);
+  border-radius: 999px;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.zd-project-status-tag[data-status="planning"] {
+  --zd-project-status-color: #7186d9;
+}
+
+.zd-project-status-tag[data-status="implementing"] {
+  --zd-project-status-color: var(--interactive-accent);
+}
+
+.zd-project-status-tag[data-status="reviewing"] {
+  --zd-project-status-color: #d99a32;
+}
+
+.zd-project-status-tag[data-status="completed"] {
+  --zd-project-status-color: #4faf78;
+}
+
+.zd-project-status-tag[data-status="paused"] {
+  --zd-project-status-color: #8b919b;
+}
+
+.zd-project-status-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  background: currentColor;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.zendian-homepage .homepage-project-name-row .zd-project-status-tag {
+  min-height: 18px;
+  padding: 1px 6px;
+  gap: 4px;
+  font-size: 9px;
+}
+
+.zendian-homepage .homepage-project-name-row .zd-project-status-dot {
+  width: 5px;
+  height: 5px;
+  flex-basis: 5px;
 }
 
 .zendian-homepage .homepage-project-progress-row {
