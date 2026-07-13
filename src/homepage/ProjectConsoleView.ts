@@ -28,7 +28,6 @@ import { renderTaskPriorityLabel } from "./components/TaskPriorityLabel";
 import { createTaskSchedulePicker } from "./components/TaskSchedulePicker";
 import type { SettingsManager } from "../core/settings-manager";
 import {
-  findProjectTimelineFile,
   getProjectSystemDirectory,
   LEGACY_PROJECT_CONSOLE_FOLDER,
 } from "./services/ProjectHomeFileResolver";
@@ -386,21 +385,18 @@ export class ProjectConsoleView extends FileView {
     this.data = await this.services.projectData.getProjectConsoleData(this.projPath);
     if (!this.data) return;
 
-    const hasTimeline = Boolean(findProjectTimelineFile(this.app, this.projPath));
-    if (hasTimeline) {
-      this.timelineTasks = await this.taskSyncService.getTasks(this.projPath);
-      this.data.tasks = this.timelineTasks.map((task) => ({
-        text: task.text,
-        completed: task.completed,
-        created: task.created,
-        due: task.due,
-        dueTime: task.dueTime,
-        priority: this.toDisplayPriority(task.priority),
-        tags: task.tags,
-      }));
-    } else {
-      this.timelineTasks = [];
-    }
+    this.timelineTasks = await this.taskSyncService.getTasks(this.projPath);
+    this.data.tasks = this.timelineTasks.map((task) => ({
+      id: task.id,
+      text: task.text,
+      completed: task.completed,
+      created: task.created,
+      due: task.due,
+      dueTime: task.dueTime,
+      priority: this.toDisplayPriority(task.priority),
+      tags: task.tags,
+      completedAt: task.completedAt,
+    }));
 
     // 并行加载统计和健康度数据
     [this.projectStats, this.health] = await Promise.all([
@@ -759,20 +755,19 @@ export class ProjectConsoleView extends FileView {
       return;
     }
 
-    // 排序函数：优先级 > 截止日期 > 创建时间
+    // 排序函数：紧急程度 > 截止时间 > 创建时间
     const priorityOrder: Record<string, number> = { "P0": 0, "P1": 1, "P2": 2, "P3": 3, "": 4 };
     const sortFn = (a: { t: ProjectConsoleTask; i: number }, b: { t: ProjectConsoleTask; i: number }) => {
-      // 优先级排序
-      const pa = priorityOrder[a.t.priority || ""] ?? 4;
-      const pb = priorityOrder[b.t.priority || ""] ?? 4;
+      const pa = priorityOrder[a.t.priority || "P2"];
+      const pb = priorityOrder[b.t.priority || "P2"];
       if (pa !== pb) return pa - pb;
-
-      // 截止日期排序（有截止日期的排前面）
-      if (a.t.due && !b.t.due) return -1;
-      if (!a.t.due && b.t.due) return 1;
-      if (a.t.due && b.t.due) return a.t.due.localeCompare(b.t.due);
-
-      return 0;
+      if (a.t.due && b.t.due) {
+        const dueOrder = `${a.t.due}T${a.t.dueTime || "23:59"}`.localeCompare(`${b.t.due}T${b.t.dueTime || "23:59"}`);
+        if (dueOrder !== 0) return dueOrder;
+      } else if (a.t.due || b.t.due) {
+        return a.t.due ? -1 : 1;
+      }
+      return (a.t.created || "").localeCompare(b.t.created || "") || a.t.text.localeCompare(b.t.text);
     };
 
     const pending = d.tasks.map((t, i) => ({ t, i })).filter((x) => !x.t.completed).sort(sortFn);
@@ -794,7 +789,7 @@ export class ProjectConsoleView extends FileView {
         tags: task.tags,
       });
       if (!success) {
-        new Notice("添加任务失败，请检查 Timeline.md");
+        new Notice("添加任务失败，请检查项目主页文件");
         return;
       }
       await this.loadProjectData();
@@ -811,7 +806,7 @@ export class ProjectConsoleView extends FileView {
     ck.addEventListener("click", async () => {
       const source = this.timelineTasks[i];
       if (!source) {
-        new Notice("旧版 .home 任务需要先迁移到 Timeline.md");
+        new Notice("任务数据已变化，请刷新后重试");
         return;
       }
       const success = await this.taskSyncService.toggleTask(this.projPath, source.line, source.raw);
@@ -867,7 +862,7 @@ export class ProjectConsoleView extends FileView {
     del.addEventListener("click", async () => {
       const source = this.timelineTasks[i];
       if (!source) {
-        new Notice("旧版 .home 任务需要先迁移到 Timeline.md");
+        new Notice("任务数据已变化，请刷新后重试");
         return;
       }
       const success = await this.taskSyncService.deleteTask(this.projPath, source.line, source.raw);
@@ -1370,5 +1365,7 @@ export function createDefaultConsoleData(name: string, icon: string, type: Proje
     createdAt: new Date().toISOString().slice(0, 10),
     tasks: [],
     deliverables: [],
+    overview: { markdown: desc },
+    timeline: { milestones: [] },
   };
 }

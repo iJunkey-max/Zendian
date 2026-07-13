@@ -93,7 +93,7 @@ export class EditorEnhanceModule implements IFeatureModule {
 
   private registerTypewriterExtension(s: PluginSettings["editorEnhance"]): void {
     if (!this.ctx) return;
-    if (s.focusMode && s.focusModeTypewriter) {
+    if (s.focusModeTypewriter) {
       if (!this.typewriterPlugin) {
         this.typewriterPlugin = createTypewriterPlugin();
         this.ctx.registerEditorExtension(this.typewriterPlugin);

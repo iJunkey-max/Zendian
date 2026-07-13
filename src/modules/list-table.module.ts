@@ -17,6 +17,8 @@ const CSS_VARS = [
   "--list-indent",
   "--list-spacing",
   "--table-width",
+  "--table-cell-padding",
+  "--table-margin",
   "--table-header-background-light",
   "--table-header-background-dark",
   "--checkbox-radius",
@@ -49,6 +51,8 @@ export class ListTableModule implements IFeatureModule {
     setCSSVar(document.body, "--table-header-background-light", s.tableHeaderBgLight);
     setCSSVar(document.body, "--table-header-background-dark", s.tableHeaderBgDark);
     setCSSVar(document.body, "--checkbox-radius", s.checkboxRadius);
+    setCSSVar(document.body, "--table-cell-padding", s.tableCellPadding);
+    setCSSVar(document.body, "--table-margin", s.tableMargin);
 
     this.classes.toggle("ul-marker-restore", s.ulMarkerRestore);
     this.classes.toggle("disable-alternative-checkboxes", s.disableAlternativeCheckboxes);

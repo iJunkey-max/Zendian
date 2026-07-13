@@ -17,6 +17,7 @@ const CSS_MERGE_ORDER = [
   "css/base/border-theme.css",
   "css/overlays/phycat-overlay.css",
   "css/overlays/banner.css",
+  "css/overlays/focus-clock.css",
   "css/overlays/homepage.css",
   "css/overlays/quicknote-editor.css",
   "css/overlays/console-enhanced.css", // 项目控制台增强样式

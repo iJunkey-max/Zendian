@@ -11,7 +11,7 @@
 
 import { App, TFile, TFolder } from "obsidian";
 import { CacheManager } from "./CacheManager";
-import { findProjectHomeFile, findProjectTimelineFile } from "./ProjectHomeFileResolver";
+import { findProjectHomeFile } from "./ProjectHomeFileResolver";
 import type { TimelineEvent, TimelineData, FileActivity } from "./types";
 import type { ProjectConsoleData } from "../types";
 import type { TaskSyncService } from "../../services/TaskSyncService";
@@ -225,8 +225,7 @@ export class TimelineService {
    */
   private async extractTaskEvents(projectPath: string): Promise<TimelineEvent[]> {
     const events: TimelineEvent[] = [];
-    const file = findProjectTimelineFile(this.app, projectPath);
-    if (!file || !this.taskSyncService) return events;
+    if (!this.taskSyncService) return events;
 
     try {
       const tasks = await this.taskSyncService.getTasks(projectPath);
@@ -248,20 +247,21 @@ export class TimelineService {
           });
         }
 
-        // 任务完成事件（估算）
-        if (task.completed && task.created) {
-          // 由于没有完成时间，我们假设在创建后的某个时间完成
-          // 这里使用文件的最后修改时间作为参考
+        // 任务完成事件
+        if (task.completed) {
+          const completedTime = task.completedAt
+            ? new Date(task.completedAt).getTime()
+            : new Date(task.created || Date.now()).getTime();
           events.push({
             type: "task-completed",
-            date: this.formatDate(file.stat.mtime),
-            timestamp: file.stat.mtime,
+            date: this.formatDate(completedTime),
+            timestamp: completedTime,
             title: `完成任务：${task.text}`,
             description: "任务已标记为完成",
             metadata: {
               taskText: task.text,
             },
-            approximateTime: true,
+            approximateTime: !task.completedAt,
           });
         }
       }

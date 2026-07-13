@@ -10,6 +10,8 @@
  */
 
 import { App, TFile, TFolder } from "obsidian";
+import type { EventBus } from "../core/event-bus";
+import { Events } from "../core/event-bus";
 
 /** 活动类型 */
 export type ActivityType = "note_created" | "note_edited" | "task_completed" | "file_opened";
@@ -30,6 +32,35 @@ export interface DailyActivity {
   taskCompleted: number;
   fileOpened: number;
   focusMinutes: number;            // 专注时长（分钟）
+  focusSeconds?: number;           // 专注时长（秒，精确统计；旧数据按分钟迁移）
+}
+
+export interface FocusSegment {
+  start: number;
+  end: number;
+}
+
+export interface ActiveFocusSession {
+  id: string;
+  status: "running" | "paused";
+  startedAt: number;
+  plannedSeconds: number;
+  targetLabel: string;
+  targetPath?: string;
+  segments: FocusSegment[];
+  activeSegmentStartedAt?: number;
+  breakMinutes: number;
+}
+
+export interface FocusSessionRecord {
+  id: string;
+  startedAt: number;
+  endedAt: number;
+  plannedSeconds: number;
+  focusedSeconds: number;
+  status: "completed" | "ended" | "abandoned";
+  targetLabel: string;
+  targetPath?: string;
 }
 
 /** 月度统计 */
@@ -40,6 +71,7 @@ export interface MonthlyStats {
   activeDays: number;              // 活跃天数
   consecutiveDays: number;         // 连续活跃天数
   focusHours: number;              // 专注时长（小时）
+  focusMinutes: number;            // 专注时长（分钟，保留精度）
 }
 
 /** 今日活跃度 */
@@ -53,6 +85,8 @@ export interface TodayActivity {
 interface ActivityLogData {
   dailyActivities: Record<string, DailyActivity>;  // key: YYYY-MM-DD
   lastSyncTime: number;
+  activeFocusSession?: ActiveFocusSession;
+  focusSessions?: FocusSessionRecord[];
 }
 
 export class ActivityLogService {
@@ -63,9 +97,10 @@ export class ActivityLogService {
 
   private dataPath = ".obsidian/plugins/zendian/activity-log.json";
   private saveDebounceTimer: number | null = null;
+  private statsNotifyTimer: number | null = null;
   private readonly SAVE_DEBOUNCE = 2000;  // 2 秒防抖保存
 
-  constructor(private app: App) {}
+  constructor(private app: App, private events?: EventBus) {}
 
   /** 初始化 — 加载历史数据 */
   async load(): Promise<void> {
@@ -74,6 +109,16 @@ export class ActivityLogService {
       if (file instanceof TFile) {
         const content = await this.app.vault.read(file);
         this.data = JSON.parse(content);
+        this.data.dailyActivities ??= {};
+        this.data.focusSessions ??= [];
+        for (const activity of Object.values(this.data.dailyActivities)) {
+          activity.noteCreated = Number(activity.noteCreated) || 0;
+          activity.noteEdited = Number(activity.noteEdited) || 0;
+          activity.taskCompleted = Number(activity.taskCompleted) || 0;
+          activity.fileOpened = Number(activity.fileOpened) || 0;
+          activity.focusMinutes = Number(activity.focusMinutes) || 0;
+          activity.focusSeconds ??= Math.round(activity.focusMinutes * 60);
+        }
       }
     } catch (e) {
       console.warn("[ActivityLog] 无法加载历史数据，使用空数据:", e);
@@ -98,6 +143,7 @@ export class ActivityLogService {
     }
 
     const dailyRecord = this.data.dailyActivities[today];
+    const wasActiveDay = this.isActiveDay(dailyRecord);
 
     // 更新计数
     switch (type) {
@@ -117,6 +163,7 @@ export class ActivityLogService {
 
     // 防抖保存
     this.scheduleSave();
+    if (!wasActiveDay || type === "note_created" || type === "task_completed") this.scheduleStatsNotification();
   }
 
   /** 记录专注时长（分钟） */
@@ -133,7 +180,35 @@ export class ActivityLogService {
       };
     }
     this.data.dailyActivities[today].focusMinutes += minutes;
+    this.data.dailyActivities[today].focusSeconds =
+      (this.data.dailyActivities[today].focusSeconds ?? 0) + Math.round(minutes * 60);
     this.scheduleSave();
+    this.scheduleStatsNotification();
+  }
+
+  getActiveFocusSession(): ActiveFocusSession | null {
+    return this.data.activeFocusSession ? structuredClone(this.data.activeFocusSession) : null;
+  }
+
+  setActiveFocusSession(session: ActiveFocusSession | null): void {
+    if (session) this.data.activeFocusSession = structuredClone(session);
+    else delete this.data.activeFocusSession;
+    this.scheduleSave();
+  }
+
+  recordFocusSession(record: FocusSessionRecord, segments: FocusSegment[]): void {
+    this.data.focusSessions ??= [];
+    this.data.focusSessions.push(record);
+    if (this.data.focusSessions.length > 1000) {
+      this.data.focusSessions.splice(0, this.data.focusSessions.length - 1000);
+    }
+
+    if (record.status !== "abandoned") {
+      for (const segment of segments) this.addFocusSegment(segment);
+    }
+    delete this.data.activeFocusSession;
+    this.scheduleSave();
+    this.scheduleStatsNotification();
   }
 
   /** 获取指定日期的活动 */
@@ -167,7 +242,7 @@ export class ActivityLogService {
     let editCount = 0;
     let taskCompleted = 0;
     let activeDays = 0;
-    let focusMinutes = 0;
+    let focusSeconds = 0;
 
     // 汇总本月数据
     for (const [date, activity] of Object.entries(this.data.dailyActivities)) {
@@ -175,7 +250,7 @@ export class ActivityLogService {
         noteCount += activity.noteCreated;
         editCount += activity.noteEdited;
         taskCompleted += activity.taskCompleted;
-        focusMinutes += activity.focusMinutes;
+        focusSeconds += activity.focusSeconds ?? Math.round(activity.focusMinutes * 60);
         if (this.isActiveDay(activity)) {
           activeDays++;
         }
@@ -191,7 +266,8 @@ export class ActivityLogService {
       taskCompleted,
       activeDays,
       consecutiveDays,
-      focusHours: Math.round(focusMinutes / 60),
+      focusHours: Math.round(focusSeconds / 3600),
+      focusMinutes: focusSeconds / 60,
     };
   }
 
@@ -257,14 +333,14 @@ export class ActivityLogService {
     let editCount = 0;
     let taskCompleted = 0;
     let activeDays = 0;
-    let focusMinutes = 0;
+    let focusSeconds = 0;
 
     for (const [date, activity] of Object.entries(this.data.dailyActivities)) {
       if (date >= startDate && date <= endDate) {
         noteCount += activity.noteCreated;
         editCount += activity.noteEdited;
         taskCompleted += activity.taskCompleted;
-        focusMinutes += activity.focusMinutes;
+        focusSeconds += activity.focusSeconds ?? Math.round(activity.focusMinutes * 60);
         if (this.isActiveDay(activity)) {
           activeDays++;
         }
@@ -277,7 +353,8 @@ export class ActivityLogService {
       taskCompleted,
       activeDays,
       consecutiveDays: 0,  // 上月连续天数不需要
-      focusHours: Math.round(focusMinutes / 60),
+      focusHours: Math.round(focusSeconds / 3600),
+      focusMinutes: focusSeconds / 60,
     };
   }
 
@@ -318,8 +395,40 @@ export class ActivityLogService {
     return (
       activity.noteCreated > 0 ||
       activity.noteEdited > 0 ||
-      activity.taskCompleted > 0
+      activity.taskCompleted > 0 ||
+      (activity.focusSeconds ?? activity.focusMinutes * 60) > 0
     );
+  }
+
+  private addFocusSegment(segment: FocusSegment): void {
+    let cursor = segment.start;
+    const end = Math.max(segment.start, segment.end);
+    while (cursor < end) {
+      const dayStart = new Date(cursor);
+      dayStart.setHours(0, 0, 0, 0);
+      const nextDay = new Date(dayStart);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const sliceEnd = Math.min(end, nextDay.getTime());
+      const seconds = Math.max(0, Math.round((sliceEnd - cursor) / 1000));
+      const date = this.formatDate(new Date(cursor));
+      const activity = this.ensureDailyActivity(date);
+      activity.focusSeconds = (activity.focusSeconds ?? Math.round(activity.focusMinutes * 60)) + seconds;
+      activity.focusMinutes = activity.focusSeconds / 60;
+      cursor = sliceEnd;
+    }
+  }
+
+  private ensureDailyActivity(date: string): DailyActivity {
+    this.data.dailyActivities[date] ??= {
+      date,
+      noteCreated: 0,
+      noteEdited: 0,
+      taskCompleted: 0,
+      fileOpened: 0,
+      focusMinutes: 0,
+      focusSeconds: 0,
+    };
+    return this.data.dailyActivities[date];
   }
 
   /** 计算连续活跃天数 */
@@ -354,6 +463,15 @@ export class ActivityLogService {
     }, this.SAVE_DEBOUNCE);
   }
 
+  private scheduleStatsNotification(): void {
+    if (!this.events) return;
+    if (this.statsNotifyTimer !== null) window.clearTimeout(this.statsNotifyTimer);
+    this.statsNotifyTimer = window.setTimeout(() => {
+      this.statsNotifyTimer = null;
+      this.events?.emit(Events.ACTIVITY_STATS_CHANGED);
+    }, 100);
+  }
+
   /** 保存到磁盘 */
   private async save(): Promise<void> {
     try {
@@ -383,6 +501,10 @@ export class ActivityLogService {
     if (this.saveDebounceTimer !== null) {
       window.clearTimeout(this.saveDebounceTimer);
       this.saveDebounceTimer = null;
+    }
+    if (this.statsNotifyTimer !== null) {
+      window.clearTimeout(this.statsNotifyTimer);
+      this.statsNotifyTimer = null;
     }
     await this.save();
   }

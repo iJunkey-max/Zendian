@@ -41,4 +41,5 @@ export class EventBus {
 export const Events = {
   SETTINGS_CHANGED: "settings:changed",
   THEME_CHANGED: "theme:changed",
+  ACTIVITY_STATS_CHANGED: "activity:stats-changed",
 } as const;

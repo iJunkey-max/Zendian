@@ -3080,7 +3080,7 @@ body.p-spacing-br :is(.markdown-preview-view, .markdown-rendered) p>br {
 
 /* line-height */
 body {
-    --line-height-normal: 1.5;
+    --line-height-normal: 1.7;
     --line-height-tight: 1.3;
     --line-height-customize: var(--line-height-normal);
 }
@@ -3498,8 +3498,8 @@ font[color] {
 
 /* Lists */
 body {
-    --list-indent: 2em;
-    --list-spacing: 0.075em;
+    --list-indent: 1.75em;
+    --list-spacing: 0.1em;
     --list-bullet-border: none;
     --list-bullet-radius: 50%;
     --list-bullet-size: 0.3em;

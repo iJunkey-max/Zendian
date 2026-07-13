@@ -2,6 +2,7 @@ import { App, TFile, TFolder } from "obsidian";
 
 /** 仅用于读取旧项目；新项目不再创建固定控制台子文件夹。 */
 export const LEGACY_PROJECT_CONSOLE_FOLDER = "00 控制台";
+export const PROJECT_HOME_FILENAME = "项目主页.home";
 
 function normalizeProjectPath(projectPath: string): string {
   return projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
@@ -21,6 +22,7 @@ export function findProjectHomeFile(app: App, projectPath: string, preferredName
   const projectName = preferredName?.trim() || normalizedPath.split("/").pop()?.replace(/^\d+_/, "") || "";
   const legacyPath = `${normalizedPath}/${LEGACY_PROJECT_CONSOLE_FOLDER}`;
   const direct = findFile(app, [
+    `${normalizedPath}/${PROJECT_HOME_FILENAME}`,
     projectName ? `${normalizedPath}/${projectName}.home` : "",
     `${normalizedPath}/控制台.home`,
     projectName ? `${legacyPath}/${projectName}.home` : "",
@@ -61,7 +63,5 @@ export function getProjectSystemDirectory(app: App, projectPath: string): string
   const normalizedPath = normalizeProjectPath(projectPath);
   const homeFile = findProjectHomeFile(app, normalizedPath);
   if (homeFile) return homeFile.parent?.path || normalizedPath;
-  const timeline = findProjectTimelineFile(app, normalizedPath);
-  if (timeline) return timeline.parent?.path || normalizedPath;
   return normalizedPath;
 }

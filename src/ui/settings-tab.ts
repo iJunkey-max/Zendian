@@ -330,6 +330,15 @@ const SECTION_SOURCE: TabDef[] = [
             ...toggle("focus-mode-typewriter", "打字机滚动", (s) => s.editorEnhance.focusModeTypewriter, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeTypewriter: v } }), "输入时光标始终保持在屏幕垂直中央，减少视线跳动，适合长时间沉浸式写作"),
             visible: (s) => s.editorEnhance.focusMode,
           },
+          toggle("focus-clock-enabled", "启用专注时钟", (s) => s.editorEnhance.focusClockEnabled, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusClockEnabled: v } }), "在右下角状态栏显示专注时钟入口；专注进行时仅显示计时和图标控制"),
+          { ...select("focus-clock-default-minutes", "默认专注时长", [
+            { label: "25 分钟", value: "25" },
+            { label: "50 分钟", value: "50" },
+            { label: "90 分钟", value: "90" },
+          ], (s) => String(s.editorEnhance.focusClockDefaultMinutes), (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusClockDefaultMinutes: Number(v) } }), "打开面板时预选的专注时长"), visible: (s) => s.editorEnhance.focusClockEnabled },
+          { ...slider("focus-clock-break-minutes", "默认休息时长", (s) => s.editorEnhance.focusClockBreakMinutes, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusClockBreakMinutes: v } }), 0, 30, 1, "设为 0 时，专注完成后不进入休息倒计时"), visible: (s) => s.editorEnhance.focusClockEnabled },
+          { ...toggle("focus-clock-auto-focus-mode", "计时时启用编辑器专注效果", (s) => s.editorEnhance.focusClockAutoEnableFocusMode, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusClockAutoEnableFocusMode: v } }), "只在本次计时期间临时启用，结束后恢复原状态"), visible: (s) => s.editorEnhance.focusClockEnabled },
+          { ...toggle("focus-clock-sound", "结束提示音", (s) => s.editorEnhance.focusClockSound, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusClockSound: v } }), "专注或休息倒计时结束时播放轻提示音"), visible: (s) => s.editorEnhance.focusClockEnabled },
         ],
       },
       {
@@ -350,14 +359,14 @@ const SECTION_SOURCE: TabDef[] = [
       {
         id: "page-paragraph", title: "Page & Paragraph", titleZh: "页面与段落",
         settings: [
-          slider("file-line-width", "阅读区宽度", (s) => s.typography.fileLineWidth, (s, v) => ({ typography: { ...s.typography, fileLineWidth: v } }), 400, 1600, 50, "单位 px"),
+          slider("file-line-width", "阅读区宽度", (s) => s.typography.fileLineWidth, (s, v) => ({ typography: { ...s.typography, fileLineWidth: v } }), 560, 1200, 20, "编辑与阅读共用的正文版心宽度；860px 兼顾信息密度与长文可读性"),
           toggle("editor-grid-background-pattren", "网格背景图案", (s) => s.editorEnhance.gridBackground, (s, v) => ({ editorEnhance: { ...s.editorEnhance, gridBackground: v } }), "在编辑器背景显示淡雅的网格线，营造书写纸效果"),
           { ...select("grid-background-pattern-size", "网格背景尺寸", [
             { label: "小", value: "24px" }, { label: "中", value: "36px" }, { label: "大", value: "48px" },
           ], (s) => s.editorEnhance.gridBackgroundSize, (s, v) => ({ editorEnhance: { ...s.editorEnhance, gridBackgroundSize: v } }), "选择网格密度"), visible: (s) => s.editorEnhance.gridBackground },
           toggle("text-align-justify", "段落两端对齐", (s) => s.typography.textAlignJustify, (s, v) => ({ typography: { ...s.typography, textAlignJustify: v } }), "使段落文本左右两端对齐，类似报纸排版效果"),
-          slider("letter-spacing", "字间距", (s) => s.typography.letterSpacing, (s, v) => ({ typography: { ...s.typography, letterSpacing: v } }), 0, 5, 0.5, "调整字符之间的间距，0为默认，正值增大间距"),
-          slider("line-height-customize", "段落行高", (s) => s.typography.lineHeight, (s, v) => ({ typography: { ...s.typography, lineHeight: v } }), 1, 3, 0.1, "调整段落文本的行高，值越大行距越宽松"),
+          slider("letter-spacing", "字间距", (s) => s.typography.letterSpacing, (s, v) => ({ typography: { ...s.typography, letterSpacing: v } }), 0, 1.5, 0.1, "轻微增加中英文混排行距感，默认 0.2px"),
+          slider("line-height-customize", "段落行高", (s) => s.typography.lineHeight, (s, v) => ({ typography: { ...s.typography, lineHeight: v } }), 1.4, 2.2, 0.05, "默认 1.7，在紧凑信息密度与连续阅读之间取平衡"),
           advanced(text("p-spacing", "段落间距", (s) => s.typography.paragraphSpacing, (s, v) => ({ typography: { ...s.typography, paragraphSpacing: v } }), "1em", "支持合法 CSS 长度，例如 1em 或 16px")),
           advanced(toggle("p-spacing-br", "空行也使用段落间距", (s) => s.typography.paragraphSpacingBr, (s, v) => ({ typography: { ...s.typography, paragraphSpacingBr: v } }))),
         ],
@@ -416,21 +425,25 @@ const SECTION_SOURCE: TabDef[] = [
             { label: "Solarized Light", value: "solarized-light" }, { label: "Solarized Dark", value: "solarized-dark" },
             { label: "One Dark", value: "one-dark" },
           ], (s) => s.codeBlock.theme, (s, v) => ({ codeBlock: { ...s.codeBlock, theme: v as any } }), "选择代码块的配色主题方案"),
-          slider("code-line-height", "代码行高", (s) => s.typography.codeLineHeight, (s, v) => ({ typography: { ...s.typography, codeLineHeight: v } }), 1, 3, 0.1, "调整代码块中文本的行高"),
-          slider("blockquote-line-height", "引用块行高", (s) => s.typography.blockquoteLineHeight, (s, v) => ({ typography: { ...s.typography, blockquoteLineHeight: v } }), 1, 3, 0.1, "调整引用块中文本的行高"),
+          slider("code-line-height", "代码行高", (s) => s.typography.codeLineHeight, (s, v) => ({ typography: { ...s.typography, codeLineHeight: v } }), 1.3, 2, 0.05, "编辑与阅读代码块共用，默认 1.5"),
+          slider("blockquote-line-height", "引用块行高", (s) => s.typography.blockquoteLineHeight, (s, v) => ({ typography: { ...s.typography, blockquoteLineHeight: v } }), 1.3, 2, 0.05, "默认 1.6，保持引用内容清晰但不过度膨胀"),
+          advanced(text("code-block-padding-x", "代码块水平内边距", (s) => s.codeBlock.horizontalPadding, (s, v) => ({ codeBlock: { ...s.codeBlock, horizontalPadding: v } }), "14px", "同时作用于阅读模式代码内容")),
+          advanced(text("code-block-margin", "代码块外边距", (s) => s.codeBlock.blockMargin, (s, v) => ({ codeBlock: { ...s.codeBlock, blockMargin: v } }), "0.8em 0", "控制代码块与正文的垂直距离")),
           when(advanced(color("code-background-light", "代码背景（浅色）", (s) => s.codeBlock.backgroundLight, (s, v) => ({ codeBlock: { ...s.codeBlock, backgroundLight: v } }), "留空时跟随主题")), (s) => s.codeBlock.theme === "customize"),
           when(advanced(color("code-background-dark", "代码背景（深色）", (s) => s.codeBlock.backgroundDark, (s, v) => ({ codeBlock: { ...s.codeBlock, backgroundDark: v } }), "留空时跟随主题")), (s) => s.codeBlock.theme === "customize"),
           when(advanced(color("code-border-light", "代码边框（浅色）", (s) => s.codeBlock.borderLight, (s, v) => ({ codeBlock: { ...s.codeBlock, borderLight: v } }), "留空时跟随主题")), (s) => s.codeBlock.theme === "customize"),
           when(advanced(color("code-border-dark", "代码边框（深色）", (s) => s.codeBlock.borderDark, (s, v) => ({ codeBlock: { ...s.codeBlock, borderDark: v } }), "留空时跟随主题")), (s) => s.codeBlock.theme === "customize"),
           advanced(color("blockquote-background-light", "引用背景（浅色）", (s) => s.blockquote.backgroundLight, (s, v) => ({ blockquote: { ...s.blockquote, backgroundLight: v } }), "留空时跟随主题")),
           advanced(color("blockquote-background-dark", "引用背景（深色）", (s) => s.blockquote.backgroundDark, (s, v) => ({ blockquote: { ...s.blockquote, backgroundDark: v } }), "留空时跟随主题")),
+          advanced(text("blockquote-padding", "引用块内边距", (s) => s.blockquote.padding, (s, v) => ({ blockquote: { ...s.blockquote, padding: v } }), "0.75em 1em 0.75em 2.5em")),
+          advanced(text("blockquote-margin", "引用块外边距", (s) => s.blockquote.margin, (s, v) => ({ blockquote: { ...s.blockquote, margin: v } }), "0.75em 0")),
         ],
       },
       {
         id: "list-table", title: "Lists & Tables", titleZh: "列表与表格",
         settings: [
           select("list-indent", "列表缩进", [
-            { label: "紧凑", value: "1.5em" }, { label: "标准", value: "2.25em" }, { label: "宽松", value: "3em" },
+            { label: "紧凑", value: "1.5em" }, { label: "紧凑平衡", value: "1.75em" }, { label: "标准", value: "2.25em" }, { label: "宽松", value: "3em" },
           ], (s) => s.listTable.listIndent, (s, v) => ({ listTable: { ...s.listTable, listIndent: v } })),
           slider("list-spacing", "列表间距", (s) => parseFloat(s.listTable.listSpacing) || 0.075, (s, v) => ({ listTable: { ...s.listTable, listSpacing: `${v}em` } }), 0, 1, 0.025, "设置列表项之间的垂直间距"),
           toggle("ul-marker-restore", "恢复无序列表默认样式", (s) => s.listTable.ulMarkerRestore, (s, v) => ({ listTable: { ...s.listTable, ulMarkerRestore: v } }), "将无序列表的圆点标记恢复为 Obsidian 默认样式"),
@@ -440,7 +453,9 @@ const SECTION_SOURCE: TabDef[] = [
             { label: "与行宽一致", value: "default" }, { label: "Obsidian 默认", value: "obsidian-default" }, { label: "自定义", value: "customized" },
           ], (s) => s.listTable.tableWidthMode, (s, v) => ({ listTable: { ...s.listTable, tableWidthMode: v as any } }), "选择表格宽度的计算方式"),
           { ...slider("table-width", "自定义表格宽度", (s) => s.listTable.tableWidth, (s, v) => ({ listTable: { ...s.listTable, tableWidth: v } }), 10, 100, 1, "编辑器面板宽度的百分比"), visible: (s) => s.listTable.tableWidthMode === "customized" },
-          slider("table-line-height", "表格行高", (s) => s.typography.tableLineHeight, (s, v) => ({ typography: { ...s.typography, tableLineHeight: v } }), 1, 3, 0.1, "调整表格单元格中文本的行高"),
+          slider("table-line-height", "表格行高", (s) => s.typography.tableLineHeight, (s, v) => ({ typography: { ...s.typography, tableLineHeight: v } }), 1.2, 2, 0.05, "默认 1.4，适合高密度表格"),
+          advanced(text("table-cell-padding", "表格单元格内边距", (s) => s.listTable.tableCellPadding, (s, v) => ({ listTable: { ...s.listTable, tableCellPadding: v } }), "7px 10px")),
+          advanced(text("table-margin", "表格外边距", (s) => s.listTable.tableMargin, (s, v) => ({ listTable: { ...s.listTable, tableMargin: v } }), "0.8em 0")),
           advanced(text("checkbox-radius", "复选框圆角", (s) => s.listTable.checkboxRadius, (s, v) => ({ listTable: { ...s.listTable, checkboxRadius: v } }), "6px", "支持合法 CSS 圆角值")),
           advanced(color("table-header-background-light", "表头背景（浅色）", (s) => s.listTable.tableHeaderBgLight, (s, v) => ({ listTable: { ...s.listTable, tableHeaderBgLight: v } }), "留空时跟随主题")),
           advanced(color("table-header-background-dark", "表头背景（深色）", (s) => s.listTable.tableHeaderBgDark, (s, v) => ({ listTable: { ...s.listTable, tableHeaderBgDark: v } }), "留空时跟随主题")),
@@ -456,6 +471,7 @@ const SECTION_SOURCE: TabDef[] = [
           slider("callout-border-opacity", "标注边框透明度", (s) => s.callout.borderOpacity, (s, v) => ({ callout: { ...s.callout, borderOpacity: v } }), 0, 1, 0.05, "调整标注边框的透明度，0为完全透明，1为完全不透明"),
           when(advanced(text("callout-border-width", "标注边框", (s) => s.callout.borderWidth, (s, v) => ({ callout: { ...s.callout, borderWidth: v } }), "1px", "自定义模式下使用合法 CSS 边框宽度")), (s) => s.callout.style === "customize"),
           when(advanced(text("callout-padding", "标注内边距", (s) => s.callout.padding, (s, v) => ({ callout: { ...s.callout, padding: v } }), "12px", "自定义模式下生效")), (s) => s.callout.style === "customize"),
+          when(advanced(text("callout-margin", "标注外边距", (s) => s.callout.margin, (s, v) => ({ callout: { ...s.callout, margin: v } }), "0.8em 0", "自定义模式下生效")), (s) => s.callout.style === "customize"),
           when(advanced(text("callout-title-padding", "标注标题内边距", (s) => s.callout.titlePadding, (s, v) => ({ callout: { ...s.callout, titlePadding: v } }), "8px 16px")), (s) => s.callout.style === "customize"),
           when(advanced(text("callout-title-size", "标注标题字号", (s) => s.callout.titleSize, (s, v) => ({ callout: { ...s.callout, titleSize: v } }), "inherit")), (s) => s.callout.style === "customize"),
           when(advanced(text("callout-content-padding", "标注内容内边距", (s) => s.callout.contentPadding, (s, v) => ({ callout: { ...s.callout, contentPadding: v } }), "0 16px")), (s) => s.callout.style === "customize"),
@@ -681,14 +697,14 @@ function renderHeadingTabs(
 
     if (lv !== "h1") {
       new Setting(area).setName("前间距").addSlider((sl) => {
-        sl.setLimits(0.5, 3, 0.1).setValue(h.spacingStart).setDynamicTooltip();
+        sl.setLimits(0.25, 2.5, 0.05).setValue(h.spacingStart).setDynamicTooltip();
         sl.onChange(async (v) => {
           const cur = settingsManager.getSettings();
           await settingsManager.updateMultiple({ headings: { ...cur.headings, [lv]: { ...cur.headings[lv], spacingStart: v } } });
         });
       });
       new Setting(area).setName("后间距").addSlider((sl) => {
-        sl.setLimits(0.5, 3, 0.1).setValue(h.spacingEnd).setDynamicTooltip();
+        sl.setLimits(0.25, 2.5, 0.05).setValue(h.spacingEnd).setDynamicTooltip();
         sl.onChange(async (v) => {
           const cur = settingsManager.getSettings();
           await settingsManager.updateMultiple({ headings: { ...cur.headings, [lv]: { ...cur.headings[lv], spacingEnd: v } } });

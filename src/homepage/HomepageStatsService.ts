@@ -26,7 +26,7 @@ export class HomepageStatsService {
     }
 
     // 统计文件修改时间
-    const files = this.app.vault.getFiles();
+    const files = this.app.vault.getMarkdownFiles();
     for (const file of files) {
       const mtime = file.stat.mtime;
       if (mtime >= startMs) {
@@ -36,6 +36,16 @@ export class HomepageStatsService {
     }
 
     return Array.from(counts.entries()).map(([date, count]) => ({ date, count }));
+  }
+
+  /** 获取上月创建的 Markdown 笔记数，用于真实环比。 */
+  getLastMonthNoteCount(): number {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+    const end = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    return this.app.vault.getMarkdownFiles()
+      .filter((file) => file.stat.ctime >= start && file.stat.ctime < end)
+      .length;
   }
 
   /**
@@ -48,7 +58,7 @@ export class HomepageStatsService {
     const monthStart = new Date(year, month, 1).getTime();
     const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999).getTime();
 
-    const files = this.app.vault.getFiles();
+    const files = this.app.vault.getMarkdownFiles();
     let noteCount = 0;
     let editCount = 0;
     const activeDaysSet = new Set<string>();
@@ -75,7 +85,7 @@ export class HomepageStatsService {
     return {
       noteCount,
       editCount,
-      taskCompleted: 0, // 需要扫描 vault 中的 [x] 任务
+      taskCompleted: 0, // 由 ActivityLogService 的结构化待办完成记录补充
       newTags: 0,       // 需要扫描 frontmatter 标签
       activeDays,
       consecutiveDays,
@@ -90,7 +100,7 @@ export class HomepageStatsService {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const todayEnd = todayStart + 86_400_000;
 
-    const files = this.app.vault.getFiles();
+    const files = this.app.vault.getMarkdownFiles();
     let created = 0;
     let edited = 0;
 

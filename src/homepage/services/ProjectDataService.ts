@@ -10,7 +10,8 @@
 
 import { App, TFile, TFolder } from "obsidian";
 import { CacheManager } from "./CacheManager";
-import { findProjectHomeFile } from "./ProjectHomeFileResolver";
+import { findProjectHomeFile, PROJECT_HOME_FILENAME } from "./ProjectHomeFileResolver";
+import { loadProjectHome, saveProjectHome } from "./ProjectHomeStore";
 import type {
   ProjectMetadata,
   ProjectStatistics,
@@ -62,14 +63,10 @@ export class ProjectDataService {
     }
 
     // 从文件读取
-    const file = findProjectHomeFile(this.app, projectPath);
-    if (!file) {
-      return null;
-    }
-
     try {
-      const content = await this.app.vault.read(file);
-      const data = JSON.parse(content) as ProjectConsoleData;
+      const record = await loadProjectHome(this.app, projectPath);
+      if (!record) return null;
+      const { file, data } = record;
 
       // 数据验证和规范化
       const normalized = this.normalizeConsoleData(data, projectPath);
@@ -90,13 +87,9 @@ export class ProjectDataService {
    * 保存项目控制台数据
    */
   async saveProjectConsoleData(projectPath: string, data: ProjectConsoleData): Promise<boolean> {
-    const file = findProjectHomeFile(this.app, projectPath, data.name);
-    if (!file) {
-      return false;
-    }
-
     try {
-      await this.app.vault.modify(file, JSON.stringify(data, null, 2));
+      const saved = await saveProjectHome(this.app, projectPath, data);
+      if (!saved) return false;
 
       // 使缓存失效
       this.cache.invalidate(`console:${projectPath}`);
@@ -122,7 +115,7 @@ export class ProjectDataService {
       type: data.type,
       description: data.description,
       createdAt: data.createdAt,
-      path: findProjectHomeFile(this.app, projectPath)?.path || `${projectPath}/${data.name}.home`,
+      path: findProjectHomeFile(this.app, projectPath)?.path || `${projectPath}/${PROJECT_HOME_FILENAME}`,
       folderPath: projectPath,
     };
   }
@@ -264,11 +257,15 @@ export class ProjectDataService {
     if (!data) return false;
 
     const newTask: ProjectConsoleTask = {
+      id: `task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
       text: task.text || "",
       completed: false,
       created: new Date().toISOString().slice(0, 10),
       due: task.due,
       dueTime: task.dueTime,
+      priority: task.priority,
+      tags: task.tags,
+      updatedAt: new Date().toISOString(),
     };
 
     data.tasks.push(newTask);
@@ -284,9 +281,15 @@ export class ProjectDataService {
 
     const task = data.tasks[taskIndex];
     if (updates.text !== undefined) task.text = updates.text;
-    if (updates.completed !== undefined) task.completed = updates.completed;
+    if (updates.completed !== undefined) {
+      task.completed = updates.completed;
+      task.completedAt = updates.completed ? new Date().toISOString() : undefined;
+    }
     if (updates.due !== undefined) task.due = updates.due;
     if (updates.dueTime !== undefined) task.dueTime = updates.dueTime;
+    if (updates.priority !== undefined) task.priority = updates.priority;
+    if (updates.tags !== undefined) task.tags = updates.tags;
+    task.updatedAt = new Date().toISOString();
 
     return await this.saveProjectConsoleData(projectPath, data);
   }
@@ -408,12 +411,14 @@ export class ProjectDataService {
         : [],
       tasks: data.tasks || [],
       deliverables: data.deliverables || [],
+      overview: data.overview || { markdown: "" },
+      timeline: data.timeline || { milestones: [] },
     };
   }
 
   private normalizeTask(task: ProjectConsoleTask, index: number): TaskData {
     return {
-      id: `task-${index}`,
+      id: task.id || `task-${index}`,
       text: task.text,
       completed: task.completed,
       created: task.created || "",

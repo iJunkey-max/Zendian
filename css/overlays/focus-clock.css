@@ -1,0 +1,387 @@
+/* ZENdian Focus Clock — 状态栏专注光圈与轻量浮层 */
+
+.zendian-focus-clock-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  padding: 0 2px;
+  color: var(--text-muted);
+}
+
+.zendian-focus-clock-status.is-hidden {
+  display: none;
+}
+
+.zendian-focus-clock-status button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 22px;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.zendian-focus-clock-status button:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.zendian-focus-clock-status button:focus-visible,
+.zendian-focus-clock-panel button:focus-visible,
+.zendian-focus-clock-panel input:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.zendian-focus-clock-status svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.9;
+}
+
+.zendian-focus-clock-time {
+  position: relative;
+  gap: 5px;
+  min-width: 68px !important;
+  padding: 0 6px 0 5px !important;
+  color: var(--text-normal) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.zendian-focus-clock-time::before {
+  position: absolute;
+  inset: 2px;
+  border-radius: 6px;
+  background: conic-gradient(
+    from -90deg,
+    color-mix(in srgb, var(--interactive-accent) 35%, transparent) var(--zd-focus-progress),
+    transparent 0
+  );
+  opacity: 0.28;
+  content: "";
+  pointer-events: none;
+}
+
+.zendian-focus-clock-time > * {
+  position: relative;
+}
+
+.zendian-focus-clock-time-text {
+  min-width: 38px;
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+}
+
+.zendian-focus-clock-entry.is-complete {
+  color: var(--color-green);
+}
+
+body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .status-bar {
+  height: 24px;
+  opacity: 1;
+}
+
+body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-main-container {
+  padding-bottom: 24px;
+}
+
+.zendian-focus-clock-panel {
+  --zd-focus-panel-accent: var(--interactive-accent);
+  position: fixed;
+  z-index: var(--layer-popover, 1000);
+  width: min(340px, calc(100vw - 24px));
+  padding: 14px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 16px;
+  color: var(--text-normal);
+  background:
+    radial-gradient(circle at 50% 22%, color-mix(in srgb, var(--zd-focus-panel-accent) 9%, transparent), transparent 38%),
+    var(--background-primary);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.18), 0 3px 12px rgb(0 0 0 / 0.1);
+  animation: zendian-focus-clock-in 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.zendian-focus-clock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+}
+
+.zendian-focus-clock-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.zendian-focus-clock-title svg {
+  width: 15px;
+  height: 15px;
+  color: var(--zd-focus-panel-accent);
+}
+
+.zendian-focus-clock-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.zendian-focus-clock-header button:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.zendian-focus-clock-dial {
+  position: relative;
+  display: grid;
+  place-content: center;
+  width: 152px;
+  height: 152px;
+  margin: 14px auto 16px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -90deg,
+    var(--zd-focus-panel-accent) var(--zd-focus-progress),
+    color-mix(in srgb, var(--text-muted) 13%, transparent) 0
+  );
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--zd-focus-panel-accent) 13%, transparent);
+}
+
+.zendian-focus-clock-dial::before {
+  position: absolute;
+  inset: 7px;
+  border-radius: inherit;
+  background: var(--background-primary);
+  content: "";
+}
+
+.zendian-focus-clock-dial::after {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  width: 3px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--zd-focus-panel-accent);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.zendian-focus-clock-dial.is-break {
+  --zd-focus-panel-accent: var(--color-cyan);
+}
+
+.zendian-focus-clock-dial-time,
+.zendian-focus-clock-dial-label {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.zendian-focus-clock-dial-time {
+  font-family: var(--font-monospace);
+  font-size: 31px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.045em;
+}
+
+.zendian-focus-clock-dial-label {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.zendian-focus-clock-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.zendian-focus-clock-presets button,
+.zendian-focus-clock-presets input {
+  width: 100%;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 9px;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  box-shadow: none;
+  text-align: center;
+}
+
+.zendian-focus-clock-presets button {
+  cursor: pointer;
+}
+
+.zendian-focus-clock-presets button:hover,
+.zendian-focus-clock-presets button.is-selected {
+  border-color: color-mix(in srgb, var(--zd-focus-panel-accent) 54%, var(--background-modifier-border));
+  color: var(--text-normal);
+  background: color-mix(in srgb, var(--zd-focus-panel-accent) 10%, var(--background-secondary));
+}
+
+.zendian-focus-clock-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.zendian-focus-clock-field label {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.zendian-focus-clock-field input {
+  width: 100%;
+  height: 38px;
+  padding: 0 11px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+  box-shadow: none;
+}
+
+.zendian-focus-clock-break-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.zendian-focus-clock-break-row > input[type="number"] {
+  width: 48px;
+  height: 28px;
+  margin-left: auto;
+  padding: 0 5px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 7px;
+  background: var(--background-secondary);
+  text-align: center;
+}
+
+.zendian-focus-clock-unit {
+  font-size: 11px;
+}
+
+.zendian-focus-clock-primary,
+.zendian-focus-clock-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  border: 0;
+  border-radius: 11px;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.zendian-focus-clock-primary {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+.zendian-focus-clock-primary:hover {
+  background: var(--interactive-accent-hover);
+}
+
+.zendian-focus-clock-secondary {
+  color: var(--text-normal);
+  background: var(--background-secondary);
+}
+
+.zendian-focus-clock-target {
+  overflow: hidden;
+  margin: -4px 12px 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zendian-focus-clock-detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.zendian-focus-clock-detail-actions button,
+.zendian-focus-clock-confirm-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 9px;
+  color: var(--text-normal);
+  background: var(--background-secondary);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.zendian-focus-clock-confirm {
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--background-secondary-alt);
+}
+
+.zendian-focus-clock-confirm-title {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.zendian-focus-clock-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.zendian-focus-clock-confirm-actions button.is-primary {
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+@keyframes zendian-focus-clock-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zendian-focus-clock-panel { animation: none; }
+}

@@ -1,6 +1,6 @@
 {
   "name": "zendian",
-  "version": "3.0.01",
+  "version": "3.0.02",
   "description": "A personal knowledge and project workspace for Obsidian.",
   "main": "dist/main.js",
   "scripts": {

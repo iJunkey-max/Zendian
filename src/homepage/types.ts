@@ -43,30 +43,6 @@ export interface HomepageDailyNoteSummary {
   source: string;
 }
 
-/** 任务项 */
-export interface HomepageTaskItem {
-  text: string;
-  filePath: string;
-  fileName: string;
-  line: number;
-  completed: boolean;
-  mtime: number;
-}
-
-/** 任务扫描设置 */
-export interface HomepageTaskRadarSettings {
-  excludeFolders: string[];
-  includeCompleted: boolean;
-  limit: number;
-}
-
-/** 任务扫描结果 */
-export interface HomepageTaskRadarResult {
-  scannedFiles: number;
-  matchedFiles: number;
-  items: HomepageTaskItem[];
-}
-
 // ============================================================
 // 主页新增业务类型
 // ============================================================
@@ -88,6 +64,7 @@ export interface ProjectTask {
   created?: string;
   due?: string;
   dueTime?: string;
+  priority?: TaskPriority;
   line: number;
 }
 
@@ -204,6 +181,15 @@ export interface ProjectConsoleData {
   };
   tasks: ProjectConsoleTask[];
   deliverables: ProjectConsoleDeliverable[];
+  overview?: {
+    markdown: string;
+    migratedAt?: string;
+  };
+  timeline?: {
+    milestones: ProjectConsoleMilestone[];
+    legacyMarkdown?: string;
+    migratedAt?: string;
+  };
 }
 
 /** 任务优先级 */
@@ -219,6 +205,7 @@ export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
 
 /** 控制台任务 */
 export interface ProjectConsoleTask {
+  id?: string;
   text: string;
   completed: boolean;
   created?: string;           // YYYY-MM-DD
@@ -228,6 +215,16 @@ export interface ProjectConsoleTask {
   tags?: string[];            // 标签
   subtasks?: ProjectConsoleSubtask[]; // 子任务
   progress?: number;          // 进度 0-100（用于多步骤任务）
+  completedAt?: string;       // ISO 时间
+  updatedAt?: string;         // ISO 时间
+}
+
+export interface ProjectConsoleMilestone {
+  id: string;
+  name: string;
+  date: string;
+  progress: number;
+  completed: boolean;
 }
 
 /** 子任务 */

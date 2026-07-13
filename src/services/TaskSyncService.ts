@@ -1,35 +1,32 @@
 /**
- * TaskSyncService — 任务同步服务
+ * TaskSyncService — 项目主页结构化待办服务
  *
- * 功能：
- * - 从 Timeline.md 解析任务（支持 @due、@priority 标记）
- * - 修改 Timeline.md 文件（勾选/取消勾选任务）
- * - 提供统一的任务数据接口
- *
- * 数据来源：新项目根目录 Timeline.md；兼容旧项目 00 控制台/Timeline.md
+ * 任务只读写 `项目主页.home` 的 tasks 数组。旧 Timeline.md 会在首次读取时
+ * 由 ProjectHomeStore 安全迁入项目主页，之后不再扫描项目 Markdown 文件。
  */
 
-import { App, TFile, TFolder } from "obsidian";
-import { findProjectTimelineFile } from "../homepage/services/ProjectHomeFileResolver";
+import { App } from "obsidian";
+import type { ProjectConsoleTask, TaskPriority as HomeTaskPriority } from "../homepage/types";
+import { loadProjectHome, saveProjectHome } from "../homepage/services/ProjectHomeStore";
+import type { ActivityLogService } from "./ActivityLogService";
 
-/** 任务优先级 */
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 
-/** 任务数据结构 */
 export interface Task {
-  text: string;                  // 任务文本（去除标记后）
+  id: string;
+  text: string;
   completed: boolean;
-  created?: string;              // YYYY-MM-DD
-  due?: string;                  // YYYY-MM-DD
-  dueTime?: string;              // HH:mm
+  created?: string;
+  due?: string;
+  dueTime?: string;
   priority?: TaskPriority;
   tags?: string[];
-  line: number;                  // 所在行号（0-based）
-  raw: string;                   // 原始行内容
-  projectPath: string;           // 所属项目路径
+  completedAt?: string;
+  line: number;                  // tasks 数组索引，保留旧调用接口
+  raw: string;                   // 稳定任务 ID，用于并发校验
+  projectPath: string;
 }
 
-/** 任务统计 */
 export interface TaskStats {
   total: number;
   completed: number;
@@ -38,106 +35,63 @@ export interface TaskStats {
   todayDue: number;
 }
 
-const TASK_REGEX = /^- \[([ xX])\] (.+)$/;
+const TO_STORAGE_PRIORITY: Record<TaskPriority, HomeTaskPriority> = {
+  urgent: "P0",
+  high: "P1",
+  medium: "P2",
+  low: "P3",
+};
+
+const FROM_STORAGE_PRIORITY: Record<HomeTaskPriority, TaskPriority> = {
+  P0: "urgent",
+  P1: "high",
+  P2: "medium",
+  P3: "low",
+};
+
+const PRIORITY_ORDER: Record<TaskPriority, number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
 
 export class TaskSyncService {
-  constructor(private app: App) {}
+  constructor(private app: App, private activityLog?: ActivityLogService) {}
 
-  /**
-   * 获取项目的所有任务
-   * @param projectPath 项目根目录路径
-   * @returns 任务列表
-   */
   async getTasks(projectPath: string): Promise<Task[]> {
-    const timelineFile = this.findTimelineFile(projectPath);
-    if (!timelineFile) return [];
-
-    try {
-      const content = await this.app.vault.read(timelineFile);
-      return this.parseTimeline(content, projectPath);
-    } catch (e) {
-      console.error(`[TaskSync] 读取 Timeline 失败: ${timelineFile.path}`, e);
-      return [];
-    }
+    const record = await loadProjectHome(this.app, projectPath);
+    if (!record) return [];
+    return record.data.tasks.map((task, index) => this.toTask(task, index, projectPath));
   }
 
-  /**
-   * 获取项目的任务统计
-   */
   async getTaskStats(projectPath: string): Promise<TaskStats> {
     const tasks = await this.getTasks(projectPath);
     const today = this.getToday();
-
-    let completed = 0;
-    let overdue = 0;
-    let todayDue = 0;
-
-    for (const task of tasks) {
-      if (task.completed) {
-        completed++;
-      } else {
-        if (task.due) {
-          if (task.due < today) overdue++;
-          if (task.due === today) todayDue++;
-        }
-      }
-    }
-
+    const completed = tasks.filter((task) => task.completed).length;
     return {
       total: tasks.length,
       completed,
       pending: tasks.length - completed,
-      overdue,
-      todayDue,
+      overdue: tasks.filter((task) => !task.completed && task.due && task.due < today).length,
+      todayDue: tasks.filter((task) => !task.completed && task.due === today).length,
     };
   }
 
-  /**
-   * 切换任务完成状态
-   * @param projectPath 项目路径
-   * @param lineNumber 任务所在行号（0-based）
-   * @returns 是否成功
-   */
   async toggleTask(projectPath: string, lineNumber: number, expectedRaw?: string): Promise<boolean> {
-    const timelineFile = this.findTimelineFile(projectPath);
-    if (!timelineFile) return false;
-
-    try {
-      const content = await this.app.vault.read(timelineFile);
-      const lines = content.split("\n");
-
-      if (lineNumber < 0 || lineNumber >= lines.length) {
-        return false;
-      }
-
-      const line = lines[lineNumber];
-      if (expectedRaw !== undefined && line !== expectedRaw) {
-        return false;
-      }
-      const match = line.match(TASK_REGEX);
-
-      if (!match) return false;
-
-      // 切换状态
-      const isCompleted = match[1].toLowerCase() === "x";
-      const newStatus = isCompleted ? " " : "x";
-      lines[lineNumber] = line.replace(/^- \[[ xX]\]/, `- [${newStatus}]`);
-
-      await this.app.vault.modify(timelineFile, lines.join("\n"));
-      return true;
-    } catch (e) {
-      console.error(`[TaskSync] 切换任务失败: ${projectPath}:${lineNumber}`, e);
-      return false;
-    }
+    const record = await loadProjectHome(this.app, projectPath);
+    if (!record) return false;
+    const index = this.resolveTaskIndex(record.data.tasks, lineNumber, expectedRaw);
+    if (index < 0) return false;
+    const task = record.data.tasks[index];
+    task.completed = !task.completed;
+    task.completedAt = task.completed ? new Date().toISOString() : undefined;
+    task.updatedAt = new Date().toISOString();
+    const saved = await saveProjectHome(this.app, projectPath, record.data);
+    if (saved && task.completed) this.activityLog?.logActivity("task_completed", projectPath, { taskId: task.id });
+    return saved;
   }
 
-  /**
-   * 添加新任务
-   * @param projectPath 项目路径
-   * @param text 任务文本
-   * @param options 可选参数（截止日期、优先级等）
-   * @returns 是否成功
-   */
   async addTask(
     projectPath: string,
     text: string,
@@ -147,244 +101,108 @@ export class TaskSyncService {
       priority?: TaskPriority;
       created?: string;
       tags?: string[];
-    }
+    },
   ): Promise<boolean> {
-    const timelineFile = this.findTimelineFile(projectPath);
-    if (!timelineFile) return false;
-
-    try {
-      const content = await this.app.vault.read(timelineFile);
-      const lines = content.split("\n");
-
-      // 构造任务行
-      let taskLine = `- [ ] ${text}`;
-
-      if (options?.created) {
-        taskLine += ` @created(${options.created})`;
-      }
-
-      if (options?.due) {
-        taskLine += ` @due(${options.due})`;
-      }
-
-      if (options?.dueTime) {
-        taskLine += ` @time(${options.dueTime})`;
-      }
-
-      if (options?.priority) {
-        taskLine += ` @priority(${options.priority})`;
-      }
-      if (options?.tags?.length) {
-        taskLine += ` @tags(${options.tags.join(",")})`;
-      }
-
-      // 找到合适的插入位置（在第一个任务块的末尾）
-      let insertIndex = lines.length;
-      let inTaskBlock = false;
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line.match(TASK_REGEX)) {
-          inTaskBlock = true;
-        } else if (inTaskBlock && line === "") {
-          insertIndex = i;
-          break;
-        }
-      }
-
-      lines.splice(insertIndex, 0, taskLine);
-
-      await this.app.vault.modify(timelineFile, lines.join("\n"));
-      return true;
-    } catch (e) {
-      console.error(`[TaskSync] 添加任务失败: ${projectPath}`, e);
-      return false;
-    }
+    const cleanText = text.trim();
+    if (!cleanText) return false;
+    const record = await loadProjectHome(this.app, projectPath);
+    if (!record) return false;
+    const now = new Date();
+    const task: ProjectConsoleTask = {
+      id: `task-${now.getTime().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      text: cleanText,
+      completed: false,
+      created: options?.created || now.toISOString().slice(0, 10),
+      due: options?.due,
+      dueTime: options?.dueTime,
+      priority: options?.priority ? TO_STORAGE_PRIORITY[options.priority] : "P2",
+      tags: options?.tags?.map((tag) => tag.trim()).filter(Boolean),
+      updatedAt: now.toISOString(),
+    };
+    record.data.tasks.push(task);
+    record.data.updatedAt = now.toISOString().slice(0, 10);
+    return saveProjectHome(this.app, projectPath, record.data);
   }
 
-  /**
-   * 删除任务
-   * @param projectPath 项目路径
-   * @param lineNumber 任务所在行号（0-based）
-   * @returns 是否成功
-   */
   async deleteTask(projectPath: string, lineNumber: number, expectedRaw?: string): Promise<boolean> {
-    const timelineFile = this.findTimelineFile(projectPath);
-    if (!timelineFile) return false;
-
-    try {
-      const content = await this.app.vault.read(timelineFile);
-      const lines = content.split("\n");
-
-      if (lineNumber < 0 || lineNumber >= lines.length) {
-        return false;
-      }
-      if (expectedRaw !== undefined && lines[lineNumber] !== expectedRaw) {
-        return false;
-      }
-
-      lines.splice(lineNumber, 1);
-
-      await this.app.vault.modify(timelineFile, lines.join("\n"));
-      return true;
-    } catch (e) {
-      console.error(`[TaskSync] 删除任务失败: ${projectPath}:${lineNumber}`, e);
-      return false;
-    }
+    const record = await loadProjectHome(this.app, projectPath);
+    if (!record) return false;
+    const index = this.resolveTaskIndex(record.data.tasks, lineNumber, expectedRaw);
+    if (index < 0) return false;
+    record.data.tasks.splice(index, 1);
+    record.data.updatedAt = new Date().toISOString().slice(0, 10);
+    return saveProjectHome(this.app, projectPath, record.data);
   }
 
-  /**
-   * 解析 Timeline.md 文件内容
-   */
-  parseTimeline(content: string, projectPath: string): Task[] {
-    const tasks: Task[] = [];
-    const lines = content.split("\n");
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const match = line.match(TASK_REGEX);
-
-      if (!match) continue;
-
-      const completed = match[1].toLowerCase() === "x";
-      let text = match[2].trim();
-
-      // 解析标记
-      let created: string | undefined;
-      let due: string | undefined;
-      let dueTime: string | undefined;
-      let priority: TaskPriority | undefined;
-      let tags: string[] | undefined;
-
-      // 提取 @created(date)
-      const createdMatch = text.match(/@created\(([^)]+)\)/);
-      if (createdMatch) {
-        created = createdMatch[1];
-        text = text.replace(createdMatch[0], "").trim();
-      }
-
-      // 提取 @due(date)
-      const dueMatch = text.match(/@due\(([^)]+)\)/);
-      if (dueMatch) {
-        due = dueMatch[1];
-        text = text.replace(dueMatch[0], "").trim();
-      }
-
-      // 提取 @time(HH:mm)
-      const dueTimeMatch = text.match(/@time\(((?:[01]\d|2[0-3]):[0-5]\d)\)/);
-      if (dueTimeMatch) {
-        dueTime = dueTimeMatch[1];
-        text = text.replace(dueTimeMatch[0], "").trim();
-      }
-
-      // 提取 @priority(level)
-      const priorityMatch = text.match(/@priority\((low|medium|high|urgent)\)/);
-      if (priorityMatch) {
-        priority = priorityMatch[1] as TaskPriority;
-        text = text.replace(priorityMatch[0], "").trim();
-      }
-
-      const tagsMatch = text.match(/@tags\(([^)]*)\)/);
-      if (tagsMatch) {
-        tags = tagsMatch[1].split(",").map((tag) => tag.trim()).filter(Boolean);
-        text = text.replace(tagsMatch[0], "").trim();
-      }
-
-      tasks.push({
-        text,
-        completed,
-        created,
-        due,
-        dueTime,
-        priority,
-        tags,
-        line: i,
-        raw: line,
-        projectPath,
-      });
-    }
-
-    return tasks;
-  }
-
-  /**
-   * 获取所有项目的任务（用于主页待办汇总）
-   * @param projectPaths 项目路径列表
-   * @returns 所有任务列表
-   */
   async getAllTasks(projectPaths: string[]): Promise<Task[]> {
-    const taskGroups = await Promise.all(projectPaths.map((projectPath) => this.getTasks(projectPath)));
-    return taskGroups.flat();
+    return (await Promise.all(projectPaths.map((path) => this.getTasks(path)))).flat();
   }
 
-  /**
-   * 过滤今天截止的任务
-   */
   filterTodayDue(tasks: Task[]): Task[] {
     const today = this.getToday();
-    return tasks.filter((t) => !t.completed && t.due === today);
+    return tasks.filter((task) => !task.completed && task.due === today);
   }
 
-  /**
-   * 过滤本周截止的任务
-   */
   filterWeekDue(tasks: Task[]): Task[] {
     const today = new Date();
-    const todayDate = this.formatDate(today);
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
-    const endDate = this.formatDate(endOfWeek);
-
-    return tasks.filter((t) => !t.completed && t.due && t.due >= todayDate && t.due <= endDate);
+    const startDate = this.formatDate(today);
+    const end = new Date(today);
+    end.setDate(today.getDate() + (7 - today.getDay()));
+    const endDate = this.formatDate(end);
+    return tasks.filter((task) => !task.completed && task.due && task.due >= startDate && task.due <= endDate);
   }
 
-  /**
-   * 过滤逾期任务
-   */
   filterOverdue(tasks: Task[]): Task[] {
     const today = this.getToday();
-    return tasks.filter((t) => !t.completed && t.due && t.due < today);
+    return tasks.filter((task) => !task.completed && task.due && task.due < today);
   }
 
-  /**
-   * 按优先级排序
-   */
+  /** 紧急程度优先；同级按截止时间；同级且无截止时间时按创建时间。 */
+  sortTasks(tasks: Task[]): Task[] {
+    return [...tasks].sort((a, b) => {
+      const priorityOrder = PRIORITY_ORDER[a.priority || "medium"] - PRIORITY_ORDER[b.priority || "medium"];
+      if (priorityOrder !== 0) return priorityOrder;
+      if (a.due && b.due) {
+        const dueOrder = `${a.due}T${a.dueTime || "23:59"}`.localeCompare(`${b.due}T${b.dueTime || "23:59"}`);
+        if (dueOrder !== 0) return dueOrder;
+      } else if (a.due || b.due) {
+        return a.due ? -1 : 1;
+      }
+      return (a.created || "").localeCompare(b.created || "") || a.text.localeCompare(b.text);
+    });
+  }
+
   sortByPriority(tasks: Task[]): Task[] {
-    const priorityOrder: Record<TaskPriority, number> = {
-      urgent: 0,
-      high: 1,
-      medium: 2,
-      low: 3,
-    };
-
-    return tasks.sort((a, b) => {
-      const aPriority = a.priority || "medium";
-      const bPriority = b.priority || "medium";
-      return priorityOrder[aPriority] - priorityOrder[bPriority];
-    });
+    return [...tasks].sort((a, b) =>
+      PRIORITY_ORDER[a.priority || "medium"] - PRIORITY_ORDER[b.priority || "medium"],
+    );
   }
 
-  /**
-   * 按截止日期排序
-   */
   sortByDue(tasks: Task[]): Task[] {
-    return tasks.sort((a, b) => {
-      if (!a.due && !b.due) return 0;
-      if (!a.due) return 1;
-      if (!b.due) return -1;
-      const dateOrder = a.due.localeCompare(b.due);
-      if (dateOrder !== 0) return dateOrder;
-      return (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
-    });
+    return this.sortTasks(tasks);
   }
 
-  // ══════════════════════════════════════════════════════════
-  // 私有方法
-  // ══════════════════════════════════════════════════════════
+  private toTask(task: ProjectConsoleTask, index: number, projectPath: string): Task {
+    const id = task.id || `task-${index}`;
+    return {
+      id,
+      text: task.text,
+      completed: Boolean(task.completed),
+      created: task.created,
+      due: task.due,
+      dueTime: task.dueTime,
+      priority: task.priority ? FROM_STORAGE_PRIORITY[task.priority] : undefined,
+      tags: task.tags,
+      completedAt: task.completedAt,
+      line: index,
+      raw: id,
+      projectPath,
+    };
+  }
 
-  /** 查找项目的 Timeline.md 文件 */
-  private findTimelineFile(projectPath: string): TFile | null {
-    return findProjectTimelineFile(this.app, projectPath);
+  private resolveTaskIndex(tasks: ProjectConsoleTask[], fallbackIndex: number, expectedId?: string): number {
+    if (expectedId) return tasks.findIndex((task) => task.id === expectedId);
+    return fallbackIndex >= 0 && fallbackIndex < tasks.length ? fallbackIndex : -1;
   }
 
   private getToday(): string {

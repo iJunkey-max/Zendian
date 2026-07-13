@@ -19,6 +19,7 @@ const CSS_VARS = [
   "--callout-border-width",
   "--callout-border-opacity",
   "--callout-padding",
+  "--callout-margin",
   "--callout-title-padding",
   "--callout-title-size",
   "--callout-content-padding",
@@ -53,6 +54,7 @@ export class CalloutModule implements IFeatureModule {
     const customVars: Array<[string, string]> = [
       ["--callout-border-width", s.borderWidth],
       ["--callout-padding", s.padding],
+      ["--callout-margin", s.margin],
       ["--callout-title-padding", s.titlePadding],
       ["--callout-title-size", s.titleSize],
       ["--callout-content-padding", s.contentPadding],

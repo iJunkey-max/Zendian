@@ -1,6 +1,5 @@
 import { App, TFolder, TFile } from "obsidian";
-import { findProjectHomeFile, findProjectTimelineFile } from "./ProjectHomeFileResolver";
-import type { ProjectConsoleData } from "../types";
+import { loadProjectHome } from "./ProjectHomeStore";
 import { getProjectStatusOption, normalizeProjectStatus } from "../project-status";
 
 /**
@@ -108,57 +107,49 @@ export class ProjectTimelineService {
       }
     }
 
-    // 3. 解析 Timeline.md 中的里程碑和任务完成
-    const timelineFile = findProjectTimelineFile(this.app, projectPath);
-    if (timelineFile) {
-      const content = await this.app.vault.read(timelineFile);
-      const milestones = this.extractMilestones(content);
-      const completedTasks = this.extractCompletedTasks(content);
-
-      for (const ms of milestones) {
+    // 3. 从项目主页读取里程碑、任务完成记录与状态历史
+    const homeRecord = await loadProjectHome(this.app, projectPath);
+    if (homeRecord) {
+      const { data, file } = homeRecord;
+      for (const ms of data.timeline?.milestones || []) {
         events.push({
           type: "milestone",
           timestamp: this.parseDateToTimestamp(ms.date),
           title: ms.name,
           description: `进度 ${ms.progress}%`,
           icon: "flag",
-          color: ms.isCompleted ? "#10b981" : "#8b5cf6",
+          color: ms.completed ? "#10b981" : "#8b5cf6",
         });
       }
 
-      for (const task of completedTasks) {
+      for (const task of data.tasks.filter((item) => item.completed)) {
+        const timestamp = task.completedAt
+          ? new Date(task.completedAt).getTime()
+          : new Date(task.updatedAt || task.due || task.created || data.createdAt).getTime();
+        if (!Number.isFinite(timestamp)) continue;
         events.push({
           type: "task_completed",
-          timestamp: task.timestamp,
+          timestamp,
           title: task.text,
-          filePath: timelineFile.path,
+          filePath: file.path,
           icon: "check-circle",
           color: "#10b981",
         });
       }
-    }
 
-    // 4. 解析 .home 中的手动状态变更历史
-    const homeFile = findProjectHomeFile(this.app, projectPath);
-    if (homeFile) {
-      try {
-        const data = JSON.parse(await this.app.vault.read(homeFile)) as ProjectConsoleData;
-        for (const entry of data.statusHistory || []) {
-          const timestamp = new Date(entry.changedAt).getTime();
-          if (!Number.isFinite(timestamp)) continue;
-          const from = getProjectStatusOption(normalizeProjectStatus(entry.from));
-          const to = getProjectStatusOption(normalizeProjectStatus(entry.to));
-          events.push({
-            type: "status_changed",
-            timestamp,
-            title: `项目状态调整为${to.label}`,
-            description: `从${from.label}调整为${to.label}`,
-            icon: "refresh-cw",
-            color: "#7186d9",
-          });
-        }
-      } catch (error) {
-        console.warn(`[ProjectTimelineService] 解析状态历史失败: ${homeFile.path}`, error);
+      for (const entry of data.statusHistory || []) {
+        const timestamp = new Date(entry.changedAt).getTime();
+        if (!Number.isFinite(timestamp)) continue;
+        const from = getProjectStatusOption(normalizeProjectStatus(entry.from));
+        const to = getProjectStatusOption(normalizeProjectStatus(entry.to));
+        events.push({
+          type: "status_changed",
+          timestamp,
+          title: `项目状态调整为${to.label}`,
+          description: `从${from.label}调整为${to.label}`,
+          icon: "refresh-cw",
+          color: "#7186d9",
+        });
       }
     }
 
@@ -170,11 +161,13 @@ export class ProjectTimelineService {
    * 获取项目里程碑
    */
   async getProjectMilestones(projectPath: string): Promise<ProjectMilestone[]> {
-    const file = findProjectTimelineFile(this.app, projectPath);
-    if (!file) return [];
-
-    const content = await this.app.vault.read(file);
-    return this.extractMilestones(content);
+    const record = await loadProjectHome(this.app, projectPath);
+    return (record?.data.timeline?.milestones || []).map((milestone) => ({
+      name: milestone.name,
+      date: milestone.date,
+      progress: milestone.progress,
+      isCompleted: milestone.completed,
+    }));
   }
 
   /**
@@ -195,6 +188,7 @@ export class ProjectTimelineService {
     }
 
     const allFiles = this.getAllMarkdownFiles(folder);
+    const homeRecord = await loadProjectHome(this.app, projectPath);
     let totalWords = 0;
     let totalTasks = 0;
     let completedTasks = 0;
@@ -204,11 +198,6 @@ export class ProjectTimelineService {
       const content = await this.app.vault.read(file);
       totalWords += this.countWords(content);
 
-      // 统计任务
-      const taskMatches = content.match(/- \[[ x]\]/g) || [];
-      totalTasks += taskMatches.length;
-      completedTasks += (content.match(/- \[x\]/gi) || []).length;
-
       // 记录活跃日期
       const dateStr = new Date(file.stat.mtime).toISOString().split("T")[0];
       activeDates.add(dateStr);
@@ -216,9 +205,12 @@ export class ProjectTimelineService {
 
     const lastActiveFile = allFiles.sort((a, b) => b.stat.mtime - a.stat.mtime)[0];
 
+    totalTasks = homeRecord?.data.tasks.length || 0;
+    completedTasks = homeRecord?.data.tasks.filter((task) => task.completed).length || 0;
+
     return {
       totalFiles: allFiles.length,
-      totalNotes: allFiles.filter((file) => !["Overview.md", "Timeline.md"].includes(file.name)).length,
+      totalNotes: allFiles.length,
       totalTasks,
       completedTasks,
       totalWords,
@@ -253,51 +245,9 @@ export class ProjectTimelineService {
   }
 
   private isSignificantFile(file: TFile): boolean {
-    // 排除 Timeline.md、README.md 等自动生成的文件
-    const ignored = ["Timeline.md", "README.md", "Index.md"];
+    // 排除非业务索引文件
+    const ignored = ["README.md", "Index.md"];
     return !ignored.includes(file.basename);
-  }
-
-  /**
-   * 从 Timeline.md 中提取里程碑
-   * 格式：- [x] 里程碑名称 `2024-07-10` (100%)
-   */
-  private extractMilestones(content: string): ProjectMilestone[] {
-    const milestones: ProjectMilestone[] = [];
-    const regex = /- \[([x ])\] (.+?)\s+`([0-9]{4}-[0-9]{2}-[0-9]{2})`\s+\((\d+)%\)/gi;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(content)) !== null) {
-      milestones.push({
-        name: match[2].trim(),
-        date: match[3],
-        progress: parseInt(match[4], 10),
-        isCompleted: match[1] === "x",
-      });
-    }
-
-    return milestones;
-  }
-
-  /**
-   * 从 Timeline.md 中提取已完成任务（最近 10 条）
-   */
-  private extractCompletedTasks(content: string): Array<{ text: string; timestamp: number }> {
-    const tasks: Array<{ text: string; timestamp: number }> = [];
-    const lines = content.split("\n");
-
-    for (const line of lines) {
-      // 匹配：- [x] 任务文本
-      if (/^- \[x\]/i.test(line)) {
-        const text = line.replace(/^- \[x\]\s*/i, "").trim();
-        // 尝试提取日期（如果有）
-        const dateMatch = text.match(/\[(\d{4}-\d{2}-\d{2})\]/);
-        const timestamp = dateMatch ? this.parseDateToTimestamp(dateMatch[1]) : Date.now();
-        tasks.push({ text: text.replace(/\[\d{4}-\d{2}-\d{2}\]/g, "").trim(), timestamp });
-      }
-    }
-
-    return tasks.slice(0, 10);
   }
 
   private parseDateToTimestamp(dateStr: string): number {

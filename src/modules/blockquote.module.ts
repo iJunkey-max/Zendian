@@ -18,6 +18,8 @@ export class BlockquoteModule implements IFeatureModule {
   unload(): void {
     removeCSSVar(document.body, "--blockquote-background-light");
     removeCSSVar(document.body, "--blockquote-background-dark");
+    removeCSSVar(document.body, "--blockquote-padding");
+    removeCSSVar(document.body, "--blockquote-margin");
   }
 
   onSettingsChanged(changedKeys: string[], settings: PluginSettings): void {
@@ -29,5 +31,7 @@ export class BlockquoteModule implements IFeatureModule {
   private apply(settings: PluginSettings["blockquote"]): void {
     setCSSVar(document.body, "--blockquote-background-light", settings.backgroundLight);
     setCSSVar(document.body, "--blockquote-background-dark", settings.backgroundDark);
+    setCSSVar(document.body, "--blockquote-padding", settings.padding);
+    setCSSVar(document.body, "--blockquote-margin", settings.margin);
   }
 }

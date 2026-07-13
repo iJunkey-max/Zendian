@@ -6,11 +6,11 @@
  * - 管理项目状态、优先级、标签、里程碑
  * - 提供类型安全的 API
  *
- * 数据来源：新项目根目录 {项目名}.home；兼容旧项目控制台目录
+ * 数据来源：新项目根目录 `项目主页.home`；兼容并迁移旧项目控制台文件
  */
 
 import { App, TFile } from "obsidian";
-import { findProjectHomeFile, getProjectSystemDirectory } from "../homepage/services/ProjectHomeFileResolver";
+import { findProjectHomeFile, PROJECT_HOME_FILENAME } from "../homepage/services/ProjectHomeFileResolver";
 import {
   normalizeProjectStatus,
   normalizeStatusBeforePause,
@@ -91,8 +91,10 @@ export interface ProjectHomeData {
   // ── 交付物 ──
   deliverables: Deliverable[];
 
-  // ── 废弃字段（仅用于向后兼容）──
-  tasks?: any[];
+  // ── 统一项目主页数据 ──
+  tasks: any[];
+  overview?: { markdown: string; migratedAt?: string };
+  timeline?: { milestones: any[]; legacyMarkdown?: string; migratedAt?: string };
 }
 
 /** 默认元数据 */
@@ -373,6 +375,7 @@ export class ProjectMetadataService {
       viewConfig: { ...DEFAULT_VIEW_CONFIG },
       milestones: [],
       deliverables: [],
+      tasks: [],
     };
 
     await this.save(projectPath, data);
@@ -393,7 +396,7 @@ export class ProjectMetadataService {
     const homeFile = this.findHomeFile(projectPath);
     if (!homeFile) {
       // 创建新文件
-      const filePath = `${getProjectSystemDirectory(this.app, projectPath)}/${data.name}.home`;
+      const filePath = `${projectPath}/${PROJECT_HOME_FILENAME}`;
       await this.app.vault.create(filePath, JSON.stringify(data, null, 2));
     } else {
       // 更新现有文件
@@ -404,6 +407,7 @@ export class ProjectMetadataService {
   /** 补齐缺失字段 */
   private ensureDefaults(data: Partial<ProjectHomeData>): ProjectHomeData {
     return {
+      ...data,
       name: data.name || "未命名项目",
       icon: data.icon || "lucide-folder",
       description: data.description || "",
@@ -429,6 +433,9 @@ export class ProjectMetadataService {
       },
       milestones: data.milestones || [],
       deliverables: data.deliverables || [],
+      tasks: data.tasks || [],
+      overview: data.overview,
+      timeline: data.timeline,
     };
   }
 

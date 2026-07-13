@@ -105,6 +105,11 @@ export interface EditorEnhanceSettings {
   focusMode: boolean;
   focusModeOpacity: number;
   focusModeTypewriter: boolean;
+  focusClockEnabled: boolean;
+  focusClockDefaultMinutes: number;
+  focusClockBreakMinutes: number;
+  focusClockAutoEnableFocusMode: boolean;
+  focusClockSound: boolean;
   hoverIndicator: boolean;
   hoverIndicatorListLevel: boolean;
   hoverIndicatorCodeblockLineNumber: boolean;
@@ -132,12 +137,16 @@ export interface CodeBlockSettings {
   backgroundDark: string;
   borderLight: string;
   borderDark: string;
+  horizontalPadding: string;
+  blockMargin: string;
 }
 
 /** 引用块模块设置 */
 export interface BlockquoteSettings {
   backgroundLight: string;
   backgroundDark: string;
+  padding: string;
+  margin: string;
 }
 
 /** 标注模块设置 */
@@ -146,6 +155,7 @@ export interface CalloutSettings {
   borderWidth: string;
   borderOpacity: number;
   padding: string;
+  margin: string;
   titlePadding: string;
   titleSize: string;
   contentPadding: string;
@@ -161,6 +171,8 @@ export interface ListTableSettings {
   checkboxRadius: string;
   tableWidthMode: TableWidthMode;
   tableWidth: number;
+  tableCellPadding: string;
+  tableMargin: string;
   tableHeaderBgLight: string;
   tableHeaderBgDark: string;
 }
@@ -372,7 +384,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       textTransform: "",
       colorScheme: "default",
       alignment: "center",
-      size: 1.618,
+      size: 1.55,
     },
     h2: {
       divider: false,
@@ -381,9 +393,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       textTransform: "",
       colorScheme: "default",
       alignment: "left",
-      spacingStart: 1.318,
-      spacingEnd: 1.318,
-      size: 1.462,
+      spacingStart: 1.1,
+      spacingEnd: 0.65,
+      size: 1.35,
       style: "twin",
     },
     h3: {
@@ -393,9 +405,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       textTransform: "",
       colorScheme: "default",
       alignment: "left",
-      spacingStart: 1.5,
-      spacingEnd: 1.5,
-      size: 1.318,
+      spacingStart: 1,
+      spacingEnd: 0.5,
+      size: 1.2,
     },
     h4: {
       divider: false,
@@ -404,9 +416,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       textTransform: "",
       colorScheme: "default",
       alignment: "left",
-      spacingStart: 1.5,
-      spacingEnd: 1.5,
-      size: 1.2,
+      spacingStart: 0.85,
+      spacingEnd: 0.4,
+      size: 1.1,
     },
     h5: {
       divider: false,
@@ -415,9 +427,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       textTransform: "",
       colorScheme: "default",
       alignment: "left",
-      spacingStart: 1.5,
-      spacingEnd: 1.5,
-      size: 1.2,
+      spacingStart: 0.7,
+      spacingEnd: 0.35,
+      size: 1,
     },
     h6: {
       divider: false,
@@ -426,14 +438,14 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       textTransform: "",
       colorScheme: "default",
       alignment: "left",
-      spacingStart: 1.5,
-      spacingEnd: 1.5,
-      size: 1.2,
+      spacingStart: 0.7,
+      spacingEnd: 0.35,
+      size: 0.95,
     },
     inlineTitle: {
       dividerRemove: false,
       font: "",
-      size: "1.5em",
+      size: "1.45em",
       weight: 700,
       textTransform: "",
     },
@@ -444,6 +456,11 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     focusMode: false,
     focusModeOpacity: 0.5,
     focusModeTypewriter: true,
+    focusClockEnabled: true,
+    focusClockDefaultMinutes: 25,
+    focusClockBreakMinutes: 5,
+    focusClockAutoEnableFocusMode: true,
+    focusClockSound: true,
     hoverIndicator: false,
     hoverIndicatorListLevel: false,
     hoverIndicatorCodeblockLineNumber: false,
@@ -451,13 +468,13 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     gridBackgroundSize: "36px",
   },
   typography: {
-    fileLineWidth: 900,
-    letterSpacing: 1,
-    lineHeight: 2.2,
-    codeLineHeight: 1.6,
+    fileLineWidth: 860,
+    letterSpacing: 0.2,
+    lineHeight: 1.7,
+    codeLineHeight: 1.5,
     blockquoteLineHeight: 1.6,
-    tableLineHeight: 1.8,
-    paragraphSpacing: "1em",
+    tableLineHeight: 1.4,
+    paragraphSpacing: "0.65em",
     paragraphSpacingBr: false,
     textAlignJustify: false,
   },
@@ -467,37 +484,44 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     backgroundDark: "",
     borderLight: "",
     borderDark: "",
+    horizontalPadding: "14px",
+    blockMargin: "0.8em 0",
   },
   blockquote: {
     backgroundLight: "",
     backgroundDark: "",
+    padding: "0.75em 1em 0.75em 2.5em",
+    margin: "0.75em 0",
   },
   callout: {
     style: "customize",
-    borderWidth: "0px",
+    borderWidth: "1px",
     borderOpacity: 0.25,
-    padding: "",
-    titlePadding: "",
-    titleSize: "",
-    contentPadding: "",
-    contentRadius: "",
+    padding: "10px 12px",
+    margin: "0.8em 0",
+    titlePadding: "3px 9px",
+    titleSize: "0.88em",
+    contentPadding: "0 2px",
+    contentRadius: "0px",
   },
   listTable: {
-    listIndent: "2.25em",
-    listSpacing: "0.075em",
+    listIndent: "1.75em",
+    listSpacing: "0.1em",
     ulMarkerRestore: false,
     disableAlternativeCheckboxes: false,
     checkboxRadius: "6px",
     tableWidthMode: "default",
-    tableWidth: 88,
+    tableWidth: 92,
+    tableCellPadding: "7px 10px",
+    tableMargin: "0.8em 0",
     tableHeaderBgLight: "",
     tableHeaderBgDark: "",
   },
   link: {
-    decoration: "underline",
+    decoration: "underline-offset",
     decorationHover: "underline",
-    decorationThickness: "auto",
-    externalDecoration: "underline",
+    decorationThickness: "1px",
+    externalDecoration: "underline-offset",
     externalDecorationHover: "underline",
   },
   image: {

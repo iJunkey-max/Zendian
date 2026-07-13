@@ -16,6 +16,7 @@ import { ModuleManager } from "./core/module-manager";
 import { ActivityLogService } from "./services/ActivityLogService";
 import { ProjectMetadataService } from "./services/ProjectMetadataService";
 import { TaskSyncService } from "./services/TaskSyncService";
+import { FocusClockController } from "./focus-clock/FocusClockController";
 
 // 功能模块导入
 import { AutoHideModule } from "./modules/auto-hide.module";
@@ -59,6 +60,7 @@ export default class ZENdianPlugin extends Plugin {
   public activityLogService!: ActivityLogService;
   public projectMetadataService!: ProjectMetadataService;
   public taskSyncService!: TaskSyncService;
+  private focusClock?: FocusClockController;
 
   async onload() {
     // 1. 初始化核心服务
@@ -75,10 +77,20 @@ export default class ZENdianPlugin extends Plugin {
     );
 
     // 1.1 初始化数据服务
-    this.activityLogService = new ActivityLogService(this.app);
+    this.activityLogService = new ActivityLogService(this.app, this.events);
     this.projectMetadataService = new ProjectMetadataService(this.app);
-    this.taskSyncService = new TaskSyncService(this.app);
+    this.taskSyncService = new TaskSyncService(this.app, this.activityLogService);
     await this.activityLogService.load();
+
+    const focusClockStatus = this.addStatusBarItem();
+    this.focusClock = new FocusClockController(
+      this.app,
+      focusClockStatus,
+      this.settingsManager,
+      this.events,
+      this.activityLogService,
+    );
+    this.app.workspace.onLayoutReady(() => this.focusClock?.load());
 
     // 2. 注册功能模块
     this.moduleManager.register(new AutoHideModule());
@@ -151,6 +163,18 @@ export default class ZENdianPlugin extends Plugin {
       callback: () => this.activateHomepage(),
     });
 
+    this.addCommand({
+      id: "open-focus-clock",
+      name: "打开专注时钟",
+      callback: () => this.focusClock?.openPanel(),
+    });
+
+    this.addCommand({
+      id: "toggle-focus-clock-pause",
+      name: "暂停或继续专注时钟",
+      callback: () => this.focusClock?.togglePause(),
+    });
+
     // 5. 监听主题变更
     this.registerEvent(
       this.app.workspace.on("css-change", () => {
@@ -183,6 +207,7 @@ export default class ZENdianPlugin extends Plugin {
   }
 
   onunload() {
+    this.focusClock?.unload();
     // 强制保存活动日志
     this.activityLogService?.flush();
     destroyServiceManager();

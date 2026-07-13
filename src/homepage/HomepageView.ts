@@ -9,7 +9,6 @@ import { ItemView, type WorkspaceLeaf, type App, TFile, TFolder, getIcon, Modal,
 import { HomepageStatsService } from "./HomepageStatsService";
 import { HomepageDataService } from "./HomepageDataService";
 import { HomepageBookmarksService } from "./HomepageBookmarksService";
-import { HomepageTaskService } from "./HomepageTaskService";
 import { HomepageWeatherService } from "./HomepageWeatherService";
 import { HomepageProjectScanService } from "./HomepageProjectScanService";
 import { ActivityLogService } from "../services/ActivityLogService";
@@ -34,9 +33,7 @@ import { createTaskSchedulePicker } from "./components/TaskSchedulePicker";
 import { getProjectSubfolderName } from "./project-subfolders";
 import {
   findProjectHomeFile,
-  findProjectOverviewFile,
-  findProjectTimelineFile,
-  getProjectSystemDirectory,
+  PROJECT_HOME_FILENAME,
 } from "./services/ProjectHomeFileResolver";
 
 export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
@@ -280,14 +277,10 @@ class ProjectCreateModal extends Modal {
       if (template.icon) updatedIcons[subfolderPath] = template.icon;
     }
 
-    // 系统文件保存在项目根目录，不再依赖固定子文件夹。
-    await this.app.vault.create(`${projectPath}/Overview.md`, `# ${name}\n\n> 创建于 ${new Date().toLocaleDateString()}\n`);
-    await this.app.vault.create(`${projectPath}/Timeline.md`, `# ${name} - 任务时间线\n\n- [ ] 待规划 @created(${new Date().toISOString().slice(0, 10)})\n`);
-
-    // 创建 .home 控制台文件
+    // 项目概览、时间轴与待办统一保存在项目主页文件。
     const consoleData = createDefaultConsoleData(name, this.selectedIcon, category.name, this.descValue.trim());
     await this.app.vault.create(
-      `${projectPath}/${name}.home`,
+      `${projectPath}/${PROJECT_HOME_FILENAME}`,
       JSON.stringify(consoleData, null, 2)
     );
 
@@ -375,7 +368,6 @@ export class HomepageView extends ItemView {
   private statsService!: HomepageStatsService;
   private dataService!: HomepageDataService;
   private bookmarksService!: HomepageBookmarksService;
-  private taskService!: HomepageTaskService;
   private timelineService!: ProjectTimelineService;
   private weatherService!: HomepageWeatherService;
   private projectScanService!: HomepageProjectScanService;
@@ -384,6 +376,7 @@ export class HomepageView extends ItemView {
   private currentProjectFilter: ProjectFilter = DEFAULT_FILTER;
   private allProjects: HomepageProject[] = [];
   private unsubSettings: (() => void) | null = null;
+  private unsubActivityStats: (() => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf, private dependencies: HomepageDependencies) {
     super(leaf);
@@ -407,7 +400,6 @@ export class HomepageView extends ItemView {
     this.statsService = new HomepageStatsService(this.app);
     this.dataService = new HomepageDataService(this.app);
     this.bookmarksService = new HomepageBookmarksService(this.app);
-    this.taskService = new HomepageTaskService(this.app);
     this.weatherService = new HomepageWeatherService();
     this.projectScanService = new HomepageProjectScanService(this.app);
     this.timelineService = new ProjectTimelineService(this.app);
@@ -426,6 +418,7 @@ export class HomepageView extends ItemView {
     this.unsubSettings = this.dependencies.events.on(Events.SETTINGS_CHANGED, (changedKeys: string[]) => {
       if (changedKeys.includes("homepage")) this.renderDashboard();
     });
+    this.unsubActivityStats = this.dependencies.events.on(Events.ACTIVITY_STATS_CHANGED, () => void this.loadMonthlyStats());
   }
 
   private renderDashboard(): void {
@@ -466,6 +459,10 @@ export class HomepageView extends ItemView {
     if (this.unsubSettings) {
       this.unsubSettings();
       this.unsubSettings = null;
+    }
+    if (this.unsubActivityStats) {
+      this.unsubActivityStats();
+      this.unsubActivityStats = null;
     }
   }
 
@@ -764,9 +761,9 @@ export class HomepageView extends ItemView {
 
     const metricsGrid = topArea.createDiv({ cls: "homepage-metrics-grid" });
     const metrics = [
-      { key: "noteCount", label: "笔记数量", value: "0", trend: "+ 23%" },
-      { key: "taskCompleted", label: "待办完成", value: "0", trend: "+ 8%" },
-      { key: "focusTime", label: "专注时长", value: "0h", trend: "+ 5%" },
+      { key: "noteCount", label: "笔记数量", value: "0", trend: "" },
+      { key: "taskCompleted", label: "待办完成", value: "0", trend: "" },
+      { key: "focusTime", label: "专注时长", value: "0 分", trend: "" },
       { key: "consecutiveDays", label: "连续记录", value: "0天", trend: "" },
     ];
 
@@ -786,9 +783,7 @@ export class HomepageView extends ItemView {
 
       const valueRow = metricCard.createDiv({ cls: "homepage-metric-value-row" });
       valueRow.createSpan({ cls: "homepage-metric-value", text: m.value });
-      if (m.trend) {
-        valueRow.createSpan({ cls: "homepage-metric-trend", text: m.trend });
-      }
+      valueRow.createSpan({ cls: "homepage-metric-trend", text: m.trend });
 
       // SVG 迷你折线图
       const sparklineWrap = metricCard.createDiv({ cls: "homepage-metric-sparkline", attr: { "data-sparkline": m.key } });
@@ -993,20 +988,69 @@ export class HomepageView extends ItemView {
 
   // ── 月度统计 ──────────────────────────────────────────────
 
-  private loadMonthlyStats(): void {
+  private async loadMonthlyStats(): Promise<void> {
     const stats = this.statsService.getMonthlyStats();
+    const activityStats = this.activityLogService.getMonthlyStats();
+    const lastMonthStats = this.activityLogService.getLastMonthStats();
+    const lastMonthNoteCount = this.statsService.getLastMonthNoteCount();
+    const taskCompletions = await this.getMonthlyTaskCompletionCounts();
 
     const updates: Record<string, string> = {
       noteCount: String(stats.noteCount),
-      taskCompleted: String(stats.taskCompleted),
-      focusTime: `${Math.round(stats.editCount * 0.5)}h`,
-      consecutiveDays: `${stats.consecutiveDays}天`,
+      taskCompleted: String(taskCompletions.current),
+      focusTime: this.formatFocusMinutes(activityStats.focusMinutes),
+      consecutiveDays: `${activityStats.consecutiveDays}天`,
     };
 
     for (const [key, value] of Object.entries(updates)) {
       const el = this.containerEl.querySelector(`[data-metric="${key}"] .homepage-metric-value`);
       if (el) el.textContent = value;
     }
+
+    const trends: Record<string, string> = {
+      noteCount: this.formatMetricTrend(stats.noteCount, lastMonthNoteCount),
+      taskCompleted: this.formatMetricTrend(taskCompletions.current, taskCompletions.previous),
+      focusTime: this.formatMetricTrend(activityStats.focusMinutes, lastMonthStats.focusMinutes),
+      consecutiveDays: "",
+    };
+    for (const [key, trend] of Object.entries(trends)) {
+      const element = this.containerEl.querySelector(`[data-metric="${key}"] .homepage-metric-trend`);
+      if (element) element.textContent = trend;
+    }
+  }
+
+  private async getMonthlyTaskCompletionCounts(): Promise<{ current: number; previous: number }> {
+    const settings = this.dependencies.settingsManager.getSettings();
+    const projectPaths = await this.getProjectPaths(settings.homepage.projectCategories);
+    const tasks = await this.dependencies.taskSyncService.getAllTasks(projectPaths);
+    const now = new Date();
+    const currentStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const nextStart = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+    const previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+    let current = 0;
+    let previous = 0;
+    for (const task of tasks) {
+      if (!task.completedAt) continue;
+      const completedAt = new Date(task.completedAt).getTime();
+      if (!Number.isFinite(completedAt)) continue;
+      if (completedAt >= currentStart && completedAt < nextStart) current++;
+      else if (completedAt >= previousStart && completedAt < currentStart) previous++;
+    }
+    return { current, previous };
+  }
+
+  private formatMetricTrend(current: number, previous: number): string {
+    if (previous <= 0) return current > 0 ? "本月新增" : "";
+    const percent = Math.round((current - previous) / previous * 100);
+    return `${percent >= 0 ? "+" : ""}${percent}%`;
+  }
+
+  private formatFocusMinutes(minutes: number): string {
+    const rounded = Math.round(minutes);
+    if (rounded < 60) return `${rounded} 分`;
+    const hours = Math.floor(rounded / 60);
+    const rest = rounded % 60;
+    return rest ? `${hours}h ${rest}m` : `${hours}h`;
   }
 
   // ── 最近笔记 ──────────────────────────────────────────────
@@ -1232,8 +1276,8 @@ export class HomepageView extends ItemView {
         }
         row.addEventListener("click", () => {
           overlay.remove();
-          const timeline = findProjectTimelineFile(this.app, project.folderPath);
-          if (timeline) this.openFileAndScroll(timeline.path, task.line);
+          const home = findProjectHomeFile(this.app, project.folderPath);
+          if (home) void this.app.workspace.getLeaf(false).openFile(home);
         });
       }
     }
@@ -1414,11 +1458,7 @@ export class HomepageView extends ItemView {
       return;
     }
 
-    const overviewFile = findProjectOverviewFile(this.app, folderPath);
-    if (overviewFile) {
-      const leaf = this.app.workspace.getLeaf("tab");
-      await leaf.openFile(overviewFile);
-    }
+    new Notice("该项目还没有项目主页");
   }
 
   private renderProjectStatusTag(container: HTMLElement, projectStatus: ProjectStatus): HTMLElement {
@@ -1443,35 +1483,11 @@ export class HomepageView extends ItemView {
 
   /** 为项目创建 .home 文件 */
   private async createHomeFile(project: HomepageProject): Promise<void> {
-    const systemPath = getProjectSystemDirectory(this.app, project.folderPath);
     const data = createDefaultConsoleData(project.name, "lucide-folder", project.type, project.description);
-    // 把已有任务注入
-    for (const t of project.pendingTasks) {
-      data.tasks.push({
-        text: t.text,
-        completed: t.completed,
-        created: t.created,
-        due: t.due,
-        dueTime: t.dueTime,
-      });
-    }
-    const filePath = `${systemPath}/${project.name}.home`;
+    const filePath = `${project.folderPath}/${PROJECT_HOME_FILENAME}`;
     await this.app.vault.create(filePath, JSON.stringify(data, null, 2));
     this.projectScanService.markDirty();
     this.loadProjects();
-  }
-
-  private async openFileAndScroll(path: string, line: number): Promise<void> {
-    const file = this.app.vault.getAbstractFileByPath(path);
-    if (file instanceof TFile) {
-      const leaf = this.app.workspace.getLeaf(false);
-      await leaf.openFile(file);
-      const editor = (this.app.workspace as any).activeEditor?.editor;
-      if (editor) {
-        editor.setCursor({ line, ch: 0 });
-        editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: 0 } }, true);
-      }
-    }
   }
 
   private formatRelativeTime(mtime: number): string {
@@ -1601,7 +1617,7 @@ export class HomepageView extends ItemView {
         priority,
       });
       if (!success) {
-        new Notice("添加失败，请检查项目的 Timeline.md");
+        new Notice("添加失败，请检查项目主页文件");
         return;
       }
       new Notice("待办已添加");
@@ -1635,7 +1651,7 @@ export class HomepageView extends ItemView {
       await this.toggleTask(task, checkbox, onChanged);
     });
 
-    // 任务文本（点击跳转到 Timeline.md）
+    // 任务文本（点击打开项目主页）
     const textSpan = left.createSpan({
       cls: `homepage-todo-text${task.completed ? " homepage-todo-text--done" : ""}`,
       text: task.text,
@@ -1643,8 +1659,8 @@ export class HomepageView extends ItemView {
     textSpan.style.cursor = "pointer";
     textSpan.addEventListener("click", (e) => {
       e.stopPropagation();
-      const timeline = findProjectTimelineFile(this.app, task.projectPath);
-      if (timeline) this.openFileAndScroll(timeline.path, task.line);
+      const home = findProjectHomeFile(this.app, task.projectPath);
+      if (home) void this.app.workspace.getLeaf(false).openFile(home);
     });
 
     // 右侧：优先级 + 截止日期
@@ -1701,7 +1717,7 @@ export class HomepageView extends ItemView {
       }
     }
 
-    // 2. 调用 TaskSyncService 修改文件
+    // 2. 更新项目主页中的结构化任务
     try {
       const success = await this.dependencies.taskSyncService.toggleTask(task.projectPath, task.line, task.raw);
 
@@ -1710,11 +1726,7 @@ export class HomepageView extends ItemView {
       }
 
       // 3. 记录活动日志
-      if (!wasCompleted) {
-        this.dependencies.activityLogService.logActivity("task_completed", task.projectPath);
-      }
-
-      // 4. 延迟重新加载列表（更新计数和排序）
+      // 3. 延迟重新加载列表（更新计数和排序）
       setTimeout(() => {
         this.loadTodos();
         onChanged?.();
@@ -1810,28 +1822,6 @@ export class HomepageView extends ItemView {
     if (due < today) return `逾期 ${due.slice(5)}`;
 
     return due.slice(5); // MM-DD
-  }
-
-  private updateTodoTabCounts(items: import("./types").HomepageTaskItem[]): void {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const weekStart = todayStart - now.getDay() * 86_400_000;
-
-    const allCount = items.length;
-    const todayCount = items.filter((t) => !t.completed && t.mtime >= todayStart).length;
-    const weekCount = items.filter((t) => !t.completed && t.mtime >= weekStart).length;
-    const doneCount = items.filter((t) => t.completed).length;
-
-    const counts: Record<string, number> = { all: allCount, today: todayCount, week: weekCount, done: doneCount };
-
-    const tabs = this.containerEl.querySelectorAll(".homepage-todo-tab");
-    tabs.forEach((tab) => {
-      const key = tab.getAttribute("data-tab");
-      if (key && key in counts) {
-        const countEl = tab.querySelector(".homepage-todo-tab-count");
-        if (countEl) countEl.textContent = String(counts[key]);
-      }
-    });
   }
 
   // ── 便签 ──────────────────────────────────────────────────
@@ -1979,13 +1969,11 @@ export class HomepageView extends ItemView {
     let taskTotal = 0;
     let taskDone = 0;
     try {
-      const result = await this.taskService.getTaskRadar({
-        excludeFolders: [".obsidian", "模板"],
-        includeCompleted: true,
-        limit: 999,
-      });
-      taskTotal = result.items.length;
-      taskDone = result.items.filter((t) => t.completed).length;
+      const settings = this.dependencies.settingsManager.getSettings();
+      const projectPaths = await this.getProjectPaths(settings.homepage.projectCategories);
+      const tasks = await this.dependencies.taskSyncService.getAllTasks(projectPaths);
+      taskTotal = tasks.length;
+      taskDone = tasks.filter((task) => task.completed).length;
     } catch {
       // 如果获取失败，使用活动日志中的任务完成数
       taskDone = todayActivity.taskCompleted;

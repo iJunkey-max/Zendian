@@ -1,8 +1,8 @@
 /**
  * HomepageProjectScanService — 扫描 vault 项目文件夹
  *
- * 从设置读取类型文件夹列表，扫描每个文件夹下的子项目，
- * 从 Overview.md 读取描述，从 Timeline.md 自动计算进度。
+ * 从设置读取类型文件夹列表，扫描每个文件夹下的项目主页，
+ * 项目元数据、进度与待办均以 `项目主页.home` 为唯一事实源。
  */
 
 import { App, TFile, TFolder } from "obsidian";
@@ -14,51 +14,9 @@ import type {
   ProjectConsoleData,
 } from "./types";
 import type { ProjectCategory } from "../types/settings.types";
-import {
-  findProjectHomeFile,
-  findProjectTimelineFile,
-  getProjectSystemDirectory,
-} from "./services/ProjectHomeFileResolver";
+import { loadProjectHome } from "./services/ProjectHomeStore";
 import { getProjectCategoryFolder } from "./project-categories";
 import { normalizeProjectStatus } from "./project-status";
-
-const TASK_REGEX = /^- \[([ x])\] (.+)$/;
-
-/**
- * 从任务行中提取文本和时间标记
- * 格式：- [ ] 任务文本 @created(2026-01-15) @due(2026-02-01)
- */
-function parseTaskLine(line: string, lineNum: number): ProjectTask | null {
-  const match = line.match(TASK_REGEX);
-  if (!match) return null;
-
-  const completed = match[1] === "x";
-  let rawText = match[2].trim();
-
-  let created: string | undefined;
-  let due: string | undefined;
-  let dueTime: string | undefined;
-
-  const createdMatch = rawText.match(/@created\(([^)]*)\)/);
-  if (createdMatch) {
-    created = createdMatch[1];
-    rawText = rawText.replace(createdMatch[0], "").trim();
-  }
-
-  const dueMatch = rawText.match(/@due\(([^)]*)\)/);
-  if (dueMatch) {
-    due = dueMatch[1];
-    rawText = rawText.replace(dueMatch[0], "").trim();
-  }
-
-  const dueTimeMatch = rawText.match(/@time\(((?:[01]\d|2[0-3]):[0-5]\d)\)/);
-  if (dueTimeMatch) {
-    dueTime = dueTimeMatch[1];
-    rawText = rawText.replace(dueTimeMatch[0], "").trim();
-  }
-
-  return { text: rawText, completed, created, due, dueTime, line: lineNum };
-}
 
 export class HomepageProjectScanService {
   private cache = new Map<string, HomepageProject>();
@@ -155,49 +113,32 @@ export class HomepageProjectScanService {
   /**
    * 扫描单个项目文件夹
    *
-   * 优先从 .home 文件读取数据，降级到 Overview.md + Timeline.md
+   * 项目元数据、进度和待办只从项目主页读取。
    */
   private async scanProject(folder: TFolder, type: ProjectType): Promise<HomepageProject | null> {
     const folderPath = folder.path;
     const fallbackName = folder.name.replace(/^\d+_/, "") || folder.name;
-    const systemPath = getProjectSystemDirectory(this.app, folderPath);
-
-    // 优先从 .home 文件读取
     const homeData = await this.readHomeFile(folderPath, fallbackName);
     const name = homeData?.name || fallbackName;
-    const timelineFile = findProjectTimelineFile(this.app, folderPath);
-    const timelineData = await this.parseTimeline(systemPath);
-
-    let description: string;
-    let taskTotal: number;
-    let taskDone: number;
-    let progress: number;
-    let pendingTasks: ProjectTask[];
-
-    if (homeData) {
-      // .home 提供元数据；Timeline.md 是任务事实源。
-      description = homeData.description || "";
-      if (timelineFile instanceof TFile) {
-        taskTotal = timelineData.taskTotal;
-        taskDone = timelineData.taskDone;
-        progress = timelineData.progress;
-        pendingTasks = timelineData.pendingTasks;
-      } else {
-        taskTotal = homeData.tasks.length;
-        taskDone = homeData.tasks.filter((t) => t.completed).length;
-        progress = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
-        pendingTasks = homeData.tasks
-          .filter((t) => !t.completed)
-          .map((t, i) => ({ text: t.text, completed: false, created: t.created, due: t.due, dueTime: t.dueTime, line: i }));
-      }
-    } else {
-      // 降级：从 Overview.md + Timeline.md 读取
-      description = await this.readFirstParagraph(systemPath, "Overview.md");
-      taskTotal = timelineData.taskTotal;
-      taskDone = timelineData.taskDone;
-      progress = timelineData.progress;
-      pendingTasks = timelineData.pendingTasks;
-    }
+    const tasks = homeData?.tasks || [];
+    const taskTotal = tasks.length;
+    const taskDone = tasks.filter((task) => task.completed).length;
+    const progress = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
+    const priorityOrder: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
+    const pendingTasks: ProjectTask[] = tasks
+      .map((task, line) => ({ ...task, line }))
+      .filter((task) => !task.completed)
+      .sort((a, b) => {
+        const priority = priorityOrder[a.priority || "P2"] - priorityOrder[b.priority || "P2"];
+        if (priority !== 0) return priority;
+        if (a.due && b.due) {
+          const due = `${a.due}T${a.dueTime || "23:59"}`.localeCompare(`${b.due}T${b.dueTime || "23:59"}`);
+          if (due !== 0) return due;
+        } else if (a.due || b.due) {
+          return a.due ? -1 : 1;
+        }
+        return (a.created || "").localeCompare(b.created || "") || a.text.localeCompare(b.text);
+      });
 
     // 获取最近编辑的文件
     const recentFiles = this.getRecentFiles(folder, 5);
@@ -212,7 +153,7 @@ export class HomepageProjectScanService {
       progress,
       taskTotal,
       taskDone,
-      description,
+      description: homeData?.description || "",
       recentFiles,
       pendingTasks,
       updatedAt,
@@ -227,79 +168,8 @@ export class HomepageProjectScanService {
    * 在项目根目录或旧版控制台目录中查找 .home 文件并解析
    */
   private async readHomeFile(projectPath: string, projectName: string): Promise<ProjectConsoleData | null> {
-    const file = findProjectHomeFile(this.app, projectPath, projectName);
-    if (!file) return null;
-
-    try {
-      const content = await this.app.vault.read(file);
-      const data = JSON.parse(content) as ProjectConsoleData;
-      return data && typeof data.name === "string" ? data : null;
-    } catch (error) {
-      console.warn(`[ZENdian] 解析 ${file.path} 失败:`, error);
-      return null;
-    }
-  }
-
-  /**
-   * 读取指定文件的第一段非空文本
-   */
-  private async readFirstParagraph(folderPath: string, fileName: string): Promise<string> {
-    const filePath = `${folderPath}/${fileName}`;
-    const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (!(file instanceof TFile)) return "";
-
-    try {
-      const content = await this.app.vault.read(file);
-      const lines = content.split("\n");
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed && !trimmed.startsWith("#") && !trimmed.startsWith("---")) {
-          return trimmed.length > 120 ? trimmed.slice(0, 120) + "..." : trimmed;
-        }
-      }
-    } catch {
-      // 降级为空
-    }
-    return "";
-  }
-
-  /**
-   * 解析 Timeline.md，计算任务进度和待办列表
-   */
-  private async parseTimeline(
-    folderPath: string
-  ): Promise<{ taskTotal: number; taskDone: number; progress: number; pendingTasks: ProjectTask[] }> {
-    const filePath = `${folderPath}/Timeline.md`;
-    const file = this.app.vault.getAbstractFileByPath(filePath);
-
-    if (!(file instanceof TFile)) {
-      return { taskTotal: 0, taskDone: 0, progress: 0, pendingTasks: [] };
-    }
-
-    try {
-      const content = await this.app.vault.read(file);
-      const lines = content.split("\n");
-      let taskTotal = 0;
-      let taskDone = 0;
-      const pendingTasks: ProjectTask[] = [];
-
-      for (let i = 0; i < lines.length; i++) {
-        const task = parseTaskLine(lines[i], i);
-        if (!task) continue;
-
-        taskTotal++;
-        if (task.completed) {
-          taskDone++;
-        } else {
-          pendingTasks.push(task);
-        }
-      }
-
-      const progress = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
-      return { taskTotal, taskDone, progress, pendingTasks };
-    } catch {
-      return { taskTotal: 0, taskDone: 0, progress: 0, pendingTasks: [] };
-    }
+    const record = await loadProjectHome(this.app, projectPath, projectName);
+    return record?.data && typeof record.data.name === "string" ? record.data : null;
   }
 
   /**
@@ -311,6 +181,7 @@ export class HomepageProjectScanService {
     const collectFiles = (f: TFolder) => {
       for (const child of f.children) {
         if (child instanceof TFile) {
+          if (child.extension === "home") continue;
           files.push({
             name: child.basename,
             path: child.path,

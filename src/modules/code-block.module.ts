@@ -20,6 +20,8 @@ const CSS_VARS = [
   "--code-background-dark",
   "--code-border-light",
   "--code-border-dark",
+  "--code-block-padding-x",
+  "--code-block-margin",
 ];
 
 export class CodeBlockModule implements IFeatureModule {
@@ -52,5 +54,7 @@ export class CodeBlockModule implements IFeatureModule {
     setCSSVar(document.body, "--code-background-dark", s.backgroundDark);
     setCSSVar(document.body, "--code-border-light", s.borderLight);
     setCSSVar(document.body, "--code-border-dark", s.borderDark);
+    setCSSVar(document.body, "--code-block-padding-x", s.horizontalPadding);
+    setCSSVar(document.body, "--code-block-margin", s.blockMargin);
   }
 }
