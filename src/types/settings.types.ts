@@ -206,9 +206,10 @@ export interface CheckboxSettings {
 }
 
 /** 文件夹层级遮罩模块设置 */
-export interface RainbowFolderSettings {
+export interface FolderCardSettings {
   enabled: boolean;
   opacity: number;
+  style: "card" | "capsule";
 }
 
 /** 新标签页模块设置 */
@@ -346,7 +347,7 @@ export interface PluginSettings {
   image: ImageSettings;
   embed: EmbedSettings;
   checkbox: CheckboxSettings;
-  rainbowFolder: RainbowFolderSettings;
+  folderCards: FolderCardSettings;
   newTab: NewTabSettings;
   canvas: CanvasSettings;
   scrollbar: ScrollbarSettings;
@@ -540,9 +541,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   checkbox: {
     colorful: false,
   },
-  rainbowFolder: {
+  folderCards: {
     enabled: false,
     opacity: 0.4,
+    style: "card",
   },
   newTab: {
     buttonStyle: "default",

@@ -286,10 +286,11 @@ const SECTION_SOURCE: TabDef[] = [
         ],
       },
       {
-        id: "file-tree-rainbow", title: "Folder Overlay", titleZh: "文件夹层级遮罩",
+        id: "file-tree-cards", title: "File List Style", titleZh: "文件列表样式",
         settings: [
-          toggle("rainbow-folder", "启用层级遮罩", (s) => s.rainbowFolder.enabled, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, enabled: v } }), "为文件树中的文件夹标题添加彩虹色循环背景"),
-          { ...slider("rainbow-folder-opacity", "遮罩深度", (s) => s.rainbowFolder.opacity, (s, v) => ({ rainbowFolder: { ...s.rainbowFolder, opacity: v } }), 0.05, 0.8, 0.05, "调整文件夹标题背景遮罩的透明度"), visible: (s) => s.rainbowFolder.enabled },
+          select("folder-cards-style", "样式", [{ label: "卡片", value: "card" }, { label: "胶囊", value: "capsule" }], (s) => s.folderCards.style, (s, v) => ({ folderCards: { ...s.folderCards, style: v === "capsule" ? "capsule" : "card" } }), "选择递归卡片样式或旧版文件夹胶囊遮罩样式"),
+          toggle("folder-cards", "启用文件列表样式", (s) => s.folderCards.enabled, (s, v) => ({ folderCards: { ...s.folderCards, enabled: v } }), "按文件夹嵌套关系显示文件列表样式"),
+          { ...slider("folder-cards-opacity", "颜色强度", (s) => s.folderCards.opacity, (s, v) => ({ folderCards: { ...s.folderCards, opacity: v } }), 0.05, 0.8, 0.05, "调整文件夹样式主题色表面的强度"), visible: (s) => s.folderCards.enabled },
         ],
       },
     ],
@@ -568,7 +569,7 @@ const MENU_CONFIG: TabDef[] = [
   { id: "workspace", name: "工作区", icon: "layout-dashboard", sections: sections("card-layout", "tabs", "auto-hide", "ui-details") },
   { id: "reading", name: "编辑与阅读", icon: "book-open-text", sections: sections("focus-mode", "hover-indicator", "page-paragraph", "text-details") },
   { id: "content", name: "标题与内容", icon: "type", sections: sections("heading-system", "code-blockquote", "callout-embed", "list-table", "images", "banner") },
-  { id: "files", name: "文件与图标", icon: "folder-tree", sections: sections("file-tree-basic", "file-tree-rainbow", "icon-system-main", "sidebar") },
+  { id: "files", name: "文件与图标", icon: "folder-tree", sections: sections("file-tree-basic", "file-tree-cards", "icon-system-main", "sidebar") },
   { id: "homepage", name: "主页", icon: "house", sections: sections("homepage-basic", "homepage-modules", "homepage-project-categories", "homepage-project-subfolders") },
   { id: "compat", name: "设备", icon: "monitor-smartphone", sections: sections("mobile-layout", "plugin-compat") },
 ];

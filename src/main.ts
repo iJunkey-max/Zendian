@@ -38,7 +38,7 @@ import { MobileModule } from "./modules/mobile.module";
 import { UIDetailModule } from "./modules/ui-detail.module";
 import { FileTreeModule } from "./modules/file-tree.module";
 import { HeadingsModule } from "./modules/headings.module";
-import { RainbowFolderModule } from "./modules/rainbow-folder.module";
+import { FolderCardsModule } from "./modules/rainbow-folder.module";
 import { NewTabModule } from "./modules/new-tab.module";
 import { IconSystemModule } from "./modules/icon-system.module";
 import { BannerModule } from "./modules/banner.module";
@@ -112,7 +112,7 @@ export default class ZENdianPlugin extends Plugin {
     this.moduleManager.register(new UIDetailModule());
     this.moduleManager.register(new FileTreeModule());
     this.moduleManager.register(new HeadingsModule());
-    this.moduleManager.register(new RainbowFolderModule());
+    this.moduleManager.register(new FolderCardsModule());
     this.moduleManager.register(new NewTabModule());
     this.moduleManager.register(new IconSystemModule());
     this.moduleManager.register(new BannerModule());

@@ -106,6 +106,17 @@ export class SettingsManager {
       };
       Object.assign(settings, mergeKnown(DEFAULT_SETTINGS, oldData));
 
+      // 兼容旧版结构化设置：rainbowFolder -> folderCards
+      const legacyFolderCards = oldData.rainbowFolder;
+      if (legacyFolderCards && typeof legacyFolderCards === "object") {
+        settings.folderCards = {
+          ...settings.folderCards,
+          enabled: legacyFolderCards.enabled ?? settings.folderCards.enabled,
+          opacity: legacyFolderCards.opacity ?? settings.folderCards.opacity,
+          style: legacyFolderCards.style === "capsule" ? "capsule" : settings.folderCards.style,
+        };
+      }
+
       const legacyBorder = oldData.cardLayout?.canvasBorder;
       if (legacyBorder !== undefined) {
         const width = Number.parseFloat(String(legacyBorder));
@@ -313,8 +324,8 @@ export class SettingsManager {
       ["Mobile@@drawer-phone-full-width", (v) => (settings.mobile.drawerPhoneFullWidth = !!v)],
 
       // Rainbow Folder
-      ["File-tree@@rainbow-folder", (v) => (settings.rainbowFolder.enabled = !!v)],
-      ["File-tree@@rainbow-folder-opacity", (v) => (settings.rainbowFolder.opacity = v ?? 0.12)],
+      ["File-tree@@rainbow-folder", (v) => (settings.folderCards.enabled = !!v)],
+      ["File-tree@@rainbow-folder-opacity", (v) => (settings.folderCards.opacity = v ?? 0.4)],
     ];
 
     for (const [oldKey, setter] of migrations) {
