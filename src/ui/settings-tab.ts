@@ -3,7 +3,7 @@
  * 精简版：无字体设置、无颜色设置，text 输入改为 select/slider
  */
 
-import { App, getIcon, Notice, PluginSettingTab, Setting, TFolder } from "obsidian";
+import { App, getIcon, Notice, PluginSettingTab, Setting, SliderComponent, TFolder, TextComponent } from "obsidian";
 import type ZENdianPlugin from "../main";
 import type { SettingsManager } from "../core/settings-manager";
 import type { ModuleManager } from "../core/module-manager";
@@ -378,6 +378,12 @@ const SECTION_SOURCE: TabDef[] = [
       {
         id: "banner", title: "Banner", titleZh: "页眉图片",
         settings: [
+          { ...select("banner-display-mode", "展示模式", [
+            { label: "智能混合 (Smart)", value: "smart" },
+            { label: "铺满裁剪 (Cover)", value: "cover" },
+            { label: "完整显示 (Contain)", value: "contain" },
+          ], (s) => s.banner.displayMode, (s, v) => ({ banner: { ...s.banner, displayMode: v as "smart" | "cover" | "contain" } }), "智能模式会在裁剪过多时使用模糊背景和完整前景图"), visible: (s) => s.banner.enabled },
+          { ...slider("banner-content-overlap", "内容上移量", (s) => s.banner.contentOverlap, (s, v) => ({ banner: { ...s.banner, contentOverlap: v } }), 0, 220, 10, "标题和属性面板叠入页眉图片底部的距离（像素）"), visible: (s) => s.banner.enabled },
           toggle("banner-enabled", "启用页眉图片", (s) => s.banner.enabled, (s, v) => ({ banner: { ...s.banner, enabled: v } }), "在笔记顶部显示页眉图片，需在 frontmatter 中设置对应键名的图片链接"),
           { ...text("banner-yaml-key", "页眉 YAML 键名", (s) => s.banner.yamlKey, (s, v) => ({ banner: { ...s.banner, yamlKey: v } }), "banner", "用于读取图片的 YAML frontmatter 键名"), visible: (s) => s.banner.enabled },
           { ...slider("banner-height", "页眉高度", (s) => s.banner.height, (s, v) => ({ banner: { ...s.banner, height: v } }), 150, 1000, 10, "调整页眉图片的高度（像素）"), visible: (s) => s.banner.enabled },
@@ -1577,12 +1583,25 @@ export class ZENdianSettingTab extends PluginSettingTab {
       }
 
       case "number-slider":
+        let sliderControl: SliderComponent;
+        let numberControl: TextComponent;
+        const clampValue = (value: number): number => Math.max(def.min, Math.min(def.max, value));
+        const syncControls = (value: number) => {
+          sliderControl?.setValue(value);
+          numberControl?.setValue(String(value));
+        };
         row.addSlider((slider) => {
+          sliderControl = slider;
           slider.setLimits(def.min ?? 0, def.max ?? 1, def.step ?? 0.01);
           slider.setValue(def.get(settings));
           slider.setDynamicTooltip();
-          slider.onChange(async (val) => update(val));
+          slider.onChange(async (val) => {
+            const normalized = clampValue(val);
+            syncControls(normalized);
+            await update(normalized);
+          });
         }).addText((text) => {
+          numberControl = text;
           text.inputEl.type = "number";
           text.inputEl.classList.add("zendian-slider-value");
           text.inputEl.min = String(def.min);
@@ -1591,7 +1610,13 @@ export class ZENdianSettingTab extends PluginSettingTab {
           text.setValue(String(def.get(settings)));
           text.onChange(async (val) => {
             const parsed = Number.parseFloat(val);
-            if (Number.isFinite(parsed)) await update(Math.max(def.min, Math.min(def.max, parsed)));
+            if (Number.isFinite(parsed)) {
+              const normalized = clampValue(parsed);
+              syncControls(normalized);
+              await update(normalized);
+            } else {
+              syncControls(def.get(this.settingsManager.getSettings()));
+            }
           });
         });
         break;

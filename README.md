@@ -2,7 +2,7 @@
 
 ZENdian 是面向 Obsidian 的个人知识与项目工作区插件。它以智能主页为入口，将项目、任务、时间轴、文件快照和数据洞察连接在同一套工作流中，同时保留专注写作与界面增强能力。
 
-当前正式版本：`V3.0.02 Lection`
+当前正式版本：`V3.0.03`
 最低 Obsidian 版本：`1.12.7`
 
 > V3 是一次产品定位升级：ZENdian 的重点已从 UI 美化转向知识工作与项目推进。插件不提供第三方插件或第三方主题适配。
@@ -102,7 +102,7 @@ npm run build
 - DB Folder、Projects、Surfing、Kanban、Calendar、Make.md、Checklist 等第三方插件适配代码已移除。
 - 若升级后界面仍显示旧样式，请执行 `Ctrl+R` 或完全重启 Obsidian。
 
-完整变化请查看 [CHANGELOG.md](CHANGELOG.md) 和 [V3.0.02 Lection Release Notes](RELEASE_NOTES_3.0.02.md)。
+完整变化请查看 [CHANGELOG.md](CHANGELOG.md) 和 [V3.0.03 Release Notes](RELEASE_NOTES_3.0.03.md)。
 
 ## 支持范围
 

@@ -267,6 +267,8 @@ export interface BannerSettings {
   yamlKey: string;
   height: number;
   position: string;
+  displayMode: "smart" | "cover" | "contain";
+  contentOverlap: number;
 }
 
 /** 图标系统模块设置 */
@@ -606,6 +608,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     yamlKey: "banner",
     height: 250,
     position: "center",
+    displayMode: "smart",
+    contentOverlap: 110,
   },
   homepage: {
     enabled: true,
