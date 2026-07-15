@@ -11,17 +11,26 @@ export class HomepageStatsService {
   constructor(private app: App) {}
 
   /**
-   * 获取热力图数据（最近 N 天的文件修改计数）
-   * @param days 天数，默认 245（35 周）
+   * 获取按周对齐的热力图数据。
+   * 返回值始终从周一开始，保证渲染层的 7 行网格与真实星期一致。
    */
   getHeatmapData(days = 245): HeatmapDay[] {
-    const now = new Date();
-    const startMs = now.getTime() - days * 86_400_000;
+    const totalDays = Math.max(7, Math.ceil(days / 7) * 7);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    // 以包含今天的周日作为网格末端，再向前回溯完整周数。
+    end.setDate(end.getDate() + (7 - end.getDay()) % 7);
+    const start = new Date(end);
+    start.setDate(end.getDate() - totalDays + 1);
+    start.setHours(0, 0, 0, 0);
+    const startMs = start.getTime();
+    const endMs = end.getTime();
     const counts = new Map<string, number>();
 
     // 初始化所有日期为 0
-    for (let i = 0; i < days; i++) {
-      const d = new Date(startMs + i * 86_400_000);
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
       counts.set(this.formatDate(d), 0);
     }
 
@@ -29,7 +38,7 @@ export class HomepageStatsService {
     const files = this.app.vault.getMarkdownFiles();
     for (const file of files) {
       const mtime = file.stat.mtime;
-      if (mtime >= startMs) {
+      if (mtime >= startMs && mtime <= endMs) {
         const key = this.formatDate(new Date(mtime));
         counts.set(key, (counts.get(key) ?? 0) + 1);
       }
@@ -46,6 +55,20 @@ export class HomepageStatsService {
     return this.app.vault.getMarkdownFiles()
       .filter((file) => file.stat.ctime >= start && file.stat.ctime < end)
       .length;
+  }
+
+  /** 获取上月有 Markdown 文件发生修改的自然日数量。 */
+  getLastMonthActiveDays(): number {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+    const end = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const days = new Set<string>();
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      if (file.stat.mtime >= start && file.stat.mtime < end) {
+        days.add(this.formatDate(new Date(file.stat.mtime)));
+      }
+    }
+    return days.size;
   }
 
   /**

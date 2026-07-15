@@ -24,7 +24,7 @@ import type { EventBus } from "../core/event-bus";
 import type { SettingsManager } from "../core/settings-manager";
 import { renderProjectFilterBar, DEFAULT_FILTER, type ProjectFilter } from "./components/ProjectFilterBar";
 import { applyFilterAndSort } from "./utils/ProjectFilterUtils";
-import { ProjectTimelineService, type TimelineEvent, type ProjectStats } from "./services/ProjectTimelineService";
+import { ProjectTimelineService, type ProjectStats } from "./services/ProjectTimelineService";
 import type { Task } from "../services/TaskSyncService";
 import type { TaskSyncService } from "../services/TaskSyncService";
 import type { TaskPriority as StorageTaskPriority } from "../services/TaskSyncService";
@@ -365,6 +365,7 @@ class HomepageTaskCreateModal extends Modal {
 
 export class HomepageView extends ItemView {
   private clockTimer: number | null = null;
+  private resizeFrame: number | null = null;
   private statsService!: HomepageStatsService;
   private dataService!: HomepageDataService;
   private bookmarksService!: HomepageBookmarksService;
@@ -373,6 +374,7 @@ export class HomepageView extends ItemView {
   private projectScanService!: HomepageProjectScanService;
   private activityLogService!: ActivityLogService;
   private currentTodoTab: TodoTabKey = "all";
+  private currentStickyIndex = 0;
   private currentProjectFilter: ProjectFilter = DEFAULT_FILTER;
   private allProjects: HomepageProject[] = [];
   private unsubSettings: (() => void) | null = null;
@@ -411,6 +413,13 @@ export class HomepageView extends ItemView {
     this.registerEvent(this.app.vault.on("modify", () => this.onProjectVaultChange()));
     this.registerEvent(this.app.vault.on("delete", () => this.onProjectVaultChange()));
     this.registerEvent(this.app.vault.on("rename", () => this.onProjectVaultChange()));
+    this.registerDomEvent(window, "resize", () => {
+      if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);
+      this.resizeFrame = window.requestAnimationFrame(() => {
+        this.resizeFrame = null;
+        this.loadHeatmap();
+      });
+    });
 
     this.renderDashboard();
 
@@ -439,15 +448,16 @@ export class HomepageView extends ItemView {
       main.querySelector(".homepage-weather-card")?.remove();
     }
 
-    const grid = main.createDiv({ cls: "homepage-grid" });
+    const insightLayout = settings.heatmapEnabled && settings.monthlyStatsEnabled ? "paired" : "single";
+    const grid = main.createDiv({ cls: "homepage-grid", attr: { "data-insight-layout": insightLayout } });
     this.renderDailyReview(grid);
     if (settings.projectBoardEnabled) this.renderProjects(grid);
     this.renderTodo(grid);
     this.renderStickyNotes(grid);
     if (settings.bookmarksEnabled) this.renderBookmarks(grid);
+    this.renderRecentNotes(grid);
     if (settings.heatmapEnabled) this.renderHeatmap(grid);
     if (settings.monthlyStatsEnabled) this.renderMonthlyStats(grid);
-    this.renderRecentNotes(grid);
 
     this.startClock();
     void this.loadDataAsync();
@@ -456,6 +466,10 @@ export class HomepageView extends ItemView {
 
   async onClose(): Promise<void> {
     this.stopClock();
+    if (this.resizeFrame !== null) {
+      window.cancelAnimationFrame(this.resizeFrame);
+      this.resizeFrame = null;
+    }
     if (this.unsubSettings) {
       this.unsubSettings();
       this.unsubSettings = null;
@@ -657,7 +671,7 @@ export class HomepageView extends ItemView {
     card.createDiv({ cls: "homepage-todo-list" });
   }
 
-  // ── 便签 (col-span-4) ─────────────────────────────────────
+  // ── 灵感速记 (col-span-4) ─────────────────────────────────
 
   private renderStickyNotes(parent: HTMLElement): void {
     const card = parent.createDiv({ cls: "homepage-card homepage-col-4", attr: { "data-section": "sticky-notes" } });
@@ -666,13 +680,27 @@ export class HomepageView extends ItemView {
     const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
     titleLeft.appendChild(svgIcon("stickyNote"));
-    titleLeft.createSpan({ text: "便签" });
+    titleLeft.createSpan({ text: "灵感速记" });
     const titleRight = titleRow.createDiv({ cls: "homepage-card-title-actions" });
-    createCardIconButton(titleRight, "plus", "新建便签", () => this.openQuickNoteModal());
-    createCardIconButton(titleRight, "list", "查看全部便签", () => this.showAllStickyNotes());
+    createCardIconButton(titleRight, "plus", "新建灵感速记", () => this.openQuickNoteModal());
+    createCardIconButton(titleRight, "list", "查看全部灵感速记", () => this.showAllStickyNotes());
 
-    // 便签容器
-    card.createDiv({ cls: "homepage-sticky-grid" });
+    const carousel = card.createDiv({ cls: "homepage-sticky-carousel" });
+    carousel.createDiv({ cls: "homepage-sticky-grid homepage-sticky-stage" });
+    const navigation = carousel.createDiv({ cls: "homepage-sticky-navigation" });
+    const previousButton = navigation.createEl("button", {
+      cls: "homepage-sticky-nav-button",
+      text: "<",
+      attr: { type: "button", "aria-label": "上一条灵感速记", "data-sticky-previous": "" },
+    });
+    previousButton.addEventListener("click", () => this.cycleStickyNote(-1));
+    navigation.createSpan({ cls: "homepage-sticky-counter", attr: { "data-sticky-counter": "" }, text: "0 / 0" });
+    const nextButton = navigation.createEl("button", {
+      cls: "homepage-sticky-nav-button",
+      text: ">",
+      attr: { type: "button", "aria-label": "下一条灵感速记", "data-sticky-next": "" },
+    });
+    nextButton.addEventListener("click", () => this.cycleStickyNote(1));
   }
 
   private renderBookmarks(parent: HTMLElement): void {
@@ -705,16 +733,16 @@ export class HomepageView extends ItemView {
     }
   }
 
-  // ── 热力图 (col-span-4) ───────────────────────────────────
+  // ── 创作节律 (col-span-8) ─────────────────────────────────
 
   private renderHeatmap(parent: HTMLElement): void {
-    const card = parent.createDiv({ cls: "homepage-card homepage-col-4", attr: { "data-section": "heatmap" } });
+    const card = parent.createDiv({ cls: "homepage-card homepage-rhythm-card", attr: { "data-section": "heatmap" } });
 
     // 标题行
     const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
     titleLeft.appendChild(svgIcon("flame"));
-    titleLeft.createSpan({ text: "热力图" });
+    titleLeft.createSpan({ text: "创作节律" });
 
     // 热力图主体
     const heatmapWrap = card.createDiv({ cls: "homepage-heatmap-wrap" });
@@ -724,17 +752,24 @@ export class HomepageView extends ItemView {
 
     const heatmapBody = heatmapWrap.createDiv({ cls: "homepage-heatmap-body" });
 
-    // 星期标签 — 间隔显示
+    // 星期标签
     const dayLabels = heatmapBody.createDiv({ cls: "homepage-heatmap-days" });
-    for (const d of ["日", "二", "四", "六"]) {
+    for (const d of ["一", "二", "三", "四", "五", "六", "日"]) {
       dayLabels.createDiv({ cls: "homepage-heatmap-day-label", text: d });
     }
 
-    // 网格容器 — 14行×15列 = 210格
-    const gridEl = heatmapBody.createDiv({ cls: "homepage-heatmap-grid" });
-    for (let i = 0; i < 14 * 15; i++) {
-      gridEl.createDiv({ cls: "homepage-heatmap-cell" });
-    }
+    // 可见周数在数据加载时按容器宽度动态计算。
+    heatmapBody.createDiv({ cls: "homepage-heatmap-grid" });
+
+    const rhythmSummary = card.createDiv({ cls: "homepage-rhythm-summary" });
+    const activeDays = rhythmSummary.createDiv({ cls: "homepage-rhythm-stat" });
+    activeDays.createDiv({ cls: "homepage-rhythm-stat-label", text: "今年活跃天数" });
+    activeDays.createDiv({ cls: "homepage-rhythm-stat-value", attr: { "data-active-days": "" }, text: "—" });
+    activeDays.createDiv({ cls: "homepage-rhythm-stat-unit", text: "天" });
+    const monthlyTrend = rhythmSummary.createDiv({ cls: "homepage-rhythm-stat homepage-rhythm-stat-trend" });
+    monthlyTrend.createDiv({ cls: "homepage-rhythm-stat-label", text: "本月趋势" });
+    monthlyTrend.createDiv({ cls: "homepage-rhythm-stat-value", attr: { "data-monthly-trend": "" }, text: "—" });
+    monthlyTrend.createDiv({ cls: "homepage-rhythm-stat-unit", text: "较上月" });
 
     // 图例（放在 wrap 内，紧跟 heatmap-body）
     const legend = heatmapWrap.createDiv({ cls: "homepage-heatmap-legend" });
@@ -743,87 +778,38 @@ export class HomepageView extends ItemView {
       legend.createDiv({ cls: "homepage-heatmap-cell homepage-heatmap-legend-cell", attr: { "data-level": String(i) } });
     }
     legend.createSpan({ cls: "homepage-heatmap-legend-label", text: "多" });
-    legend.createDiv({ cls: "homepage-heatmap-legend-total", attr: { "data-heatmap-total": "" }, text: "总计: ..." });
+    legend.createDiv({ cls: "homepage-heatmap-legend-total", attr: { "data-heatmap-total": "" }, text: "" });
   }
 
-  // ── 本月数据 (col-span-8) ─────────────────────────────────
+  // ── 本月洞察 (col-span-5) ─────────────────────────────────
 
   private renderMonthlyStats(parent: HTMLElement): void {
-    const card = parent.createDiv({ cls: "homepage-card homepage-col-8 homepage-metrics-card", attr: { "data-section": "monthly-stats" } });
+    const card = parent.createDiv({ cls: "homepage-card homepage-metrics-card", attr: { "data-section": "monthly-stats" } });
 
-    // 上半部分：标题 + 指标网格
-    const topArea = card.createDiv({ cls: "homepage-metrics-top" });
-
-    const titleRow = topArea.createDiv({ cls: "homepage-card-title-row" });
+    const titleRow = card.createDiv({ cls: "homepage-card-title-row" });
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
     titleLeft.appendChild(svgIcon("barChart"));
-    titleLeft.createSpan({ text: "本月数据" });
+    titleLeft.createSpan({ text: "本月洞察" });
 
-    const metricsGrid = topArea.createDiv({ cls: "homepage-metrics-grid" });
+    const metricsGrid = card.createDiv({ cls: "homepage-metrics-grid" });
     const metrics = [
-      { key: "noteCount", label: "笔记数量", value: "0", trend: "" },
-      { key: "taskCompleted", label: "待办完成", value: "0", trend: "" },
-      { key: "focusTime", label: "专注时长", value: "0 分", trend: "" },
-      { key: "consecutiveDays", label: "连续记录", value: "0天", trend: "" },
+      { key: "taskCompleted", label: "完成任务", value: "0", trend: "", icon: "checkSquare", tone: "green" },
+      { key: "focusTime", label: "专注时长", value: "0", trend: "", icon: "clock", tone: "blue" },
+      { key: "activeProjects", label: "活跃项目", value: "0", trend: "", icon: "folder", tone: "purple" },
+      { key: "noteGrowth", label: "笔记增长", value: "0", trend: "", icon: "fileText", tone: "red" },
     ];
 
-    // 4种不同的折线路径
-    const sparklinePaths = [
-      "M0 25 L20 15 L40 20 L60 10 L80 15 L100 5",
-      "M0 20 L20 10 L40 25 L60 15 L80 20 L100 8",
-      "M0 15 L20 25 L40 10 L60 20 L80 5 L100 18",
-      "M0 22 L20 18 L40 12 L60 22 L80 10 L100 15",
-    ];
-    const sparklineColors = ["#5c5cff", "#10b981", "#f59e0b", "#8b5cf6"];
-
-    for (let mi = 0; mi < metrics.length; mi++) {
-      const m = metrics[mi];
-      const metricCard = metricsGrid.createDiv({ cls: "homepage-metric-card", attr: { "data-metric": m.key } });
+    for (const m of metrics) {
+      const metricCard = metricsGrid.createDiv({ cls: `homepage-metric-card homepage-metric-card--${m.tone}`, attr: { "data-metric": m.key } });
       metricCard.createDiv({ cls: "homepage-metric-label", text: m.label });
+
+      const iconWrap = metricCard.createDiv({ cls: "homepage-metric-icon" });
+      iconWrap.innerHTML = SVG_ICON[m.icon as keyof typeof SVG_ICON];
 
       const valueRow = metricCard.createDiv({ cls: "homepage-metric-value-row" });
       valueRow.createSpan({ cls: "homepage-metric-value", text: m.value });
       valueRow.createSpan({ cls: "homepage-metric-trend", text: m.trend });
-
-      // SVG 迷你折线图
-      const sparklineWrap = metricCard.createDiv({ cls: "homepage-metric-sparkline", attr: { "data-sparkline": m.key } });
-      const sparkSvg = sparklineWrap.createSvg("svg", {
-        cls: "homepage-sparkline-svg",
-        attr: { viewBox: "0 0 100 30", preserveAspectRatio: "none" },
-      });
-      // 渐变定义
-      const defs = sparkSvg.createSvg("defs");
-      const grad = defs.createSvg("linearGradient", {
-        attr: { id: `spark-grad-${mi}`, x1: "0", y1: "0", x2: "0", y2: "1" },
-      });
-      grad.createSvg("stop", { attr: { offset: "0%", "stop-color": sparklineColors[mi], "stop-opacity": "0.3" } });
-      grad.createSvg("stop", { attr: { offset: "100%", "stop-color": sparklineColors[mi], "stop-opacity": "0" } });
-      // 折线
-      sparkSvg.createSvg("path", {
-        attr: { d: sparklinePaths[mi], fill: "none", stroke: sparklineColors[mi], "stroke-width": "2" },
-      });
-      // 渐变填充区域
-      sparkSvg.createSvg("path", {
-        attr: { d: `${sparklinePaths[mi]} L100 30 L0 30 Z`, fill: `url(#spark-grad-${mi})`, opacity: "0.2" },
-      });
     }
-
-    // 下半部分：引言装饰区
-    const quoteBar = card.createDiv({ cls: "homepage-metrics-quote" });
-    const quoteContent = quoteBar.createDiv({ cls: "homepage-metrics-quote-content" });
-    quoteContent.createEl("p", { cls: "homepage-metrics-quote-text", text: `"知识是连接的，记录是思考的开始。"` });
-    quoteContent.createEl("p", { cls: "homepage-metrics-quote-author", text: "— Keep Creating" });
-
-    // 装饰 SVG
-    const decor = quoteBar.createDiv({ cls: "homepage-metrics-decor" });
-    const decorSvg = decor.createSvg("svg", {
-      attr: { viewBox: "0 0 200 100", width: "100%", height: "100%" },
-    });
-    decorSvg.createSvg("path", { attr: { d: "M50 100 L100 40 L150 100 Z", fill: "currentColor", opacity: "0.15" } });
-    decorSvg.createSvg("path", { attr: { d: "M100 100 L160 20 L200 100 Z", fill: "currentColor", opacity: "0.25" } });
-    decorSvg.createSvg("path", { attr: { d: "M0 100 L60 60 L120 100 Z", fill: "currentColor", opacity: "0.08" } });
-    const decorIcon = decor.createDiv({ cls: "homepage-metrics-decor-icon homepage-icon" });
-    decorIcon.innerHTML = SVG_ICON.rocket;
   }
 
   // ── 最近笔记 (col-span-4) ─────────────────────────────────
@@ -937,19 +923,33 @@ export class HomepageView extends ItemView {
   // ── 热力图 ────────────────────────────────────────────────
 
   private loadHeatmap(): void {
-    const data = this.statsService.getHeatmapData(210);
-    const cells = this.containerEl.querySelectorAll(".homepage-heatmap-grid .homepage-heatmap-cell");
+    const data = this.statsService.getHeatmapData(364);
+    const card = this.containerEl.querySelector('[data-section="heatmap"]') as HTMLElement | null;
+    const bodyEl = card?.querySelector(".homepage-heatmap-body") as HTMLElement | null;
+    const dayLabelsEl = card?.querySelector(".homepage-heatmap-days") as HTMLElement | null;
+    const gridEl = card?.querySelector(".homepage-heatmap-grid") as HTMLElement | null;
+    const monthsEl = card?.querySelector("[data-months]") as HTMLElement | null;
+    if (!card || !bodyEl || !gridEl || !monthsEl) return;
+
+    const cardStyles = window.getComputedStyle(card);
+    const cellSize = Number.parseFloat(cardStyles.getPropertyValue("--rhythm-cell-size")) || 14;
+    const cellGap = Number.parseFloat(cardStyles.getPropertyValue("--rhythm-cell-gap")) || 3;
+    const labelsWidth = dayLabelsEl?.offsetWidth || 16;
+    const availableWidth = Math.max(0, bodyEl.clientWidth - labelsWidth - 8);
+    const visibleWeeks = Math.max(8, Math.min(52, Math.floor((availableWidth + cellGap) / (cellSize + cellGap))));
+    const visibleData = data.slice(-visibleWeeks * 7);
+    card.style.setProperty("--rhythm-weeks", String(visibleWeeks));
 
     const maxCount = Math.max(1, ...data.map((d) => d.count));
-    let totalActiveDays = 0;
+    const now = new Date();
+    const currentYear = String(now.getFullYear());
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const yearActiveDays = data.filter((day) => day.count > 0 && day.date.startsWith(currentYear)).length;
 
-    data.forEach((day, i) => {
-      const cell = cells[i] as HTMLElement | undefined;
-      if (!cell) return;
-
+    gridEl.empty();
+    visibleData.forEach((day) => {
       let level = 0;
       if (day.count > 0) {
-        totalActiveDays++;
         const ratio = day.count / maxCount;
         if (ratio > 0.75) level = 4;
         else if (ratio > 0.5) level = 3;
@@ -957,33 +957,30 @@ export class HomepageView extends ItemView {
         else level = 1;
       }
 
-      cell.setAttribute("data-level", String(level));
-      cell.title = `${day.date}: ${day.count} 次修改`;
+      const cell = gridEl.createDiv({
+        cls: "homepage-heatmap-cell",
+        attr: { "data-level": String(level), title: `${day.date}: ${day.count} 次修改` },
+      });
+      if (day.date > todayKey) cell.addClass("is-future");
     });
 
-    // 月份标签 — 间隔显示
-    const monthsEl = this.containerEl.querySelector("[data-months]");
-    if (monthsEl) {
-      monthsEl.empty();
-      const monthSet = new Set<string>();
-      const monthLabels: string[] = [];
-      for (const day of data) {
-        const m = day.date.slice(0, 7); // YYYY-MM
-        if (!monthSet.has(m)) {
-          monthSet.add(m);
-          const monthNum = parseInt(m.slice(5, 7), 10);
-          monthLabels.push(`${monthNum}月`);
-        }
-      }
-      // 每隔一个月显示
-      for (let i = 0; i < monthLabels.length; i += 2) {
-        monthsEl.createSpan({ cls: "homepage-heatmap-month-label", text: monthLabels[i] });
-      }
-    }
+    monthsEl.empty();
+    let previousMonth = -1;
+    visibleData.forEach((day, index) => {
+      const month = Number(day.date.split("-")[1]);
+      if (month === previousMonth) return;
+      previousMonth = month;
+      const label = monthsEl.createSpan({ cls: "homepage-heatmap-month-label", text: `${month}月` });
+      label.style.gridColumn = String(Math.floor(index / 7) + 1);
+    });
 
     // 总天数
     const totalEl = this.containerEl.querySelector("[data-heatmap-total]");
-    if (totalEl) totalEl.textContent = `总计: ${totalActiveDays} 天`;
+    if (totalEl) totalEl.textContent = "";
+    const activeDaysEl = this.containerEl.querySelector("[data-active-days]");
+    if (activeDaysEl) activeDaysEl.textContent = String(yearActiveDays);
+    const monthlyTrendEl = this.containerEl.querySelector("[data-monthly-trend]");
+    if (monthlyTrendEl) monthlyTrendEl.textContent = "计算中";
   }
 
   // ── 月度统计 ──────────────────────────────────────────────
@@ -993,13 +990,15 @@ export class HomepageView extends ItemView {
     const activityStats = this.activityLogService.getMonthlyStats();
     const lastMonthStats = this.activityLogService.getLastMonthStats();
     const lastMonthNoteCount = this.statsService.getLastMonthNoteCount();
+    const lastMonthActiveDays = this.statsService.getLastMonthActiveDays();
     const taskCompletions = await this.getMonthlyTaskCompletionCounts();
 
+    const projectPaths = await this.getProjectPaths(this.dependencies.settingsManager.getSettings().homepage.projectCategories);
     const updates: Record<string, string> = {
-      noteCount: String(stats.noteCount),
       taskCompleted: String(taskCompletions.current),
       focusTime: this.formatFocusMinutes(activityStats.focusMinutes),
-      consecutiveDays: `${activityStats.consecutiveDays}天`,
+      activeProjects: String(projectPaths.length),
+      noteGrowth: String(stats.noteCount),
     };
 
     for (const [key, value] of Object.entries(updates)) {
@@ -1008,14 +1007,18 @@ export class HomepageView extends ItemView {
     }
 
     const trends: Record<string, string> = {
-      noteCount: this.formatMetricTrend(stats.noteCount, lastMonthNoteCount),
       taskCompleted: this.formatMetricTrend(taskCompletions.current, taskCompletions.previous),
       focusTime: this.formatMetricTrend(activityStats.focusMinutes, lastMonthStats.focusMinutes),
-      consecutiveDays: "",
+      activeProjects: "— 持平",
+      noteGrowth: this.formatMetricTrend(stats.noteCount, lastMonthNoteCount),
     };
     for (const [key, trend] of Object.entries(trends)) {
       const element = this.containerEl.querySelector(`[data-metric="${key}"] .homepage-metric-trend`);
       if (element) element.textContent = trend;
+    }
+    const monthlyTrendEl = this.containerEl.querySelector("[data-monthly-trend]");
+    if (monthlyTrendEl) {
+      monthlyTrendEl.textContent = this.formatMetricTrend(stats.activeDays, lastMonthActiveDays).replace(" 较上月", "");
     }
   }
 
@@ -1040,17 +1043,16 @@ export class HomepageView extends ItemView {
   }
 
   private formatMetricTrend(current: number, previous: number): string {
-    if (previous <= 0) return current > 0 ? "本月新增" : "";
+    if (previous <= 0) return current > 0 ? "▲ 本月新增" : "— 暂无变化";
     const percent = Math.round((current - previous) / previous * 100);
-    return `${percent >= 0 ? "+" : ""}${percent}%`;
+    if (percent === 0) return "— 持平";
+    return `${percent > 0 ? "▲" : "▼"} ${Math.abs(percent)}% 较上月`;
   }
 
   private formatFocusMinutes(minutes: number): string {
     const rounded = Math.round(minutes);
     if (rounded < 60) return `${rounded} 分`;
-    const hours = Math.floor(rounded / 60);
-    const rest = rounded % 60;
-    return rest ? `${hours}h ${rest}m` : `${hours}h`;
+    return `${(rounded / 60).toFixed(1)} 小时`;
   }
 
   // ── 最近笔记 ──────────────────────────────────────────────
@@ -1214,9 +1216,8 @@ export class HomepageView extends ItemView {
   private async openProjectDetailPanel(project: HomepageProject): Promise<void> {
     const tagColor = getProjectTypeColor(project.type);
 
-    // 异步加载统计和时间轴数据
+    // 异步加载统计数据
     const statsPromise = this.timelineService.getProjectStats(project.folderPath);
-    const timelinePromise = this.timelineService.getProjectTimeline(project.folderPath);
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay" });
     const panel = overlay.createDiv({ cls: "hp-detail-panel hp-detail-panel-enhanced" });
@@ -1282,21 +1283,6 @@ export class HomepageView extends ItemView {
       }
     }
 
-    // 项目时间轴（异步加载）
-    const timelineContainer = body.createDiv({ cls: "hp-detail-section" });
-    const timelineTitle = timelineContainer.createDiv({ cls: "hp-detail-section-title", text: "项目时间轴" });
-    const timelineContent = timelineContainer.createDiv({ cls: "hp-detail-timeline" });
-    timelineContent.createDiv({ cls: "hp-detail-stats-loading", text: "加载时间轴..." });
-
-    timelinePromise.then((events) => {
-      timelineContent.empty();
-      if (events.length === 0) {
-        timelineContent.createDiv({ cls: "homepage-empty-text", text: "暂无历史记录" });
-      } else {
-        this.renderTimeline(timelineContent, events, overlay);
-      }
-    });
-
     // 最近编辑
     if (project.recentFiles.length > 0) {
       const section = body.createDiv({ cls: "hp-detail-section" });
@@ -1349,36 +1335,6 @@ export class HomepageView extends ItemView {
       const info = card.createDiv({ cls: "hp-detail-stat-info" });
       info.createDiv({ cls: "hp-detail-stat-value", text: item.value });
       info.createDiv({ cls: "hp-detail-stat-label", text: item.label });
-    }
-  }
-
-  /**
-   * 渲染项目时间轴
-   */
-  private renderTimeline(container: HTMLElement, events: TimelineEvent[], overlay: HTMLElement): void {
-    for (const event of events.slice(0, 10)) {
-      const item = container.createDiv({ cls: "hp-detail-timeline-item" });
-
-      const dot = item.createDiv({ cls: "hp-detail-timeline-dot" });
-      dot.style.backgroundColor = event.color;
-
-      const content = item.createDiv({ cls: "hp-detail-timeline-content" });
-      const header = content.createDiv({ cls: "hp-detail-timeline-header" });
-      header.createSpan({ cls: "hp-detail-timeline-title", text: event.title });
-      header.createSpan({ cls: "hp-detail-timeline-time", text: this.formatRelativeTime(event.timestamp) });
-
-      if (event.description) {
-        content.createDiv({ cls: "hp-detail-timeline-desc", text: event.description });
-      }
-
-      // 如果有文件路径，点击跳转
-      if (event.filePath) {
-        item.style.cursor = "pointer";
-        item.addEventListener("click", () => {
-          overlay.remove();
-          this.openFile(event.filePath!);
-        });
-      }
     }
   }
 
@@ -1826,51 +1782,92 @@ export class HomepageView extends ItemView {
 
   // ── 便签 ──────────────────────────────────────────────────
 
-  private loadStickyNotes(): void {
-    const notes = this.dataService.getQuickNotes();
+  private getInspirationNotesFolder(): string {
+    return this.dependencies.settingsManager.getSettings().homepage.inspirationNotesFolder.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+  }
+
+  private getStickyNotes(): HomepageQuickNote[] {
+    const folder = this.getInspirationNotesFolder();
+    if (!folder) return this.dataService.getQuickNotes();
+    const prefix = `${folder}/`;
+    return this.app.vault.getMarkdownFiles()
+      .filter((file) => file.path.startsWith(prefix))
+      .sort((a, b) => b.stat.mtime - a.stat.mtime)
+      .map((file) => ({ id: file.path, label: file.basename, path: file.path, color: "default" }));
+  }
+
+  private async hydrateStickyNote(note: HomepageQuickNote): Promise<void> {
+    if (note.content !== undefined) return;
+    const file = this.app.vault.getAbstractFileByPath(note.path);
+    if (file instanceof TFile) note.content = await this.app.vault.cachedRead(file);
+  }
+
+  private async loadStickyNotes(): Promise<void> {
+    const notes = this.getStickyNotes();
     const container = this.containerEl.querySelector('[data-section="sticky-notes"] .homepage-sticky-grid');
     if (!container) return;
 
     container.empty();
+    const previousButton = this.containerEl.querySelector('[data-section="sticky-notes"] [data-sticky-previous]') as HTMLButtonElement | null;
+    const nextButton = this.containerEl.querySelector('[data-section="sticky-notes"] [data-sticky-next]') as HTMLButtonElement | null;
+    const counter = this.containerEl.querySelector('[data-section="sticky-notes"] [data-sticky-counter]');
 
     if (notes.length === 0) {
       const empty = container.createDiv({ cls: "homepage-sticky-empty" });
-      empty.createDiv({ cls: "homepage-empty-text", text: "暂无便签" });
-      empty.createDiv({ cls: "homepage-empty-hint", text: "点击「新建便签」创建第一条" });
+      empty.createDiv({ cls: "homepage-empty-text", text: "暂无灵感速记" });
+      empty.createDiv({ cls: "homepage-empty-hint", text: "点击右上角「+」记录第一条灵感" });
+      if (counter) counter.textContent = "0 / 0";
+      if (previousButton) previousButton.disabled = true;
+      if (nextButton) nextButton.disabled = true;
       return;
     }
 
-    notes.slice(0, 3).forEach((note, index) => {
-      this.renderStickyNote(container as HTMLElement, note, index);
-    });
+    this.currentStickyIndex = Math.min(Math.max(this.currentStickyIndex, 0), notes.length - 1);
+    await this.hydrateStickyNote(notes[this.currentStickyIndex]);
+    this.renderStickyNote(container as HTMLElement, notes[this.currentStickyIndex]);
+    if (counter) counter.textContent = `${this.currentStickyIndex + 1} / ${notes.length}`;
+    const navigationDisabled = notes.length <= 1;
+    if (previousButton) previousButton.disabled = navigationDisabled;
+    if (nextButton) nextButton.disabled = navigationDisabled;
+  }
+
+  private cycleStickyNote(direction: -1 | 1): void {
+    const notes = this.getStickyNotes();
+    if (notes.length <= 1) return;
+    this.currentStickyIndex = (this.currentStickyIndex + direction + notes.length) % notes.length;
+    void this.loadStickyNotes();
   }
 
   private renderStickyNote(
     parent: HTMLElement,
     note: HomepageQuickNote,
-    index: number,
     onChanged?: () => void,
   ): void {
-    const colors = ["yellow", "blue", "green"];
     const noteEl = parent.createDiv({
-      cls: `homepage-sticky-note homepage-sticky-note--${colors[index % colors.length]}`,
+      cls: "homepage-sticky-note homepage-sticky-note--plain",
     });
 
     noteEl.createDiv({ cls: "homepage-sticky-label", text: note.label || "无标题" });
-    if (note.content) noteEl.createDiv({ cls: "homepage-sticky-text", text: note.content });
-
-    noteEl.addEventListener("dblclick", (event) => {
-      if ((event.target as HTMLElement).closest(".homepage-sticky-delete")) return;
-      this.openQuickNoteEditor(note, onChanged);
+    noteEl.createDiv({
+      cls: `homepage-sticky-text${note.content ? "" : " is-placeholder"}`,
+      text: note.content || "双击添加速记内容…",
     });
 
-    if (note.path) {
-      noteEl.style.cursor = "pointer";
-      noteEl.addEventListener("click", (event) => {
-        if ((event.target as HTMLElement).closest(".homepage-sticky-delete")) return;
-        setTimeout(() => this.openFile(note.path), 200);
-      });
-    }
+    let clickTimer: number | null = null;
+    noteEl.addEventListener("dblclick", (event) => {
+      if ((event.target as HTMLElement).closest(".homepage-sticky-delete")) return;
+      if (clickTimer !== null) window.clearTimeout(clickTimer);
+      if (note.path) void this.openFile(note.path);
+    });
+
+    noteEl.addEventListener("click", (event) => {
+      if ((event.target as HTMLElement).closest(".homepage-sticky-delete")) return;
+      if (clickTimer !== null) window.clearTimeout(clickTimer);
+      clickTimer = window.setTimeout(() => {
+        clickTimer = null;
+        this.beginStickyInlineEdit(note, noteEl, onChanged);
+      }, 220);
+    });
 
     const deleteButton = noteEl.createEl("button", {
       cls: "homepage-sticky-delete",
@@ -1879,9 +1876,51 @@ export class HomepageView extends ItemView {
     });
     deleteButton.addEventListener("click", async (event) => {
       event.stopPropagation();
-      await this.dataService.deleteQuickNote(note.id);
-      this.loadStickyNotes();
+      const folder = this.getInspirationNotesFolder();
+      if (folder) {
+        const file = this.app.vault.getAbstractFileByPath(note.path);
+        if (file instanceof TFile) await this.app.vault.delete(file);
+      } else {
+        await this.dataService.deleteQuickNote(note.id);
+      }
+      void this.loadStickyNotes();
       onChanged?.();
+    });
+  }
+
+  private beginStickyInlineEdit(note: HomepageQuickNote, noteEl: HTMLElement, onChanged?: () => void): void {
+    if (noteEl.querySelector(".homepage-sticky-editor")) return;
+    const textEl = noteEl.querySelector(".homepage-sticky-text") as HTMLElement | null;
+    if (!textEl) return;
+    const editor = document.createElement("textarea");
+    editor.className = "homepage-sticky-editor";
+    editor.value = note.content || "";
+    editor.placeholder = "记录此刻的想法…";
+    textEl.replaceWith(editor);
+    editor.focus();
+    editor.setSelectionRange(editor.value.length, editor.value.length);
+
+    let finished = false;
+    const finish = async (save: boolean): Promise<void> => {
+      if (finished) return;
+      finished = true;
+      if (save && editor.value !== (note.content || "")) {
+        note.content = editor.value;
+        const file = this.app.vault.getAbstractFileByPath(note.path);
+        if (file instanceof TFile) await this.app.vault.modify(file, editor.value);
+        else await this.app.vault.create(note.path, editor.value);
+        onChanged?.();
+      }
+      const replacement = noteEl.createDiv({
+        cls: `homepage-sticky-text${note.content ? "" : " is-placeholder"}`,
+        text: note.content || "双击添加速记内容…",
+      });
+      editor.replaceWith(replacement);
+    };
+    editor.addEventListener("blur", () => { void finish(true); });
+    editor.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") { event.preventDefault(); void finish(false); }
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void finish(true); }
     });
   }
 
@@ -1892,7 +1931,7 @@ export class HomepageView extends ItemView {
     const icon = header.createDiv({ cls: "hp-detail-icon" });
     icon.innerHTML = SVG_ICON.stickyNote;
     const info = header.createDiv({ cls: "hp-detail-header-info" });
-    info.createEl("h2", { cls: "hp-detail-title", text: "全部便签" });
+    info.createEl("h2", { cls: "hp-detail-title", text: "全部灵感速记" });
     const meta = info.createDiv({ cls: "hp-detail-meta-text" });
     const closeButton = header.createEl("button", {
       cls: "hp-detail-close",
@@ -1903,38 +1942,22 @@ export class HomepageView extends ItemView {
     overlay.addEventListener("click", (event) => { if (event.target === overlay) overlay.remove(); });
 
     const body = panel.createDiv({ cls: "hp-all-body hp-all-sticky-body homepage-sticky-grid" });
-    const renderNotes = () => {
-      const notes = this.dataService.getQuickNotes();
+    const renderNotes = async () => {
+      const notes = this.getStickyNotes();
       body.empty();
-      meta.textContent = `${notes.length} 条便签`;
+      meta.textContent = `${notes.length} 条速记`;
       if (notes.length === 0) {
-        body.createDiv({ cls: "homepage-empty-text", text: "暂无便签" });
+        body.createDiv({ cls: "homepage-empty-text", text: "暂无灵感速记" });
         return;
       }
-      notes.forEach((note, index) => this.renderStickyNote(body, note, index, renderNotes));
+      for (const note of notes) {
+        await this.hydrateStickyNote(note);
+        this.renderStickyNote(body, note, () => { void renderNotes(); });
+      }
     };
 
-    renderNotes();
+    void renderNotes();
     setTimeout(() => closeButton.focus(), 50);
-  }
-
-  /**
-   * 打开便签编辑器
-   */
-  private openQuickNoteEditor(note: HomepageQuickNote, onUpdated?: () => void): void {
-    const { QuickNoteEditorModal } = require("./components/QuickNoteEditorModal");
-
-    new QuickNoteEditorModal(
-      this.app,
-      note.id,
-      note.label,
-      note.content || "",
-      async (id: string, content: string) => {
-        await this.dataService.updateQuickNoteContent(id, content);
-        this.loadStickyNotes();
-        onUpdated?.();
-      }
-    ).open();
   }
 
   private openQuickNoteModal(existing?: HomepageQuickNote): void {
@@ -1949,13 +1972,16 @@ export class HomepageView extends ItemView {
       } else {
         await this.app.vault.create(data.path, content);
       }
-      if (existing) {
+      const fixedFolder = this.getInspirationNotesFolder();
+      if (existing && !fixedFolder) {
         await this.dataService.updateQuickNote(existing.id, { ...data, content });
-      } else {
+      } else if (!existing && !fixedFolder) {
         await this.dataService.addQuickNote(data.label, data.path, data.color, content);
+        this.currentStickyIndex = Math.max(0, this.dataService.getQuickNotes().length - 1);
       }
-      this.loadStickyNotes();
-    }, existing).open();
+      if (fixedFolder) this.currentStickyIndex = 0;
+      void this.loadStickyNotes();
+    }, existing, this.getInspirationNotesFolder()).open();
   }
 
   // ── 每日回顾统计 ──────────────────────────────────────────

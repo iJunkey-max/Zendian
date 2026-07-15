@@ -5,31 +5,24 @@ import type { HomepageQuickNote } from "./types";
 
 type QuickNoteSaveCallback = (note: Omit<HomepageQuickNote, "id">) => Promise<void> | void;
 
-const COLOR_PRESETS = [
-  { label: "蓝色", value: "#3b82f6" },
-  { label: "绿色", value: "#10b981" },
-  { label: "橙色", value: "#f59e0b" },
-  { label: "紫色", value: "#8b5cf6" },
-  { label: "红色", value: "#ef4444" },
-  { label: "青色", value: "#06b6d4" },
-];
-
 const FOLDER_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H9l2 2h7.5A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5Z"/></svg>`;
 
 export class QuickNoteModal extends Modal {
   private label = "";
   private folderPath = "";
-  private color = "#3b82f6";
   private onSave: QuickNoteSaveCallback;
   private folders: string[] = [];
   private suggestionsEl: HTMLElement | null = null;
   private previewEl: HTMLElement | null = null;
   private activeSuggestion = 0;
   private filteredFolders: string[] = [];
+  private fixedFolderPath: string;
 
-  constructor(app: App, onSave: QuickNoteSaveCallback, existing?: HomepageQuickNote) {
+  constructor(app: App, onSave: QuickNoteSaveCallback, existing?: HomepageQuickNote, fixedFolderPath = "") {
     super(app);
     this.onSave = onSave;
+    this.fixedFolderPath = fixedFolderPath.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+    if (this.fixedFolderPath) this.folderPath = this.fixedFolderPath;
     this.folders = app.vault.getAllLoadedFiles()
       .filter((item): item is TFolder => item instanceof TFolder && Boolean(item.path))
       .map((folder) => folder.path)
@@ -38,18 +31,17 @@ export class QuickNoteModal extends Modal {
     if (existing) {
       this.label = existing.label;
       const separator = existing.path.lastIndexOf("/");
-      this.folderPath = separator >= 0 ? existing.path.slice(0, separator) : "";
-      this.color = existing.color;
+      this.folderPath = this.fixedFolderPath || (separator >= 0 ? existing.path.slice(0, separator) : "");
     }
   }
 
   onOpen(): void {
     const { contentEl } = this;
     contentEl.addClass("zendian-quicknote-create-modal");
-    contentEl.createEl("h2", { text: "新建便签" });
+    contentEl.createEl("h2", { text: "新建灵感速记" });
     contentEl.createDiv({
       cls: "zendian-quicknote-create-intro",
-      text: "选择仓库文件夹，便签将绑定到同名 Markdown 文件。",
+      text: this.fixedFolderPath ? `将自动保存到「${this.fixedFolderPath}」文件夹。` : "选择仓库文件夹，速记将绑定到同名 Markdown 文件。",
     });
 
     new Setting(contentEl)
@@ -65,10 +57,11 @@ export class QuickNoteModal extends Modal {
         text.inputEl.addClass("zendian-quicknote-label-input");
       });
 
-    const folderSetting = new Setting(contentEl).setName("存放文件夹");
-    folderSetting.settingEl.addClass("zendian-quicknote-folder-setting");
-    folderSetting.controlEl.addClass("zendian-quicknote-folder-control");
-    folderSetting.addText((text) => {
+    if (!this.fixedFolderPath) {
+      const folderSetting = new Setting(contentEl).setName("存放文件夹");
+      folderSetting.settingEl.addClass("zendian-quicknote-folder-setting");
+      folderSetting.controlEl.addClass("zendian-quicknote-folder-control");
+      folderSetting.addText((text) => {
       text.setPlaceholder("输入路径搜索文件夹").setValue(this.folderPath || "/");
       const input = text.inputEl;
       input.addClass("zendian-quicknote-folder-input");
@@ -94,21 +87,15 @@ export class QuickNoteModal extends Modal {
       input.addEventListener("focus", () => this.renderFolderSuggestions(input));
       input.addEventListener("blur", () => window.setTimeout(() => this.hideSuggestions(input), 120));
       input.addEventListener("keydown", (event) => this.handleFolderKeydown(event, input));
-    });
+      });
+    }
 
     this.previewEl = contentEl.createDiv({ cls: "zendian-quicknote-path-preview" });
     this.updatePathPreview();
 
-    new Setting(contentEl)
-      .setName("颜色")
-      .addDropdown((dropdown) => {
-        for (const option of COLOR_PRESETS) dropdown.addOption(option.value, option.label);
-        dropdown.setValue(this.color).onChange((value) => { this.color = value; });
-      });
-
     new Setting(contentEl).addButton((button) =>
       button
-        .setButtonText("创建便签")
+        .setButtonText("创建速记")
         .setCta()
         .onClick(async () => this.saveNote())
     );
@@ -213,11 +200,11 @@ export class QuickNoteModal extends Modal {
     }
     const path = folderPath ? `${folderPath}/${label}.md` : `${label}.md`;
     try {
-      await this.onSave({ label, path, color: this.color });
+      await this.onSave({ label, path, color: "default" });
       this.close();
     } catch (error) {
-      console.error("[ZENdian] 创建便签失败:", error);
-      new Notice(error instanceof Error ? error.message : "创建便签失败");
+      console.error("[ZENdian] 创建灵感速记失败:", error);
+      new Notice(error instanceof Error ? error.message : "创建灵感速记失败");
     }
   }
 

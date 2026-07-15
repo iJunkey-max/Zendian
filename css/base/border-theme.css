@@ -3057,12 +3057,27 @@ body {
     --grid-background-pattern-color: var(--background-modifier-border);
 }
 
-.editor-grid-background-pattren .workspace-leaf-content[data-type="markdown"],
+.editor-grid-background-pattren .workspace-leaf-content[data-type="markdown"] .markdown-source-view.mod-cm6 .cm-scroller,
+.editor-grid-background-pattren .workspace-leaf-content[data-type="markdown"] .markdown-preview-view,
 .editor-grid-background-pattren .export-image-preview-container.markdown-rendered {
     background-image: linear-gradient(to right, var(--grid-background-pattern-color) 1px, transparent 1px),
         linear-gradient(to bottom, var(--grid-background-pattern-color) 1px, transparent 1px);
     background-size: var(--grid-background-pattern-size) var(--grid-background-pattern-size);
-    background-position: center;
+    background-position: 0 0;
+    background-origin: padding-box;
+    background-attachment: local;
+}
+
+/* 移动端的编辑器工具栏与安全区会改变外层 leaf 的可视尺寸。
+   将网格锚定在真正滚动的编辑器/阅读容器，避免背景被内容层遮住或偏到视口外。 */
+.is-mobile.editor-grid-background-pattren .workspace-leaf-content[data-type="markdown"] .markdown-source-view.mod-cm6 {
+    background: transparent;
+}
+
+.is-mobile.editor-grid-background-pattren .workspace-leaf-content[data-type="markdown"] .markdown-source-view.mod-cm6 .cm-scroller,
+.is-mobile.editor-grid-background-pattren .workspace-leaf-content[data-type="markdown"] .markdown-preview-view {
+    background-position: max(env(safe-area-inset-left), 0px) 0;
+    background-clip: padding-box;
 }
 
 

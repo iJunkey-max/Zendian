@@ -322,6 +322,8 @@ export interface HomepageSettings {
   bookmarksEnabled: boolean;
   /** 最近笔记数量 */
   recentNoteCount: number;
+  /** 灵感速记绑定的文件夹；为空时沿用旧版独立速记数据。 */
+  inspirationNotesFolder: string;
 }
 
 // ============================================================
@@ -632,5 +634,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     monthlyStatsEnabled: true,
     bookmarksEnabled: true,
     recentNoteCount: 6,
+    inspirationNotesFolder: "",
   },
 };

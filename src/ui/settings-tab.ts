@@ -533,6 +533,12 @@ const SECTION_SOURCE: TabDef[] = [
         ],
       },
       {
+        id: "homepage-inspiration-notes", title: "Inspiration Notes", titleZh: "灵感速记",
+        settings: [
+          text("homepage-inspiration-folder", "绑定文件夹", (s) => s.homepage.inspirationNotesFolder, (s, v) => ({ homepage: { ...s.homepage, inspirationNotesFolder: v.trim() } }), "例如：00_灵感速记", "文件夹内的 Markdown 文件会自动作为灵感速记，可在主页左右切换"),
+        ],
+      },
+      {
         id: "homepage-project-categories", title: "Project Categories", titleZh: "项目分类",
         projectCategories: true,
       },
@@ -570,7 +576,7 @@ const MENU_CONFIG: TabDef[] = [
   { id: "reading", name: "编辑与阅读", icon: "book-open-text", sections: sections("focus-mode", "hover-indicator", "page-paragraph", "text-details") },
   { id: "content", name: "标题与内容", icon: "type", sections: sections("heading-system", "code-blockquote", "callout-embed", "list-table", "images", "banner") },
   { id: "files", name: "文件与图标", icon: "folder-tree", sections: sections("file-tree-basic", "file-tree-cards", "icon-system-main", "sidebar") },
-  { id: "homepage", name: "主页", icon: "house", sections: sections("homepage-basic", "homepage-modules", "homepage-project-categories", "homepage-project-subfolders") },
+  { id: "homepage", name: "主页", icon: "house", sections: sections("homepage-basic", "homepage-inspiration-notes", "homepage-modules", "homepage-project-categories", "homepage-project-subfolders") },
   { id: "compat", name: "设备", icon: "monitor-smartphone", sections: sections("mobile-layout", "plugin-compat") },
 ];
 

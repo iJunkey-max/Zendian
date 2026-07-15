@@ -261,8 +261,59 @@
 
 /* 响应式：窄屏下改为上下布局 */
 @media (max-width: 768px) {
+  .quicknote-editor-modal {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .quicknote-editor-modal .modal-content {
+    min-height: 0;
+  }
+
+  .quicknote-editor-header {
+    padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+    gap: 10px;
+  }
+
+  .quicknote-editor-header h2 {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .quicknote-editor-container {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.8fr);
+    min-height: 0;
+  }
+
+  .quicknote-textarea,
+  .quicknote-preview {
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+
+  .quicknote-editor-footer {
+    padding: 10px max(16px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+}
+
+@media (max-width: 420px) {
+  .quicknote-editor-status-text {
+    max-width: 6.5rem;
+    padding: 4px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .quicknote-editor-footer {
+    font-size: 11px;
   }
 }

@@ -3199,3 +3199,67 @@
     max-height: min(68vh, 560px);
   }
 }
+
+/* 移动端：控制台使用自然高度，避免双层滚动与底部导航遮挡。 */
+@media (max-width: 640px) {
+  body.is-mobile .zc-root .zc-wrapper {
+    width: 100%;
+    max-width: none;
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      calc(72px + env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+    box-sizing: border-box;
+  }
+
+  body.is-mobile .zc-root :is(.zc-stats, .zc-grid, .zc-workspace-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body.is-mobile .zc-root .zc-stats {
+    gap: 10px;
+  }
+
+  body.is-mobile .zc-root .zc-stat-card {
+    min-width: 0;
+    padding: 14px;
+  }
+
+  body.is-mobile .zc-root .zc-tabs {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  body.is-mobile .zc-root .zc-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.is-mobile .zc-root .zc-tab {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+
+  body.is-mobile .zc-root :is(button, .clickable, .zc-check, .zc-hero-export) {
+    min-height: 40px;
+  }
+
+  body.is-mobile .zc-root .zc-row {
+    min-width: 0;
+    padding: 10px;
+  }
+
+  body.is-mobile .zc-root .zc-row-time {
+    max-width: 5.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  body.is-mobile .zc-root .zc-workspace-primary,
+  body.is-mobile .zc-root .zc-workspace-aside {
+    height: auto;
+    max-height: none;
+  }
+}

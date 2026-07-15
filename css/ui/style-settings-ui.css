@@ -1634,9 +1634,46 @@
 }
 
 @media (max-width: 520px) {
+    body.is-mobile .zendian-settings-wrapper {
+        width: 100%;
+        min-width: 0;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    body.is-mobile .zendian-toolbar {
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
+    }
+
     .zendian-toolbar-actions {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    body.is-mobile .zendian-search,
+    body.is-mobile .zendian-section-content :is(input[type="text"], input[type="number"], select, textarea) {
+        width: 100%;
+        max-width: 100%;
+        min-height: 44px;
+        box-sizing: border-box;
+        font-size: 16px;
+    }
+
+    body.is-mobile .zendian-nav {
+        gap: 6px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    body.is-mobile .zendian-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    body.is-mobile .zendian-nav-item {
+        flex: 0 0 auto;
+        min-height: 44px;
     }
 
     .zendian-reset-all {
@@ -1660,6 +1697,29 @@
     .zendian-section-content .setting-item-control {
         justify-content: flex-end;
         width: 100%;
+    }
+
+    body.is-mobile :is(
+        .zendian-project-category-row,
+        .zendian-project-category-add-row,
+        .zendian-project-subfolder-row,
+        .zendian-project-subfolder-add-row
+    ) {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    body.is-mobile :is(
+        .zendian-project-category-actions,
+        .zendian-project-category-add,
+        .zendian-project-subfolder-actions
+    ) {
+        justify-self: stretch;
+        width: 100%;
+    }
+
+    body.is-mobile .zendian-section-card {
+        overflow: hidden;
     }
 }
 

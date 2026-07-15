@@ -1,7 +1,7 @@
 {
   "id": "zendian",
   "name": "ZENdian",
-  "version": "3.0.04",
+  "version": "3.1.00",
   "minAppVersion": "1.12.7",
   "description": "A personal workspace for Obsidian with dashboards, project management, tasks, timelines, snapshots, analytics, and an integrated writing experience.",
   "author": "Junkey",
