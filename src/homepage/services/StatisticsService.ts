@@ -88,7 +88,7 @@ export class StatisticsService {
   async getDeliverableStatistics(projectPath: string): Promise<DeliverableStatistics> {
     const deliverables = await this.projectDataService.getDeliverables(projectPath);
 
-    const completed = deliverables.filter(d => d.status === "done");
+    const completed = deliverables.filter(d => d.format === "zip" || d.status === "done");
     const inProgress = deliverables.filter(d => d.status === "in-progress");
     const pending = deliverables.filter(d => d.status === "pending");
 

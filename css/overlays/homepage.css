@@ -1543,6 +1543,44 @@
   }
 }
 
+.homepage-project-description-setting,
+.homepage-task-content-setting { align-items: flex-start; }
+
+.homepage-project-description-setting .setting-item-control,
+.homepage-task-content-setting .setting-item-control { width: 100%; }
+
+.homepage-project-description-input,
+.homepage-task-content-input {
+  width: min(100%, 560px);
+  min-height: 116px;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.homepage-sticky-text {
+  overflow: auto;
+  max-height: 170px;
+  line-height: 1.6;
+}
+.zendian-homepage .homepage-todo-text {
+  display: block;
+  max-height: 3.4em;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: normal;
+  line-height: 1.55;
+}
+
+.zendian-homepage .homepage-sticky-note--plain .homepage-sticky-text.zc-inline-markdown {
+  display: block;
+  overflow: auto;
+  max-height: 170px;
+  white-space: normal;
+  text-overflow: clip;
+  -webkit-line-clamp: unset;
+}
+
 .hp-all-group {
   margin-bottom: 1rem;
 }

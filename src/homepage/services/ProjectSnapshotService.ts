@@ -1,5 +1,6 @@
 import { App, TFile, TFolder, normalizePath } from "obsidian";
 import type { DataChangeEvent } from "./types";
+import { isDeliverablePath } from "./DeliverablePathRegistry";
 
 export type SnapshotAction = "baseline" | "created" | "modified" | "deleted" | "checkpoint" | "safety" | "restored";
 
@@ -12,6 +13,10 @@ export interface SnapshotVersion {
   size: number;
   action: SnapshotAction;
   checkpointId?: string;
+  editSessionId?: string;
+  editSessionStartedAt?: number;
+  editSessionEndedAt?: number;
+  editSessionChangeCount?: number;
 }
 
 export interface ProjectCheckpoint {
@@ -20,6 +25,14 @@ export interface ProjectCheckpoint {
   name: string;
   createdAt: number;
   versions: Record<string, string>;
+}
+
+export interface CheckpointRestoreResult {
+  checkpoint: ProjectCheckpoint;
+  safetyCheckpoint: ProjectCheckpoint;
+  restored: number;
+  removed: number;
+  failed: string[];
 }
 
 interface SnapshotProjectIndex {
@@ -53,6 +66,7 @@ export class ProjectSnapshotService {
   private index: SnapshotIndex = { version: 1, projects: {} };
   private loadPromise: Promise<void> | null = null;
   private saveQueue: Promise<void> = Promise.resolve();
+  private activeEditSessions = new Map<string, { id: string; projectPath: string; filePath: string; startedAt: number }>();
 
   constructor(private app: App) {}
 
@@ -66,7 +80,38 @@ export class ProjectSnapshotService {
     }
   }
 
-  async captureEvent(event: DataChangeEvent): Promise<SnapshotVersion | null> {
+  async beginEditSession(projectPath: string, filePath: string, timestamp = Date.now()): Promise<string> {
+    await this.ensureLoaded();
+    const key = `${projectPath}::${filePath}`;
+    const existing = this.activeEditSessions.get(key);
+    if (existing) return existing.id;
+    const session = { id: this.createId("e"), projectPath, filePath, startedAt: timestamp };
+    this.activeEditSessions.set(key, session);
+    return session.id;
+  }
+
+  async completeEditSession(sessionId: string, endedAt = Date.now()): Promise<void> {
+    await this.ensureLoaded();
+    let count = 0;
+    for (const project of Object.values(this.index.projects)) {
+      count += project.versions.filter((version) => version.editSessionId === sessionId).length;
+    }
+    if (count) {
+      for (const project of Object.values(this.index.projects)) {
+        for (const version of project.versions) {
+          if (version.editSessionId !== sessionId) continue;
+          version.editSessionEndedAt = endedAt;
+          version.editSessionChangeCount = count;
+        }
+      }
+      await this.saveIndex();
+    }
+    for (const [key, session] of this.activeEditSessions) {
+      if (session.id === sessionId) this.activeEditSessions.delete(key);
+    }
+  }
+
+  async captureEvent(event: DataChangeEvent, editSessionId?: string): Promise<SnapshotVersion | null> {
     const projectPath = typeof event.data?.projectPath === "string" ? event.data.projectPath : "";
     if (!projectPath || !event.path.startsWith(`${projectPath}/`)) return null;
 
@@ -79,6 +124,8 @@ export class ProjectSnapshotService {
       event.path,
       event.action === "create" ? "created" : "modified",
       event.timestamp,
+      false,
+      editSessionId ? this.getEditSession(editSessionId) : undefined,
     );
   }
 
@@ -88,6 +135,7 @@ export class ProjectSnapshotService {
     action: SnapshotAction = "modified",
     timestamp = Date.now(),
     force = false,
+    editSession?: { id: string; startedAt: number },
   ): Promise<SnapshotVersion | null> {
     await this.ensureLoaded();
     const file = this.app.vault.getAbstractFileByPath(filePath);
@@ -109,11 +157,20 @@ export class ProjectSnapshotService {
       hash,
       size: content.length,
       action,
+      editSessionId: editSession?.id,
+      editSessionStartedAt: editSession?.startedAt,
     };
     project.versions.push(version);
     this.pruneFileVersions(project, filePath);
     await this.saveIndex();
     return version;
+  }
+
+  private getEditSession(sessionId: string): { id: string; startedAt: number } | undefined {
+    for (const session of this.activeEditSessions.values()) {
+      if (session.id === sessionId) return { id: session.id, startedAt: session.startedAt };
+    }
+    return undefined;
   }
 
   async createCheckpoint(projectPath: string, name: string): Promise<ProjectCheckpoint> {
@@ -150,6 +207,68 @@ export class ProjectSnapshotService {
   async getCheckpoints(projectPath: string): Promise<ProjectCheckpoint[]> {
     await this.ensureLoaded();
     return [...this.getProject(projectPath).checkpoints].sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  async getCheckpoint(checkpointId: string): Promise<ProjectCheckpoint | null> {
+    await this.ensureLoaded();
+    return this.findCheckpoint(checkpointId)?.checkpoint ?? null;
+  }
+
+  async restoreCheckpoint(checkpointId: string): Promise<CheckpointRestoreResult | null> {
+    await this.ensureLoaded();
+    const match = this.findCheckpoint(checkpointId);
+    if (!match) return null;
+
+    const { checkpoint } = match;
+    const folder = this.app.vault.getAbstractFileByPath(checkpoint.projectPath);
+    if (!(folder instanceof TFolder)) return null;
+
+    const safetyCheckpoint = await this.createCheckpoint(
+      checkpoint.projectPath,
+      `恢复前备份 · ${checkpoint.name}`,
+    );
+    const targetPaths = new Set(Object.keys(checkpoint.versions));
+    const failed: string[] = [];
+    let restored = 0;
+    let removed = 0;
+
+    for (const [filePath, versionId] of Object.entries(checkpoint.versions)) {
+      try {
+        if (await this.restoreVersion(versionId)) restored++;
+        else failed.push(filePath);
+      } catch (error) {
+        console.error(`[ProjectSnapshotService] 恢复检查点文件失败: ${filePath}`, error);
+        failed.push(filePath);
+      }
+    }
+
+    const currentFolder = this.app.vault.getAbstractFileByPath(checkpoint.projectPath);
+    if (currentFolder instanceof TFolder) {
+      const extraFiles = this.getSupportedFiles(currentFolder)
+        .filter((file) => !targetPaths.has(file.path));
+      for (const file of extraFiles) {
+        try {
+          await this.captureFile(checkpoint.projectPath, file.path, "safety", Date.now(), true);
+          await this.app.vault.delete(file);
+          removed++;
+        } catch (error) {
+          console.error(`[ProjectSnapshotService] 移除检查点后新增文件失败: ${file.path}`, error);
+          failed.push(file.path);
+        }
+      }
+    }
+
+    return { checkpoint, safetyCheckpoint, restored, removed, failed };
+  }
+
+  async deleteCheckpoint(checkpointId: string): Promise<boolean> {
+    await this.ensureLoaded();
+    const match = this.findCheckpoint(checkpointId);
+    if (!match) return false;
+    match.project.checkpoints = match.project.checkpoints
+      .filter((checkpoint) => checkpoint.id !== checkpointId);
+    await this.saveIndex();
+    return true;
   }
 
   async getTrackedProjectPaths(): Promise<string[]> {
@@ -227,6 +346,17 @@ export class ProjectSnapshotService {
     return undefined;
   }
 
+  private findCheckpoint(checkpointId: string): {
+    project: SnapshotProjectIndex;
+    checkpoint: ProjectCheckpoint;
+  } | undefined {
+    for (const project of Object.values(this.index.projects)) {
+      const checkpoint = project.checkpoints.find((item) => item.id === checkpointId);
+      if (checkpoint) return { project, checkpoint };
+    }
+    return undefined;
+  }
+
   private pruneFileVersions(project: SnapshotProjectIndex, filePath: string): void {
     const protectedIds = new Set(project.checkpoints.flatMap((checkpoint) => Object.values(checkpoint.versions)));
     const auto = project.versions
@@ -240,6 +370,7 @@ export class ProjectSnapshotService {
     const files: TFile[] = [];
     const walk = (current: TFolder) => {
       for (const child of current.children) {
+        if (isDeliverablePath(folder.path, child.path)) continue;
         if (child instanceof TFile && this.isSupported(child) && child.stat.size <= MAX_FILE_BYTES) files.push(child);
         else if (child instanceof TFolder) walk(child);
       }

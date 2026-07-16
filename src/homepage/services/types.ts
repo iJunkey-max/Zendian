@@ -69,6 +69,10 @@ export interface TimelineEvent {
   filePath?: string;
   snapshotId?: string;
   checkpointId?: string;
+  editSessionId?: string;
+  editSessionStartedAt?: number;
+  editSessionEndedAt?: number;
+  editSessionChangeCount?: number;
   approximateTime?: boolean;
   metadata?: Record<string, any>;
 }
@@ -140,7 +144,10 @@ export interface DeliverableData {
   id: string;
   name: string;
   path?: string;
-  status: "pending" | "in-progress" | "done" | "archived";
+  status?: "pending" | "in-progress" | "done" | "archived";
+  format?: "zip";
+  fileCount?: number;
+  createdAt?: string;
   created: string;
   updated?: string;
   due?: string;

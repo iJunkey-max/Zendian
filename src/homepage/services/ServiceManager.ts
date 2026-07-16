@@ -26,8 +26,11 @@ export class ServiceManager {
 
   private initialized = false;
   private fileWatcherRef: EventRef | null = null;
+  private workspaceEventRefs: EventRef[] = [];
   private snapshotCallbacks = new Map<string, DataChangeCallback>();
   private snapshotTrackingPromises = new Map<string, Promise<void>>();
+  private editSessions = new Map<string, { projectPath: string; filePath: string }>();
+  private fileOpenTimes = new Map<string, number>();
 
   constructor(private app: App, taskSyncService?: TaskSyncService) {
     this.projectData = new ProjectDataService(app, undefined, taskSyncService);
@@ -37,6 +40,7 @@ export class ServiceManager {
     this.fileWatcher = new FileWatcher(app);
 
     this.setupFileWatcher();
+    this.setupWorkspaceListeners();
     void this.restoreSnapshotTracking();
   }
 
@@ -82,6 +86,17 @@ export class ServiceManager {
     });
   }
 
+  private setupWorkspaceListeners(): void {
+    const workspace = this.app.workspace as any;
+    if (typeof workspace.on !== "function") return;
+    this.workspaceEventRefs.push(workspace.on("file-open", (file: any) => {
+      if (file?.path) this.fileOpenTimes.set(file.path, Date.now());
+    }));
+    this.workspaceEventRefs.push(workspace.on("layout-change", () => {
+      void this.flushClosedEditSessions();
+    }));
+  }
+
   private async restoreSnapshotTracking(): Promise<void> {
     try {
       const projectPaths = await this.snapshots.getTrackedProjectPaths();
@@ -98,7 +113,22 @@ export class ServiceManager {
 
     const tracking = (async () => {
       const callback: DataChangeCallback = async (event) => {
-        await this.snapshots.captureEvent(event);
+        let sessionId: string | undefined;
+        let transientSession = false;
+        if (event.action === "update" && event.path) {
+          sessionId = await this.snapshots.beginEditSession(
+            projectPath,
+            event.path,
+            this.fileOpenTimes.get(event.path) || event.timestamp,
+          );
+          this.editSessions.set(sessionId, { projectPath, filePath: event.path });
+          transientSession = !this.isFileOpen(event.path);
+        }
+        await this.snapshots.captureEvent(event, sessionId);
+        if (transientSession && sessionId) {
+          await this.snapshots.completeEditSession(sessionId, event.timestamp);
+          this.editSessions.delete(sessionId);
+        }
         this.clearProjectCache(projectPath);
       };
       this.snapshotCallbacks.set(projectPath, callback);
@@ -114,6 +144,21 @@ export class ServiceManager {
       this.snapshotCallbacks.delete(projectPath);
       this.snapshotTrackingPromises.delete(projectPath);
       throw error;
+    }
+  }
+
+  private isFileOpen(filePath: string): boolean {
+    const leaves = this.app.workspace.getLeavesOfType("markdown");
+    return leaves.some((leaf) => (leaf.view as any)?.file?.path === filePath);
+  }
+
+  private async flushClosedEditSessions(): Promise<void> {
+    for (const [sessionId, session] of this.editSessions) {
+      if (this.isFileOpen(session.filePath)) continue;
+      await this.snapshots.completeEditSession(sessionId, Date.now());
+      this.editSessions.delete(sessionId);
+      this.fileOpenTimes.delete(session.filePath);
+      this.clearProjectCache(session.projectPath);
     }
   }
 
@@ -285,6 +330,9 @@ export class ServiceManager {
    * 销毁服务管理器
    */
   destroy(): void {
+    void this.flushClosedEditSessions();
+    for (const ref of this.workspaceEventRefs) this.app.workspace.offref(ref);
+    this.workspaceEventRefs = [];
     if (this.fileWatcherRef) {
       this.fileWatcher.offref(this.fileWatcherRef);
       this.fileWatcherRef = null;
@@ -292,6 +340,8 @@ export class ServiceManager {
     this.fileWatcher.destroy();
     this.snapshotCallbacks.clear();
     this.snapshotTrackingPromises.clear();
+    this.editSessions.clear();
+    this.fileOpenTimes.clear();
     this.clearAllCache();
     this.initialized = false;
     console.log("[ServiceManager] 已销毁");

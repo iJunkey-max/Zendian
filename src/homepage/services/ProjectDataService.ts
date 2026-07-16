@@ -24,10 +24,12 @@ import type {
 import type { ProjectConsoleData, ProjectConsoleTask, ProjectConsoleDeliverable } from "../types";
 import type { TaskSyncService } from "../../services/TaskSyncService";
 import { normalizeProjectStatus, normalizeStatusBeforePause } from "../project-status";
+import { isDeliverablePath, registerDeliverablePaths } from "./DeliverablePathRegistry";
 
 export class ProjectDataService {
   private cache: CacheManager;
   private config: ServiceConfig;
+  private deliverableFolders = new Map<string, Set<string>>();
 
   constructor(
     private app: App,
@@ -70,6 +72,8 @@ export class ProjectDataService {
 
       // 数据验证和规范化
       const normalized = this.normalizeConsoleData(data, projectPath);
+      registerDeliverablePaths(projectPath, normalized.deliverables);
+      this.rememberDeliverableFolders(projectPath, normalized.deliverables);
 
       // 缓存结果
       if (this.config.enableCache) {
@@ -147,7 +151,7 @@ export class ProjectDataService {
       ? await this.taskSyncService.getTasks(projectPath)
       : null;
     const taskSource = timelineTasks ?? consoleData?.tasks ?? [];
-    const files = this.getAllFiles(folder);
+    const files = this.getAllFiles(folder).filter((file) => !this.isDeliverableFile(projectPath, file.path));
 
     const now = Date.now();
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -159,7 +163,7 @@ export class ProjectDataService {
       totalTasks: taskSource.length,
       completedTasks: taskSource.filter(t => t.completed).length,
       totalDeliverables: consoleData?.deliverables.length || 0,
-      completedDeliverables: consoleData?.deliverables.filter(d => d.status === "done").length || 0,
+      completedDeliverables: consoleData?.deliverables.filter(d => d.format === "zip" || d.status === "done").length || 0,
       lastModified: Math.max(...files.map(f => f.stat.mtime), 0),
       createdDate: consoleData?.createdAt || "",
       daysActive: this.calculateDaysActive(consoleData?.createdAt || ""),
@@ -330,7 +334,7 @@ export class ProjectDataService {
     const folder = this.app.vault.getAbstractFileByPath(projectPath);
     if (!(folder instanceof TFolder)) return [];
 
-    const files = this.getAllFiles(folder);
+    const files = this.getAllFiles(folder).filter((file) => !this.isDeliverableFile(projectPath, file.path));
 
     return files
       .filter(f => f.extension !== "home") // 排除 .home 文件
@@ -431,12 +435,15 @@ export class ProjectDataService {
 
   private normalizeDeliverable(d: ProjectConsoleDeliverable, index: number): DeliverableData {
     return {
-      id: `deliverable-${index}`,
+      id: d.id || `deliverable-${index}`,
       name: d.name,
       path: d.path,
       status: d.status,
-      created: "",
-      description: "",
+      format: d.format,
+      fileCount: d.fileCount,
+      createdAt: d.createdAt,
+      created: d.createdAt || "",
+      description: d.description || "",
     };
   }
 
@@ -453,6 +460,23 @@ export class ProjectDataService {
     };
     walk(folder);
     return files;
+  }
+
+  private rememberDeliverableFolders(projectPath: string, deliverables: ProjectConsoleDeliverable[]): void {
+    const folders = new Set<string>();
+    for (const deliverable of deliverables) {
+      if (deliverable.format !== "zip") continue;
+      const firstSegment = deliverable.path.split("/")[0]?.trim();
+      if (firstSegment) folders.add(firstSegment);
+    }
+    this.deliverableFolders.set(projectPath, folders);
+  }
+
+  private isDeliverableFile(projectPath: string, filePath: string): boolean {
+    if (isDeliverablePath(projectPath, filePath)) return true;
+    const relativePath = filePath.startsWith(`${projectPath}/`) ? filePath.slice(projectPath.length + 1) : filePath;
+    const firstSegment = relativePath.split("/")[0];
+    return this.deliverableFolders.get(projectPath)?.has(firstSegment) ?? false;
   }
 
   private calculateDaysActive(createdAt: string): number {

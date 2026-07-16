@@ -10,6 +10,7 @@
 
 import { App, TFile, Events, type EventRef } from "obsidian";
 import type { DataChangeEvent, DataChangeCallback } from "./types";
+import { isDeliverablePath } from "./DeliverablePathRegistry";
 
 export class FileWatcher extends Events {
   private watchedProjects = new Set<string>();
@@ -133,6 +134,7 @@ export class FileWatcher extends Events {
     if (!projectPath) {
       return;
     }
+    if (isDeliverablePath(projectPath, file.path)) return;
 
     // 防抖处理
     this.debounce(`${projectPath}::${file.path}`, () => {
@@ -144,12 +146,12 @@ export class FileWatcher extends Events {
     const oldProjectPath = this.findProjectPath(oldPath);
     const newProjectPath = this.findProjectPath(file.path);
 
-    if (oldProjectPath) {
+    if (oldProjectPath && !isDeliverablePath(oldProjectPath, oldPath)) {
       this.debounce(`${oldProjectPath}::${oldPath}`, () => {
         this.emitChangeEvent(file, "delete", oldProjectPath, oldPath);
       });
     }
-    if (newProjectPath) {
+    if (newProjectPath && !isDeliverablePath(newProjectPath, file.path)) {
       this.debounce(`${newProjectPath}::${file.path}`, () => {
         this.emitChangeEvent(file, "create", newProjectPath);
       });

@@ -170,8 +170,11 @@ export class ExportService {
       };
 
       for (const item of data.deliverables) {
-        const status = statusLabels[item.status] || item.status;
+        const status = item.format === "zip"
+          ? `已发布 · ${item.fileCount ?? 0} 个文件`
+          : statusLabels[item.status || "pending"];
         lines.push(`- **${item.name}** - ${status}`);
+        if (item.description) lines.push(`  - ${item.description}`);
         if (item.path) {
           lines.push(`  - 路径: ${item.path}`);
         }
@@ -287,7 +290,9 @@ export class ExportService {
       };
 
       for (const item of data.deliverables) {
-        const status = statusLabels[item.status] || item.status;
+        const status = item.format === "zip"
+          ? `已发布（${item.fileCount ?? 0} 个文件）`
+          : statusLabels[item.status || "pending"];
         const name = `"${item.name.replace(/"/g, '""')}"`;
         const path = item.path || "";
         lines.push(`${name},${status},${path}`);

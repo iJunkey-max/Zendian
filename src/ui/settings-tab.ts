@@ -1064,8 +1064,10 @@ export class ZENdianSettingTab extends PluginSettingTab {
           const current = this.settingsManager.getSettings();
           const projectCategories = current.homepage.projectCategories.filter((_, index) => index !== i);
           const projectSubfolders = { ...current.homepage.projectSubfolders };
+          const projectDeliverableFolders = { ...current.homepage.projectDeliverableFolders };
           delete projectSubfolders[category.number];
-          await this.settingsManager.update("homepage", { projectCategories, projectSubfolders });
+          delete projectDeliverableFolders[category.number];
+          await this.settingsManager.update("homepage", { projectCategories, projectSubfolders, projectDeliverableFolders });
           new Notice(`已删除分类“${category.name}”，文件夹 ${getProjectCategoryFolder(category)} 已保留`);
           this.display();
         });
@@ -1134,9 +1136,14 @@ export class ZENdianSettingTab extends PluginSettingTab {
             const projectCategories = [...current.homepage.projectCategories];
             projectCategories[i] = updatedCategory;
             const projectSubfolders = { ...current.homepage.projectSubfolders };
+            const projectDeliverableFolders = { ...current.homepage.projectDeliverableFolders };
             if (category.number !== number) {
               projectSubfolders[number] = projectSubfolders[category.number] ?? [];
               delete projectSubfolders[category.number];
+              if (projectDeliverableFolders[category.number]) {
+                projectDeliverableFolders[number] = projectDeliverableFolders[category.number];
+                delete projectDeliverableFolders[category.number];
+              }
             }
 
             const customIcons = Object.fromEntries(
@@ -1150,7 +1157,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
             customIcons[newFolderPath] = selectedIcon;
 
             await this.settingsManager.updateMultiple({
-              homepage: { ...current.homepage, projectCategories, projectSubfolders },
+              homepage: { ...current.homepage, projectCategories, projectSubfolders, projectDeliverableFolders },
               iconSystem: { ...current.iconSystem, customIcons },
             });
 
@@ -1329,7 +1336,33 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
     const renderList = (): void => {
       list.empty();
-      const templates = this.settingsManager.getSettings().homepage.projectSubfolders[activeCategoryNumber] ?? [];
+      const homepage = this.settingsManager.getSettings().homepage;
+      const templates = homepage.projectSubfolders[activeCategoryNumber] ?? [];
+      const releaseSetting = list.createDiv("zendian-project-deliverable-folder");
+      const releaseCopy = releaseSetting.createDiv("zendian-project-deliverable-folder-copy");
+      releaseCopy.createDiv({ cls: "zendian-project-deliverable-folder-title", text: "交付物文件夹" });
+      releaseCopy.createDiv({
+        cls: "zendian-project-deliverable-folder-description",
+        text: "发布 ZIP 将保存在该项目子文件夹中，并从普通文件扫描中排除。",
+      });
+      const releaseSelect = releaseSetting.createEl("select", {
+        cls: "dropdown zendian-project-deliverable-folder-select",
+        attr: { "aria-label": "选择交付物文件夹" },
+      });
+      releaseSelect.createEl("option", { text: "未设置", value: "" });
+      for (const template of templates) {
+        const value = getProjectSubfolderName(template);
+        releaseSelect.createEl("option", { text: value, value });
+      }
+      releaseSelect.value = homepage.projectDeliverableFolders[activeCategoryNumber] ?? "";
+      releaseSelect.addEventListener("change", async () => {
+        const current = this.settingsManager.getSettings();
+        const projectDeliverableFolders = { ...current.homepage.projectDeliverableFolders };
+        if (releaseSelect.value) projectDeliverableFolders[activeCategoryNumber] = releaseSelect.value;
+        else delete projectDeliverableFolders[activeCategoryNumber];
+        await this.settingsManager.update("homepage", { projectDeliverableFolders });
+        new Notice(releaseSelect.value ? `交付物将发布到 ${releaseSelect.value}` : "已取消交付物文件夹配置");
+      });
       if (!templates.length) {
         list.createDiv({
           cls: "zendian-project-category-empty",
@@ -1403,9 +1436,14 @@ export class ZENdianSettingTab extends PluginSettingTab {
           }
           const projectSubfolders = { ...current.homepage.projectSubfolders };
           const updatedTemplates = [...templates];
+          const previousFolderName = getProjectSubfolderName(updatedTemplates[index]);
           updatedTemplates[index] = { number, name, icon: selectedIcon };
           projectSubfolders[activeCategoryNumber] = updatedTemplates;
-          await this.settingsManager.update("homepage", { projectSubfolders });
+          const projectDeliverableFolders = { ...current.homepage.projectDeliverableFolders };
+          if (projectDeliverableFolders[activeCategoryNumber] === previousFolderName) {
+            projectDeliverableFolders[activeCategoryNumber] = `${number}_${name}`;
+          }
+          await this.settingsManager.update("homepage", { projectSubfolders, projectDeliverableFolders });
           new Notice(`已更新子文件夹模板 ${number}_${name}，已有项目不会改变`);
           renderList();
         };
@@ -1421,7 +1459,11 @@ export class ZENdianSettingTab extends PluginSettingTab {
           const projectSubfolders = { ...current.homepage.projectSubfolders };
           const templates = projectSubfolders[activeCategoryNumber] ?? [];
           projectSubfolders[activeCategoryNumber] = templates.filter((_, itemIndex) => itemIndex !== index);
-          await this.settingsManager.update("homepage", { projectSubfolders });
+          const projectDeliverableFolders = { ...current.homepage.projectDeliverableFolders };
+          if (projectDeliverableFolders[activeCategoryNumber] === getProjectSubfolderName(template)) {
+            delete projectDeliverableFolders[activeCategoryNumber];
+          }
+          await this.settingsManager.update("homepage", { projectSubfolders, projectDeliverableFolders });
           new Notice(`已删除子文件夹模板“${template.name}”，已有项目文件夹不会被删除`);
           renderList();
         });

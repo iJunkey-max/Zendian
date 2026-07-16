@@ -237,7 +237,12 @@ export interface ProjectConsoleSubtask {
 export interface ProjectConsoleDeliverable {
   name: string;
   path: string;               // 相对于项目根目录
-  status: "pending" | "in-progress" | "done";
+  id?: string;
+  format?: "zip";
+  description?: string;
+  createdAt?: string;
+  fileCount?: number;
+  status?: "pending" | "in-progress" | "done";
 }
 
 /**

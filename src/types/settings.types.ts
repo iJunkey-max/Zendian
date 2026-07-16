@@ -312,6 +312,7 @@ export interface HomepageSettings {
   projectCategories: ProjectCategory[];
   /** 新建项目时创建的一级子文件夹；空数组表示不创建。 */
   projectSubfolders: Record<string, ProjectSubfolderTemplate[]>;
+  projectDeliverableFolders: Record<string, string>;
   /** 项目归档文件夹名 */
   projectArchiveFolder: string;
   /** 热力图开关 */
@@ -629,6 +630,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
       { number: "50", name: "生活", icon: "lucide-heart" },
     ],
     projectSubfolders: {},
+    projectDeliverableFolders: {},
     projectArchiveFolder: "99_归档",
     heatmapEnabled: true,
     monthlyStatsEnabled: true,

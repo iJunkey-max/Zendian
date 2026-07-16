@@ -17,6 +17,7 @@ import type { ProjectConsoleData } from "../types";
 import type { TaskSyncService } from "../../services/TaskSyncService";
 import { getProjectStatusOption, normalizeProjectStatus } from "../project-status";
 import type { ProjectSnapshotService, SnapshotVersion } from "./ProjectSnapshotService";
+import { isDeliverablePath } from "./DeliverablePathRegistry";
 
 export class TimelineService {
   private cache: CacheManager;
@@ -138,7 +139,7 @@ export class TimelineService {
     if (hasSnapshotHistory) return [];
 
     const events: TimelineEvent[] = [];
-    const files = this.getAllFiles(folder);
+    const files = this.getAllFiles(folder).filter((file) => !isDeliverablePath(projectPath, file.path));
 
     for (const file of files) {
       // 跳过 .home 文件
@@ -180,7 +181,7 @@ export class TimelineService {
 
   private async extractSnapshotEvents(projectPath: string): Promise<TimelineEvent[]> {
     if (!this.snapshotService) return [];
-    const versions = await this.snapshotService.getVersions(projectPath);
+    const versions = this.groupEditSessions(await this.snapshotService.getVersions(projectPath));
     const events = versions
       .filter((version) => !["baseline", "safety"].includes(version.action))
       .map((version) => this.snapshotVersionToEvent(version));
@@ -208,16 +209,89 @@ export class TimelineService {
       safety: { type: "file-modified", verb: "恢复前备份" },
     };
     const eventConfig = config[version.action];
+    const sessionCount = version.editSessionChangeCount || 1;
+    const isEditSession = Boolean(version.editSessionId);
+    const sessionTime = isEditSession && sessionCount > 1
+      ? `编辑会话 · ${sessionCount} 个版本 · ${this.formatSessionClock(version.editSessionStartedAt || version.timestamp)}–${this.formatSessionClock(version.editSessionEndedAt || version.timestamp)}`
+      : version.filePath;
     return {
       type: eventConfig.type,
       date: this.formatDate(version.timestamp),
       timestamp: version.timestamp,
-      title: `${eventConfig.verb}：${fileName}`,
-      description: version.filePath,
+      title: `${isEditSession ? "编辑文件" : eventConfig.verb}：${fileName}`,
+      description: sessionTime,
       filePath: version.filePath,
       snapshotId: version.id,
-      metadata: { size: version.size, action: version.action },
+      metadata: {
+        size: version.size,
+        action: version.action,
+        editSessionId: version.editSessionId,
+        editSessionChangeCount: sessionCount,
+        editSessionStartedAt: version.editSessionStartedAt,
+        editSessionEndedAt: version.editSessionEndedAt,
+      },
     };
+  }
+
+  private groupEditSessions(versions: SnapshotVersion[]): SnapshotVersion[] {
+    const grouped = new Map<string, SnapshotVersion[]>();
+    const standalone: SnapshotVersion[] = [];
+    for (const version of versions) {
+      if (version.action !== "modified" || !version.editSessionId) {
+        standalone.push(version);
+        continue;
+      }
+      const list = grouped.get(version.editSessionId) || [];
+      list.push(version);
+      grouped.set(version.editSessionId, list);
+    }
+
+    for (const list of grouped.values()) {
+      list.sort((a, b) => b.timestamp - a.timestamp);
+      const latest = list[0];
+      const startedAt = Math.min(...list.map((version) => version.editSessionStartedAt || version.timestamp));
+      const endedAt = Math.max(...list.map((version) => version.editSessionEndedAt || version.timestamp));
+      standalone.push({
+        ...latest,
+        editSessionStartedAt: startedAt,
+        editSessionEndedAt: endedAt,
+        editSessionChangeCount: latest.editSessionChangeCount || list.length,
+      });
+    }
+
+    const legacy = standalone
+      .filter((version) => version.action === "modified" && !version.editSessionId)
+      .sort((a, b) => b.timestamp - a.timestamp);
+    const nonLegacy = standalone.filter((version) => !(version.action === "modified" && !version.editSessionId));
+    const legacyGrouped: SnapshotVersion[] = [];
+    while (legacy.length) {
+      const first = legacy.shift()!;
+      const list = [first];
+      while (legacy.length) {
+        const next = legacy[0];
+        if (next.filePath !== first.filePath || first.timestamp - next.timestamp > 3 * 60 * 1000) break;
+        list.push(legacy.shift()!);
+      }
+      if (list.length === 1) {
+        legacyGrouped.push(first);
+        continue;
+      }
+      legacyGrouped.push({
+        ...first,
+        editSessionId: `legacy:${first.filePath}:${first.timestamp}`,
+        editSessionStartedAt: Math.min(...list.map((version) => version.timestamp)),
+        editSessionEndedAt: Math.max(...list.map((version) => version.timestamp)),
+        editSessionChangeCount: list.length,
+      });
+    }
+    return [...nonLegacy, ...legacyGrouped].sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  private formatSessionClock(timestamp: number): string {
+    const date = new Date(timestamp);
+    return [date.getHours(), date.getMinutes()]
+      .map((part) => String(part).padStart(2, "0"))
+      .join(":");
   }
 
   /**
@@ -285,18 +359,23 @@ export class TimelineService {
       const data = JSON.parse(content) as ProjectConsoleData;
 
       for (const deliverable of data.deliverables) {
+        const isRelease = deliverable.format === "zip";
+        const timestamp = deliverable.createdAt ? new Date(deliverable.createdAt).getTime() : file.stat.ctime;
         // 交付物添加事件
         events.push({
           type: "deliverable-added",
-          date: this.formatDate(file.stat.ctime),
-          timestamp: file.stat.ctime,
-          title: `添加交付物：${deliverable.name}`,
-          description: `状态：${this.getStatusText(deliverable.status)}`,
-          filePath: deliverable.path,
+          date: this.formatDate(timestamp),
+          timestamp,
+          title: `${isRelease ? "发布" : "添加"}交付物：${deliverable.name}`,
+          description: isRelease ? `包含 ${deliverable.fileCount ?? 0} 个文件` : `状态：${this.getStatusText(deliverable.status || "pending")}`,
+          filePath: deliverable.path ? `${projectPath}/${deliverable.path}` : undefined,
           metadata: {
             name: deliverable.name,
             status: deliverable.status,
             path: deliverable.path,
+            format: deliverable.format,
+            fileCount: deliverable.fileCount,
+            description: deliverable.description,
           },
         });
       }

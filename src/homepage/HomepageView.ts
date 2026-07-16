@@ -5,7 +5,7 @@
  * 集成各数据服务，渲染完整主页。
  */
 
-import { ItemView, type WorkspaceLeaf, type App, TFile, TFolder, getIcon, Modal, Setting, Notice } from "obsidian";
+import { ItemView, type WorkspaceLeaf, type App, TFile, TFolder, getIcon, Modal, Setting, Notice, MarkdownRenderer } from "obsidian";
 import { HomepageStatsService } from "./HomepageStatsService";
 import { HomepageDataService } from "./HomepageDataService";
 import { HomepageBookmarksService } from "./HomepageBookmarksService";
@@ -153,11 +153,12 @@ class ProjectCreateModal extends Modal {
     });
 
     // 项目简介
-    new Setting(contentEl)
-      .setName("项目简介")
-      .addText((text) =>
-        text.setPlaceholder("一句话描述项目（可选）").onChange((v) => (this.descValue = v))
-      );
+    const descriptionSetting = new Setting(contentEl).setName("项目简介");
+    descriptionSetting.settingEl.addClass("homepage-project-description-setting");
+    descriptionSetting.addTextArea((text) => {
+      text.setPlaceholder("输入项目简介，支持 Markdown 和换行").onChange((v) => (this.descValue = v));
+      text.inputEl.addClass("homepage-project-description-input");
+    });
 
     // 项目类型
     const typeSetting = new Setting(contentEl).setName("项目类型");
@@ -321,8 +322,11 @@ class HomepageTaskCreateModal extends Modal {
       for (const project of this.projects) dropdown.addOption(project.folderPath, project.name);
       dropdown.setValue(this.projectPath).onChange((value) => { this.projectPath = value; });
     });
-    new Setting(this.contentEl).setName("任务内容").addText((input) => {
-      input.setPlaceholder("输入任务描述").onChange((value) => { this.text = value.trim(); });
+    const taskContentSetting = new Setting(this.contentEl).setName("任务内容");
+    taskContentSetting.settingEl.addClass("homepage-task-content-setting");
+    taskContentSetting.addTextArea((input) => {
+      input.setPlaceholder("输入任务内容，支持 Markdown 和换行").onChange((value) => { this.text = value; });
+      input.inputEl.addClass("homepage-task-content-input");
     });
     const scheduleSetting = new Setting(this.contentEl).setName("截止时间");
     scheduleSetting.settingEl.addClass("zendian-task-schedule-setting");
@@ -1608,10 +1612,11 @@ export class HomepageView extends ItemView {
     });
 
     // 任务文本（点击打开项目主页）
-    const textSpan = left.createSpan({
+    const textSpan = left.createDiv({
       cls: `homepage-todo-text${task.completed ? " homepage-todo-text--done" : ""}`,
-      text: task.text,
     });
+    textSpan.addClass("markdown-preview-view", "markdown-rendered", "zc-inline-markdown");
+    void MarkdownRenderer.renderMarkdown(task.text, textSpan, task.projectPath, null as any);
     textSpan.style.cursor = "pointer";
     textSpan.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1848,10 +1853,14 @@ export class HomepageView extends ItemView {
     });
 
     noteEl.createDiv({ cls: "homepage-sticky-label", text: note.label || "无标题" });
-    noteEl.createDiv({
-      cls: `homepage-sticky-text${note.content ? "" : " is-placeholder"}`,
-      text: note.content || "双击添加速记内容…",
+    const noteText = noteEl.createDiv({
+      cls: `homepage-sticky-text zc-inline-markdown markdown-preview-view markdown-rendered${note.content ? "" : " is-placeholder"}`,
     });
+    if (note.content) {
+      void MarkdownRenderer.renderMarkdown(note.content, noteText, note.path || "", null as any);
+    } else {
+      noteText.textContent = "双击添加速记内容…";
+    }
 
     let clickTimer: number | null = null;
     noteEl.addEventListener("dblclick", (event) => {
@@ -1912,9 +1921,13 @@ export class HomepageView extends ItemView {
         onChanged?.();
       }
       const replacement = noteEl.createDiv({
-        cls: `homepage-sticky-text${note.content ? "" : " is-placeholder"}`,
-        text: note.content || "双击添加速记内容…",
+        cls: `homepage-sticky-text zc-inline-markdown markdown-preview-view markdown-rendered${note.content ? "" : " is-placeholder"}`,
       });
+      if (note.content) {
+        void MarkdownRenderer.renderMarkdown(note.content, replacement, note.path || "", null as any);
+      } else {
+        replacement.textContent = "双击添加速记内容…";
+      }
       editor.replaceWith(replacement);
     };
     editor.addEventListener("blur", () => { void finish(true); });

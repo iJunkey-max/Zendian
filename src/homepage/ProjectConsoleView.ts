@@ -2,7 +2,7 @@
  * ProjectConsoleView — 项目控制台视图（仪表盘风格）
  */
 
-import { FileView, type WorkspaceLeaf, type App, TFile, getIcon, Menu, Modal, Setting, Notice } from "obsidian";
+import { FileView, type WorkspaceLeaf, type App, TFile, getIcon, Menu, Modal, Setting, Notice, MarkdownRenderer } from "obsidian";
 import type {
   ProjectConsoleData,
   ProjectConsoleTask,
@@ -19,7 +19,7 @@ import {
   type ProjectStatus,
 } from "./project-status";
 import { getServiceManager } from "./services";
-import type { ServiceManager, ProjectStatistics, ProjectHealth } from "./services";
+import type { ServiceManager, ProjectStatistics, ProjectHealth, ProjectCheckpoint } from "./services";
 import { LineChart, HeatmapChart } from "./components/charts";
 import type { Task } from "../services/TaskSyncService";
 import { TaskSyncService } from "../services/TaskSyncService";
@@ -27,6 +27,7 @@ import type { DataChangeCallback, TimelineEvent } from "./services/types";
 import { renderTaskPriorityLabel } from "./components/TaskPriorityLabel";
 import { createTaskSchedulePicker } from "./components/TaskSchedulePicker";
 import type { SettingsManager } from "../core/settings-manager";
+import { DeliverableReleaseService } from "./services/DeliverableReleaseService";
 import {
   getProjectSystemDirectory,
   LEGACY_PROJECT_CONSOLE_FOLDER,
@@ -79,6 +80,187 @@ function relTime(mtime: number): string {
   return `${dt.getMonth() + 1}/${dt.getDate()}`;
 }
 
+class DeliverableFilePickerModal extends Modal {
+  private selected: Set<string>;
+
+  constructor(
+    app: App,
+    private projectPath: string,
+    private files: TFile[],
+    initial: string[],
+    private onConfirm: (paths: string[]) => void,
+  ) {
+    super(app);
+    this.selected = new Set(initial);
+  }
+
+  onOpen(): void {
+    this.modalEl.addClass("zc-release-picker-modal");
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", { text: "选择交付文件" });
+    contentEl.createDiv({ cls: "zc-release-modal-hint", text: "ZIP 内为扁平文件合集；同名文件不能同时提交。" });
+    const search = contentEl.createEl("input", {
+      cls: "zc-release-search",
+      type: "search",
+      placeholder: "搜索文件名或路径",
+    });
+    const list = contentEl.createDiv("zc-release-file-list");
+    const count = contentEl.createSpan("zc-release-selected-count");
+
+    const render = (): void => {
+      list.empty();
+      const query = search.value.trim().toLocaleLowerCase();
+      const visible = this.files.filter((file) => file.path.toLocaleLowerCase().includes(query));
+      for (const file of visible) {
+        const row = list.createEl("label", { cls: "zc-release-file-option" });
+        const checkbox = row.createEl("input", { type: "checkbox" });
+        checkbox.checked = this.selected.has(file.path);
+        const copy = row.createDiv("zc-release-file-copy");
+        copy.createSpan({ cls: "zc-release-file-name", text: file.name });
+        copy.createSpan({
+          cls: "zc-release-file-path",
+          text: file.path.startsWith(`${this.projectPath}/`)
+            ? file.path.slice(this.projectPath.length + 1)
+            : file.path,
+        });
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) this.selected.add(file.path);
+          else this.selected.delete(file.path);
+          count.textContent = `已选择 ${this.selected.size} 个文件`;
+        });
+      }
+      if (!visible.length) list.createDiv({ cls: "zc-empty-sub", text: "没有匹配的文件" });
+      count.textContent = `已选择 ${this.selected.size} 个文件`;
+    };
+    search.addEventListener("input", render);
+    render();
+
+    const actions = contentEl.createDiv("zc-release-modal-actions");
+    const cancel = actions.createEl("button", { text: "取消", attr: { type: "button" } });
+    cancel.addEventListener("click", () => this.close());
+    const confirm = actions.createEl("button", {
+      cls: "mod-cta",
+      text: "确认选择",
+      attr: { type: "button" },
+    });
+    confirm.addEventListener("click", () => {
+      this.onConfirm([...this.selected]);
+      this.close();
+    });
+    window.setTimeout(() => search.focus(), 0);
+  }
+}
+
+class SubmitDeliverableModal extends Modal {
+  private releaseName = "";
+  private description = "";
+  private selectedPaths: string[] = [];
+  private selectedEl!: HTMLElement;
+  private submitButton!: HTMLButtonElement;
+
+  constructor(
+    app: App,
+    private projectPath: string,
+    private projectType: string,
+    private releaseService: DeliverableReleaseService,
+    private onSubmit: (name: string, description: string, paths: string[]) => Promise<void>,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.modalEl.addClass("zc-release-submit-modal");
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", { text: "提交交付物" });
+    contentEl.createDiv({
+      cls: "zc-release-modal-hint",
+      text: "选择的文件会复制到一个不可编辑的 ZIP 发布包，源文件不会受到影响。",
+    });
+    new Setting(contentEl)
+      .setName("发布名称")
+      .setDesc("将作为 ZIP 文件名，例如 v1.0-主页重构")
+      .addText((text) => text
+        .setPlaceholder("v1.0-发布名称")
+        .onChange((value) => {
+          this.releaseName = value;
+          this.updateSubmitState();
+        }));
+    new Setting(contentEl)
+      .setName("介绍")
+      .setDesc("说明这个阶段完成了什么")
+      .addTextArea((text) => text
+        .setPlaceholder("发布说明")
+        .onChange((value) => { this.description = value; }));
+
+    const fileSection = contentEl.createDiv("zc-release-files-section");
+    const fileHeader = fileSection.createDiv("zc-release-files-header");
+    fileHeader.createDiv({ cls: "zc-release-files-title", text: "交付文件" });
+    const choose = fileHeader.createEl("button", {
+      text: "选择文件",
+      attr: { type: "button" },
+    });
+    choose.addEventListener("click", () => {
+      const files = this.releaseService.listSelectableFiles(this.projectPath, this.projectType);
+      new DeliverableFilePickerModal(this.app, this.projectPath, files, this.selectedPaths, (paths) => {
+        this.selectedPaths = paths;
+        this.renderSelected();
+        this.updateSubmitState();
+      }).open();
+    });
+    this.selectedEl = fileSection.createDiv("zc-release-selected-files");
+    this.renderSelected();
+
+    const actions = contentEl.createDiv("zc-release-modal-actions");
+    const cancel = actions.createEl("button", { text: "取消", attr: { type: "button" } });
+    cancel.addEventListener("click", () => this.close());
+    this.submitButton = actions.createEl("button", {
+      cls: "mod-cta",
+      text: "生成 ZIP 并发布",
+      attr: { type: "button" },
+    });
+    this.submitButton.addEventListener("click", async () => {
+      this.submitButton.disabled = true;
+      this.submitButton.textContent = "正在发布…";
+      try {
+        await this.onSubmit(this.releaseName, this.description, this.selectedPaths);
+        this.close();
+      } catch (error) {
+        new Notice(error instanceof Error ? error.message : "交付物发布失败");
+        this.submitButton.textContent = "生成 ZIP 并发布";
+        this.updateSubmitState();
+      }
+    });
+    this.updateSubmitState();
+  }
+
+  private renderSelected(): void {
+    this.selectedEl.empty();
+    if (!this.selectedPaths.length) {
+      this.selectedEl.createDiv({ cls: "zc-release-no-files", text: "尚未选择文件" });
+      return;
+    }
+    for (const path of this.selectedPaths) {
+      const row = this.selectedEl.createDiv("zc-release-selected-row");
+      row.createSpan({ text: path.slice(path.lastIndexOf("/") + 1) });
+      const remove = row.createEl("button", {
+        text: "×",
+        attr: { type: "button", "aria-label": "移除文件" },
+      });
+      remove.addEventListener("click", () => {
+        this.selectedPaths = this.selectedPaths.filter((item) => item !== path);
+        this.renderSelected();
+        this.updateSubmitState();
+      });
+    }
+  }
+
+  private updateSubmitState(): void {
+    if (this.submitButton) this.submitButton.disabled = !this.releaseName.trim() || this.selectedPaths.length === 0;
+  }
+}
+
 // ── AddTaskModal ──────────────────────────────────────
 
 import type { TaskPriority } from "./types";
@@ -101,9 +283,12 @@ class AddTaskModal extends Modal {
     c.createEl("h2", { text: "添加任务" });
 
     // 任务内容
-    new Setting(c).setName("任务内容").addText((t) =>
-      t.setPlaceholder("输入任务描述").onChange((v) => (this.text = v))
-    );
+    const taskContentSetting = new Setting(c).setName("任务内容");
+    taskContentSetting.settingEl.addClass("zc-task-content-setting");
+    taskContentSetting.addTextArea((t) => {
+      t.setPlaceholder("输入任务内容，支持 Markdown 和换行").onChange((v) => (this.text = v));
+      t.inputEl.addClass("zc-long-textarea");
+    });
 
     // 截止日期
     const scheduleSetting = new Setting(c).setName("截止时间");
@@ -170,7 +355,7 @@ class AddTaskModal extends Modal {
     );
 
     setTimeout(() => {
-      const i = c.querySelector("input[type=text]") as HTMLInputElement;
+      const i = c.querySelector("textarea") as HTMLTextAreaElement;
       i?.focus();
     }, 50);
   }
@@ -217,6 +402,84 @@ class CreateCheckpointModal extends Modal {
       .onClick(async () => {
         button.setDisabled(true);
         await this.onCreate(this.name);
+        this.close();
+      }));
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+class ConfirmCheckpointRestoreModal extends Modal {
+  constructor(
+    app: App,
+    private checkpoint: ProjectCheckpoint,
+    private onConfirm: () => Promise<void>,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    const container = this.contentEl;
+    container.addClass("zc-checkpoint-confirm");
+    container.createEl("h2", { text: "退回检查点" });
+    container.createEl("p", {
+      text: `项目将恢复到“${this.checkpoint.name}”，共 ${Object.keys(this.checkpoint.versions).length} 个文件版本。`,
+    });
+    container.createDiv({
+      cls: "zc-checkpoint-confirm-note",
+      text: "恢复前会自动创建安全检查点；检查点之后新增的受支持文本文件将从当前项目中移除。",
+    });
+    const actions = new Setting(container);
+    actions.settingEl.addClass("zc-checkpoint-confirm-actions");
+    actions.addButton((button) => button
+      .setButtonText("取消")
+      .onClick(() => this.close()));
+    actions.addButton((button) => button
+      .setButtonText("确认恢复")
+      .setWarning()
+      .onClick(async () => {
+        button.setDisabled(true);
+        await this.onConfirm();
+        this.close();
+      }));
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+class ConfirmCheckpointDeleteModal extends Modal {
+  constructor(
+    app: App,
+    private checkpoint: ProjectCheckpoint,
+    private onConfirm: () => Promise<void>,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    const container = this.contentEl;
+    container.addClass("zc-checkpoint-confirm");
+    container.createEl("h2", { text: "删除检查点" });
+    container.createEl("p", { text: `确定删除“${this.checkpoint.name}”吗？` });
+    container.createDiv({
+      cls: "zc-checkpoint-confirm-note",
+      text: "只删除检查点记录，不会修改当前项目文件。",
+    });
+    const actions = new Setting(container);
+    actions.settingEl.addClass("zc-checkpoint-confirm-actions");
+    actions.addButton((button) => button
+      .setButtonText("取消")
+      .onClick(() => this.close()));
+    actions.addButton((button) => button
+      .setButtonText("删除")
+      .setWarning()
+      .onClick(async () => {
+        button.setDisabled(true);
+        await this.onConfirm();
         this.close();
       }));
   }
@@ -289,6 +552,7 @@ class SnapshotDiffModal extends Modal {
     }
 
     const actions = new Setting(container);
+    actions.settingEl.addClass("zc-snapshot-actions");
     actions.addButton((button) => button.setButtonText("关闭").onClick(() => this.close()));
     actions.addButton((button) => button
       .setButtonText("恢复此版本")
@@ -321,6 +585,7 @@ export class ProjectConsoleView extends FileView {
   private projectStats: ProjectStatistics | null = null;
   private health: ProjectHealth | null = null;
   private timelineFilter: "all" | "files" | "tasks" | "project" | "checkpoints" = "all";
+  private releaseService: DeliverableReleaseService;
 
   constructor(
     l: WorkspaceLeaf,
@@ -329,6 +594,7 @@ export class ProjectConsoleView extends FileView {
   ) {
     super(l);
     this.services = getServiceManager(this.app, taskSyncService);
+    this.releaseService = new DeliverableReleaseService(this.app, settingsManager);
   }
 
   getViewType() { return VIEW_TYPE_PROJECT_CONSOLE; }
@@ -448,7 +714,10 @@ export class ProjectConsoleView extends FileView {
   private hero(p: HTMLElement) {
     const d = this.data!;
     const color = getProjectTypeColor(d.type || "未分类");
-    const breadcrumb = p.createDiv({ cls: "zc-breadcrumb" });
+    const breadcrumb = p.createEl("nav", {
+      cls: "zc-breadcrumb",
+      attr: { "aria-label": "项目路径" },
+    });
     breadcrumb.createSpan({ text: "项目" });
     breadcrumb.createSpan({ cls: "zc-breadcrumb-separator", text: "/" });
     breadcrumb.createSpan({ text: d.type || "未分类" });
@@ -475,13 +744,19 @@ export class ProjectConsoleView extends FileView {
     }
 
     const descEl = info.createDiv({ cls: "zc-hero-desc" });
-    if (d.description) descEl.createSpan({ cls: "zc-hero-desc-text", text: d.description });
+    if (d.description) {
+      const rendered = descEl.createDiv({ cls: "zc-hero-desc-text zc-row-markdown zc-inline-markdown markdown-preview-view markdown-rendered" });
+      void MarkdownRenderer.renderMarkdown(d.description, rendered, this.projPath, null as any);
+    }
     else descEl.createSpan({ cls: "zc-hero-desc-placeholder", text: "点击添加项目简介..." });
     const editBtn = descEl.createSpan({ cls: "zc-hero-desc-edit" });
     editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
     descEl.addEventListener("click", () => this.editDescription(descEl));
 
-    const exportBtn = sec.createDiv({ cls: "zc-hero-export" });
+    const exportBtn = sec.createEl("button", {
+      cls: "zc-hero-export",
+      attr: { type: "button", "aria-label": "导出项目数据" },
+    });
     exportBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
     exportBtn.createSpan({ text: "导出" });
     exportBtn.addEventListener("click", () => this.showExportMenu(exportBtn));
@@ -622,10 +897,11 @@ export class ProjectConsoleView extends FileView {
   private editDescription(container: HTMLElement) {
     const d = this.data!;
     container.empty();
-    const input = container.createEl("input", {
+    const input = container.createEl("textarea", {
       cls: "zc-hero-desc-input",
-      attr: { type: "text", placeholder: "输入项目简介...", value: d.description || "" },
+      attr: { placeholder: "输入项目简介，支持 Markdown 和换行", rows: "4" },
     });
+    input.value = d.description || "";
     input.focus();
     input.select();
     const save = async () => {
@@ -634,7 +910,10 @@ export class ProjectConsoleView extends FileView {
       this.render();
     };
     input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") void save();
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        void save();
+      }
       if (event.key === "Escape") this.render();
     });
     input.addEventListener("blur", () => void save());
@@ -679,15 +958,6 @@ export class ProjectConsoleView extends FileView {
       if (hint) valueWrap.createSpan({ cls: "zc-status-hint", text: hint });
     }
 
-    const nextTask = this.data!.tasks
-      .filter((task) => !task.completed && task.due)
-      .sort((a, b) => (a.due || "").localeCompare(b.due || ""))[0];
-    if (nextTask?.due) {
-      const next = section.createDiv({ cls: "zc-next-node" });
-      next.createSpan({ cls: "zc-next-node-label", text: "下一节点" });
-      next.createSpan({ cls: "zc-next-node-title", text: nextTask.text });
-      next.createSpan({ cls: "zc-next-node-date", text: fmtDate(nextTask.due) });
-    }
   }
 
   /** Tab 区域 */
@@ -695,7 +965,7 @@ export class ProjectConsoleView extends FileView {
     const section = p.createDiv({ cls: "zc-section" });
 
     // Tab 栏
-    const tabBar = section.createDiv({ cls: "zc-tabs" });
+    const tabBar = section.createDiv({ cls: "zc-tabs", attr: { role: "tablist", "aria-label": "项目视图" } });
     const defs: [typeof this.tab, string][] = [
       ["tasks", "任务"],
       ["deliverables", "交付物"],
@@ -704,11 +974,23 @@ export class ProjectConsoleView extends FileView {
       ["recent", "最近文件"]
     ];
     for (const [key, label] of defs) {
-      const btn = tabBar.createDiv({ cls: `zc-tab${this.tab === key ? " is-active" : ""}`, text: label });
+      const btn = tabBar.createEl("button", {
+        cls: `zc-tab${this.tab === key ? " is-active" : ""}`,
+        text: label,
+        attr: {
+          type: "button",
+          role: "tab",
+          "aria-selected": String(this.tab === key),
+        },
+      });
       btn.addEventListener("click", () => {
         this.tab = key;
-        tabBar.querySelectorAll(".zc-tab").forEach((e) => e.removeClass("is-active"));
+        tabBar.querySelectorAll<HTMLElement>(".zc-tab").forEach((e) => {
+          e.removeClass("is-active");
+          e.setAttribute("aria-selected", "false");
+        });
         btn.addClass("is-active");
+        btn.setAttribute("aria-selected", "true");
         const body = section.querySelector(".zc-section-body");
         if (body) { body.empty(); this.tabBody(body as HTMLElement); }
       });
@@ -738,8 +1020,14 @@ export class ProjectConsoleView extends FileView {
     const heading = c.createDiv({ cls: "zc-content-heading" });
     const headingText = heading.createDiv({ cls: "zc-content-heading-copy" });
     headingText.createDiv({ cls: "zc-content-eyebrow", text: "当前焦点" });
-    headingText.createEl("h2", { cls: "zc-content-title", text: "下一步行动" });
-    const add = heading.createDiv({ cls: "zc-add-btn zc-add-btn--inline" });
+    const titleRow = headingText.createDiv({ cls: "zc-content-title-row" });
+    titleRow.createEl("h2", { cls: "zc-content-title", text: "任务" });
+    const remaining = d.tasks.filter((task) => !task.completed).length;
+    titleRow.createSpan({ cls: "zc-content-count", text: `${remaining} 项待处理` });
+    const add = heading.createEl("button", {
+      cls: "zc-add-btn zc-add-btn--inline",
+      attr: { type: "button", "aria-label": "添加任务" },
+    });
     add.appendChild(svg("plus"));
     add.createSpan({ text: "添加任务" });
     add.addEventListener("click", () => this.openAddTaskModal());
@@ -825,7 +1113,8 @@ export class ProjectConsoleView extends FileView {
 
     // 第一行：任务文本 + 优先级标签
     const firstLine = content.createDiv({ cls: "zc-row-first-line" });
-    firstLine.createSpan({ cls: "zc-row-text", text: t.text });
+    const taskText = firstLine.createDiv({ cls: "zc-row-text zc-row-markdown zc-inline-markdown markdown-preview-view markdown-rendered" });
+    void MarkdownRenderer.renderMarkdown(t.text, taskText, this.projPath, null as any);
 
     // 优先级标签
     if (t.priority) {
@@ -879,24 +1168,121 @@ export class ProjectConsoleView extends FileView {
   private deliverables(c: HTMLElement) {
     const d = this.data!;
     const scroll = c.createDiv({ cls: "zc-scroll" });
-    const list = scroll.createDiv({ cls: "zc-list" });
+    const header = scroll.createDiv("zc-release-header");
+    const headerCopy = header.createDiv("zc-release-header-copy");
+    headerCopy.createDiv({ cls: "zc-release-title", text: "交付物" });
+    headerCopy.createDiv({
+      cls: "zc-release-subtitle",
+      text: d.deliverables.length
+        ? `已发布 ${d.deliverables.filter((item) => item.format === "zip").length} 个版本`
+        : "将阶段成果封装为不可编辑的 ZIP",
+    });
+    const submit = header.createEl("button", {
+      cls: "zc-release-submit",
+      attr: { type: "button" },
+    });
+    submit.appendChild(svg("plus"));
+    submit.createSpan({ text: "提交交付物" });
+    const configuredFolder = this.releaseService.resolveFolder(this.projPath, d.type);
+    submit.disabled = !configuredFolder;
+    submit.title = configuredFolder ? `发布到 ${configuredFolder.folderName}` : "请先配置当前项目分类的交付物文件夹";
+    submit.addEventListener("click", () => {
+      if (!configuredFolder) {
+        new Notice("请先在设置 → 项目子文件夹中配置交付物文件夹");
+        return;
+      }
+      new SubmitDeliverableModal(this.app, this.projPath, d.type, this.releaseService, async (name, description, paths) => {
+        const release = await this.releaseService.publish({
+          projectPath: this.projPath,
+          projectType: d.type,
+          releaseName: name,
+          description,
+          sourcePaths: paths,
+        });
+        const nextData: ProjectConsoleData = {
+          ...this.data!,
+          deliverables: [...this.data!.deliverables, release],
+        };
+        if (!(await this.services.projectData.saveProjectConsoleData(this.projPath, nextData))) {
+          throw new Error("发布包已生成，但项目记录未写入；请勿重复使用同一发布名称");
+        }
+        this.services.clearProjectCache(this.projPath);
+        this.services.timeline.clearCache(this.projPath);
+        await this.loadProjectData();
+        this.render();
+        new Notice(`已发布交付物：${release.name}`);
+      }).open();
+    });
+
+    const list = scroll.createDiv({ cls: "zc-release-list" });
     if (!d.deliverables.length) {
       const e = list.createDiv({ cls: "zc-empty" });
       e.createDiv({ cls: "zc-empty-icon" }).innerHTML = SVG.package;
-      e.createDiv({ cls: "zc-empty-title", text: "暂无交付物" });
-      e.createDiv({ cls: "zc-empty-sub", text: "在 .home 文件中添加 deliverables 数组" });
+      e.createDiv({ cls: "zc-empty-title", text: "还没有交付物" });
+      e.createDiv({
+        cls: "zc-empty-sub",
+        text: configuredFolder ? `发布包将保存到 ${configuredFolder.folderName}` : "请先配置交付物文件夹",
+      });
       return;
     }
-    const S: Record<string, string> = { pending: "待开始", "in-progress": "进行中", done: "已完成" };
     for (const item of d.deliverables) {
-      const row = list.createDiv({ cls: "zc-row zc-clickable" });
-      const ic = row.createDiv({ cls: "zc-row-icon" });
-      ic.innerHTML = SVG.fileText;
-      row.createSpan({ cls: "zc-row-text", text: item.name });
-      const st = row.createDiv({ cls: `zc-badge zc-badge-${item.status}` });
-      st.createSpan({ cls: "zc-badge-dot" });
-      st.createSpan({ text: S[item.status] || item.status });
-      row.addEventListener("click", () => this.openRel(item.path));
+      const isRelease = item.format === "zip";
+      const row = list.createDiv({ cls: `zc-release-row${isRelease ? "" : " is-legacy"}` });
+      const ic = row.createDiv({ cls: "zc-release-icon" });
+      ic.innerHTML = SVG.package;
+      const main = row.createDiv("zc-release-main");
+      const nameRow = main.createDiv("zc-release-name-row");
+      nameRow.createSpan({ cls: "zc-release-name", text: item.name });
+      if (!isRelease) nameRow.createSpan({ cls: "zc-release-legacy", text: "旧版交付物" });
+    if (item.description) {
+      const description = main.createDiv({ cls: "zc-release-description zc-row-markdown zc-inline-markdown markdown-preview-view markdown-rendered" });
+      void MarkdownRenderer.renderMarkdown(item.description, description, this.projPath, null as any);
+    }
+      const meta = main.createDiv("zc-release-meta");
+      if (isRelease) {
+        meta.createSpan({ text: `${item.fileCount ?? 0} 个文件` });
+        if (item.createdAt) meta.createSpan({ text: fmtDate(item.createdAt) });
+      } else if (item.status) {
+        meta.createSpan({ text: item.status });
+      }
+      meta.createSpan({ cls: "zc-release-path", text: item.path });
+
+      const actions = row.createDiv("zc-release-actions");
+      const open = actions.createEl("button", {
+        attr: { type: "button", "aria-label": isRelease ? "打开 ZIP 文件" : "打开交付物" },
+      });
+      open.appendChild(svg("folder"));
+      open.addEventListener("click", () => this.openRel(item.path));
+      if (isRelease) {
+        const remove = actions.createEl("button", {
+          cls: "is-danger",
+          attr: { type: "button", "aria-label": "删除交付物" },
+        });
+        remove.appendChild(svg("trash"));
+        remove.addEventListener("click", async () => {
+          if (!window.confirm(`删除“${item.name}”？\n这会删除项目记录和对应 ZIP，但不会删除任何源文件。`)) return;
+          const nextData: ProjectConsoleData = {
+            ...this.data!,
+            deliverables: this.data!.deliverables.filter((candidate) =>
+              candidate.id ? candidate.id !== item.id : candidate !== item
+            ),
+          };
+          if (!(await this.services.projectData.saveProjectConsoleData(this.projPath, nextData))) {
+            new Notice("交付物记录删除失败");
+            return;
+          }
+          try {
+            await this.releaseService.deleteArchive(this.projPath, d.type, item);
+          } catch (error) {
+            new Notice(error instanceof Error ? `记录已删除，但 ZIP 删除失败：${error.message}` : "记录已删除，但 ZIP 删除失败");
+          }
+          this.services.clearProjectCache(this.projPath);
+          this.services.timeline.clearCache(this.projPath);
+          await this.loadProjectData();
+          this.render();
+          new Notice(`已删除交付物：${item.name}`);
+        });
+      }
     }
   }
 
@@ -978,8 +1364,10 @@ export class ProjectConsoleView extends FileView {
   }
 
   private async openRel(rel: string) {
-    const full = rel.includes("/") ? rel : `${this.projPath}/${rel}`;
-    const f = this.app.vault.getAbstractFileByPath(full);
+    const direct = this.app.vault.getAbstractFileByPath(rel);
+    const f = direct instanceof TFile
+      ? direct
+      : this.app.vault.getAbstractFileByPath(`${this.projPath}/${rel}`);
     if (f instanceof TFile) await this.app.workspace.getLeaf(false).openFile(f);
   }
 
@@ -1075,6 +1463,8 @@ export class ProjectConsoleView extends FileView {
         for (const event of events) {
           const eventEl = eventList.createDiv({ cls: "zc-timeline-event" });
           eventEl.dataset.eventType = event.type;
+          if (event.snapshotId) eventEl.dataset.hasSnapshot = "true";
+          if (event.checkpointId) eventEl.dataset.hasCheckpoint = "true";
           eventEl.title = new Date(event.timestamp).toLocaleString();
 
           const time = eventEl.createDiv({
@@ -1114,15 +1504,69 @@ export class ProjectConsoleView extends FileView {
           }
           if (event.snapshotId) {
             const versionButton = actions.createEl("button", {
-              cls: "zc-timeline-action is-primary",
-              text: "版本详情",
-              attr: { type: "button" },
+              cls: "zc-timeline-action is-version",
+              attr: { type: "button", "aria-label": "查看文件版本详情" },
             });
+            versionButton.appendChild(svg("fileStack"));
+            versionButton.createSpan({ text: "版本" });
             versionButton.addEventListener("click", () => {
               new SnapshotDiffModal(this.app, this.services, event.snapshotId!, async () => {
                 this.services.timeline.clearCache(this.projPath);
                 await this.loadProjectData();
                 this.render();
+              }).open();
+            });
+          }
+          if (event.checkpointId) {
+            const checkpointId = event.checkpointId;
+            const restoreButton = actions.createEl("button", {
+              cls: "zc-timeline-action is-checkpoint-restore",
+              attr: { type: "button", "aria-label": "退回到此检查点" },
+            });
+            restoreButton.appendChild(svg("checkCircle"));
+            restoreButton.createSpan({ text: "恢复" });
+            restoreButton.addEventListener("click", async () => {
+              const checkpoint = await this.services.snapshots.getCheckpoint(checkpointId);
+              if (!checkpoint) {
+                new Notice("检查点不存在或已被删除");
+                return;
+              }
+              new ConfirmCheckpointRestoreModal(this.app, checkpoint, async () => {
+                const result = await this.services.snapshots.restoreCheckpoint(checkpointId);
+                if (!result) {
+                  new Notice("检查点恢复失败");
+                  return;
+                }
+                this.services.clearProjectCache(this.projPath);
+                this.services.timeline.clearCache(this.projPath);
+                await this.loadProjectData();
+                this.render();
+                const removedText = result.removed > 0 ? `，移除 ${result.removed} 个新增文件` : "";
+                const failedText = result.failed.length > 0 ? `，${result.failed.length} 个文件失败` : "";
+                new Notice(`已恢复 ${result.restored} 个文件${removedText}${failedText}`);
+              }).open();
+            });
+
+            const deleteButton = actions.createEl("button", {
+              cls: "zc-timeline-action is-checkpoint-delete",
+              attr: { type: "button", "aria-label": "删除此检查点" },
+            });
+            deleteButton.appendChild(svg("trash"));
+            deleteButton.createSpan({ text: "删除" });
+            deleteButton.addEventListener("click", async () => {
+              const checkpoint = await this.services.snapshots.getCheckpoint(checkpointId);
+              if (!checkpoint) {
+                new Notice("检查点不存在或已被删除");
+                return;
+              }
+              new ConfirmCheckpointDeleteModal(this.app, checkpoint, async () => {
+                if (!(await this.services.snapshots.deleteCheckpoint(checkpointId))) {
+                  new Notice("检查点删除失败");
+                  return;
+                }
+                this.services.timeline.clearCache(this.projPath);
+                this.render();
+                new Notice("检查点已删除");
               }).open();
             });
           }
@@ -1157,7 +1601,7 @@ export class ProjectConsoleView extends FileView {
 
   private formatTimelineClock(timestamp: number): string {
     const date = new Date(timestamp);
-    return [date.getHours(), date.getMinutes(), date.getSeconds()]
+    return [date.getHours(), date.getMinutes()]
       .map((part) => String(part).padStart(2, "0"))
       .join(":");
   }
