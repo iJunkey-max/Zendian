@@ -336,14 +336,23 @@ export class LineChart {
     const value = dataset.data[point.index];
     const label = this.data.labels[point.index] || "";
 
-    this.tooltip.innerHTML = `
-      <div class="chart-tooltip-title">${label}</div>
-      <div class="chart-tooltip-content">
-        <span class="chart-tooltip-dot" style="background: ${dataset.color}"></span>
-        <span class="chart-tooltip-label">${dataset.label}:</span>
-        <span class="chart-tooltip-value">${formatNumber(value)}</span>
-      </div>
-    `;
+    this.tooltip.replaceChildren();
+    const title = document.createElement("div");
+    title.className = "chart-tooltip-title";
+    title.textContent = label;
+    const content = document.createElement("div");
+    content.className = "chart-tooltip-content";
+    const dot = document.createElement("span");
+    dot.className = "chart-tooltip-dot";
+    dot.style.backgroundColor = dataset.color;
+    const datasetLabel = document.createElement("span");
+    datasetLabel.className = "chart-tooltip-label";
+    datasetLabel.textContent = `${dataset.label}:`;
+    const formattedValue = document.createElement("span");
+    formattedValue.className = "chart-tooltip-value";
+    formattedValue.textContent = formatNumber(value);
+    content.append(dot, datasetLabel, formattedValue);
+    this.tooltip.append(title, content);
 
     this.tooltip.style.display = "block";
     this.tooltip.style.left = `${point.x + 10}px`;

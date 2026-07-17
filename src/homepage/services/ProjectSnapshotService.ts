@@ -1,6 +1,7 @@
 import { App, TFile, TFolder, normalizePath } from "obsidian";
 import type { DataChangeEvent } from "./types";
 import { isDeliverablePath } from "./DeliverablePathRegistry";
+import { getPluginDataPath } from "../../utils/plugin-paths";
 
 export type SnapshotAction = "baseline" | "created" | "modified" | "deleted" | "checkpoint" | "safety" | "restored";
 
@@ -55,9 +56,6 @@ export interface SnapshotComparison {
   preview: Array<{ kind: "same" | "added" | "removed"; text: string }>;
 }
 
-const HISTORY_ROOT = ".obsidian/plugins/zendian/project-history";
-const INDEX_PATH = `${HISTORY_ROOT}/index.json`;
-const BLOBS_PATH = `${HISTORY_ROOT}/blobs`;
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_AUTO_VERSIONS_PER_FILE = 30;
 const TEXT_EXTENSIONS = new Set(["md", "canvas", "json", "home", "txt", "css", "js", "ts", "yaml", "yml"]);
@@ -67,8 +65,15 @@ export class ProjectSnapshotService {
   private loadPromise: Promise<void> | null = null;
   private saveQueue: Promise<void> = Promise.resolve();
   private activeEditSessions = new Map<string, { id: string; projectPath: string; filePath: string; startedAt: number }>();
+  private readonly historyRoot: string;
+  private readonly indexPath: string;
+  private readonly blobsPath: string;
 
-  constructor(private app: App) {}
+  constructor(private app: App) {
+    this.historyRoot = getPluginDataPath(app, "project-history");
+    this.indexPath = normalizePath(`${this.historyRoot}/index.json`);
+    this.blobsPath = normalizePath(`${this.historyRoot}/blobs`);
+  }
 
   async initializeProject(projectPath: string): Promise<void> {
     await this.ensureLoaded();
@@ -249,7 +254,7 @@ export class ProjectSnapshotService {
       for (const file of extraFiles) {
         try {
           await this.captureFile(checkpoint.projectPath, file.path, "safety", Date.now(), true);
-          await this.app.vault.delete(file);
+          await this.app.vault.trash(file, false);
           removed++;
         } catch (error) {
           console.error(`[ProjectSnapshotService] 移除检查点后新增文件失败: ${file.path}`, error);
@@ -389,31 +394,41 @@ export class ProjectSnapshotService {
   }
 
   private async load(): Promise<void> {
-    await this.ensureDirectory(HISTORY_ROOT);
-    await this.ensureDirectory(BLOBS_PATH);
+    await this.ensureDirectory(this.historyRoot);
+    await this.ensureDirectory(this.blobsPath);
     const adapter = this.app.vault.adapter;
-    if (!(await adapter.exists(normalizePath(INDEX_PATH)))) return;
+    if (!(await adapter.exists(this.indexPath))) return;
     try {
-      const parsed = JSON.parse(await adapter.read(normalizePath(INDEX_PATH))) as SnapshotIndex;
+      const parsed = JSON.parse(await adapter.read(this.indexPath)) as SnapshotIndex;
       if (parsed?.version === 1 && parsed.projects) this.index = parsed;
     } catch (error) {
       console.warn("[ProjectSnapshotService] 快照索引损坏，使用空索引", error);
+      try {
+        const backupPath = normalizePath(`${this.historyRoot}/index.corrupt-${Date.now()}.json`);
+        await adapter.copy(this.indexPath, backupPath);
+        console.warn(`[ProjectSnapshotService] 已备份损坏索引到 ${backupPath}`);
+      } catch (backupError) {
+        console.error("[ProjectSnapshotService] 备份损坏索引失败", backupError);
+      }
     }
   }
 
   private async saveIndex(): Promise<void> {
     const data = JSON.stringify(this.index, null, 2);
-    this.saveQueue = this.saveQueue.then(() => this.app.vault.adapter.write(normalizePath(INDEX_PATH), data));
-    await this.saveQueue;
+    const write = this.saveQueue
+      .catch(() => undefined)
+      .then(() => this.app.vault.adapter.write(this.indexPath, data));
+    this.saveQueue = write.catch(() => undefined);
+    await write;
   }
 
   private async writeBlob(hash: string, content: string): Promise<void> {
-    const path = normalizePath(`${BLOBS_PATH}/${hash}.txt`);
+    const path = normalizePath(`${this.blobsPath}/${hash}.txt`);
     if (!(await this.app.vault.adapter.exists(path))) await this.app.vault.adapter.write(path, content);
   }
 
   private async readBlob(hash: string): Promise<string> {
-    return this.app.vault.adapter.read(normalizePath(`${BLOBS_PATH}/${hash}.txt`));
+    return this.app.vault.adapter.read(normalizePath(`${this.blobsPath}/${hash}.txt`));
   }
 
   private async ensureDirectory(path: string): Promise<void> {

@@ -1,0 +1,10 @@
+node_modules/
+.pnpm-store/
+dist/
+
+*.asar
+*.log
+*.tsbuildinfo
+
+.DS_Store
+Thumbs.db

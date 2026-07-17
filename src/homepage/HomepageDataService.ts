@@ -2,13 +2,12 @@
  * HomepageDataService — JSON 数据持久化
  *
  * 管理主页业务数据（项目、便签、格言）
- * 存储路径：.obsidian/plugins/zendian/homepage-data.json
+ * 存储路径：<Vault.configDir>/plugins/zendian/homepage-data.json
  */
 
 import { App, TFile } from "obsidian";
 import type { HomepageData, HomepageQuickNote, HomepageQuote } from "./types";
-
-const DATA_FILE = ".obsidian/plugins/zendian/homepage-data.json";
+import { getPluginDataPath, getPluginDataRoot } from "../utils/plugin-paths";
 
 const DEFAULT_QUOTES: HomepageQuote[] = [
   { text: "每一个你不知道的时刻，都是你未触及的边界。", author: "海马星球" },
@@ -29,10 +28,15 @@ const DEFAULT_DATA: HomepageData = {
 };
 
 export class HomepageDataService {
-  private data: HomepageData = DEFAULT_DATA;
+  private data: HomepageData = structuredClone(DEFAULT_DATA);
   private loaded = false;
+  private readonly dataFile: string;
+  private readonly dataRoot: string;
 
-  constructor(private app: App) {}
+  constructor(private app: App) {
+    this.dataFile = getPluginDataPath(app, "homepage-data.json");
+    this.dataRoot = getPluginDataRoot(app);
+  }
 
   /**
    * 加载数据（首次调用时从文件读取）
@@ -41,17 +45,27 @@ export class HomepageDataService {
     if (this.loaded) return this.data;
 
     try {
-      const exists = await this.app.vault.adapter.exists(DATA_FILE);
+      const exists = await this.app.vault.adapter.exists(this.dataFile);
       if (exists) {
-        const raw = await this.app.vault.adapter.read(DATA_FILE);
+        const raw = await this.app.vault.adapter.read(this.dataFile);
         const parsed = JSON.parse(raw);
         this.data = this.mergeWithDefaults(parsed);
       } else {
-        this.data = { ...DEFAULT_DATA };
+        this.data = structuredClone(DEFAULT_DATA);
         await this.save();
       }
-    } catch {
-      this.data = { ...DEFAULT_DATA };
+    } catch (error) {
+      const adapter = this.app.vault.adapter;
+      try {
+        if (await adapter.exists(this.dataFile)) {
+          const backupPath = getPluginDataPath(this.app, `homepage-data.corrupt-${Date.now()}.json`);
+          await adapter.copy(this.dataFile, backupPath);
+          console.warn(`[ZENdian] Homepage data was unreadable; backup created at ${backupPath}`, error);
+        }
+      } catch (backupError) {
+        console.error("[ZENdian] Failed to back up unreadable homepage data", backupError);
+      }
+      this.data = structuredClone(DEFAULT_DATA);
     }
 
     this.loaded = true;
@@ -63,11 +77,10 @@ export class HomepageDataService {
    */
   async save(): Promise<void> {
     try {
-      const dir = DATA_FILE.substring(0, DATA_FILE.lastIndexOf("/"));
-      if (!(await this.app.vault.adapter.exists(dir))) {
-        await this.app.vault.adapter.mkdir(dir);
+      if (!(await this.app.vault.adapter.exists(this.dataRoot))) {
+        await this.app.vault.adapter.mkdir(this.dataRoot);
       }
-      await this.app.vault.adapter.write(DATA_FILE, JSON.stringify(this.data, null, 2));
+      await this.app.vault.adapter.write(this.dataFile, JSON.stringify(this.data, null, 2));
     } catch (e) {
       console.error("[ZENdian] Failed to save homepage data:", e);
     }

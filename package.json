@@ -1,6 +1,6 @@
 {
   "name": "zendian",
-  "version": "3.1.01",
+  "version": "3.1.03",
   "description": "A personal knowledge and project workspace for Obsidian.",
   "main": "dist/main.js",
   "scripts": {
@@ -9,7 +9,9 @@
     "build:css": "node scripts/build-css.mjs",
     "dev": "node esbuild.config.mjs",
     "typecheck": "tsc --noEmit",
-    "check:settings": "node scripts/check-settings-contract.mjs"
+    "check:settings": "node scripts/check-settings-contract.mjs",
+    "check:safety": "node scripts/check-safety-contract.mjs",
+    "check": "npm run typecheck && npm run check:settings && npm run check:safety"
   },
   "keywords": ["obsidian", "productivity", "project-management", "tasks", "knowledge-management"],
   "author": "Junkey",

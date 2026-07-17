@@ -17,6 +17,8 @@ import type { PluginSettings } from "../types/settings.types";
 export class SettingsManager {
   private settings: PluginSettings;
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  private saveQueue: Promise<void> = Promise.resolve();
+  private pendingSaveWaiters: Array<{ resolve: () => void; reject: (error: unknown) => void }> = [];
 
   constructor(
     private plugin: Plugin,
@@ -76,10 +78,37 @@ export class SettingsManager {
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
     }
-    this.saveTimeout = setTimeout(async () => {
-      await this.plugin.saveData(this.settings);
+    const pending = new Promise<void>((resolve, reject) => {
+      this.pendingSaveWaiters.push({ resolve, reject });
+    });
+    this.saveTimeout = setTimeout(() => void this.flush(), 200);
+    return pending;
+  }
+
+  /** 立即持久化所有待保存设置，并保持写入顺序。 */
+  async flush(): Promise<void> {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
       this.saveTimeout = null;
-    }, 200);
+    }
+    if (this.pendingSaveWaiters.length === 0) {
+      await this.saveQueue;
+      return;
+    }
+
+    const waiters = this.pendingSaveWaiters.splice(0);
+    const snapshot = structuredClone(this.settings);
+    const write = this.saveQueue
+      .catch(() => undefined)
+      .then(() => this.plugin.saveData(snapshot));
+    this.saveQueue = write.catch(() => undefined);
+    try {
+      await write;
+      waiters.forEach(({ resolve }) => resolve());
+    } catch (error) {
+      waiters.forEach(({ reject }) => reject(error));
+      throw error;
+    }
   }
 
   /**

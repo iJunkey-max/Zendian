@@ -11,6 +11,7 @@ import {
   findProjectTimelineFile,
   PROJECT_HOME_FILENAME,
 } from "./ProjectHomeFileResolver";
+import { formatDate } from "../../utils/date";
 
 export interface ProjectHomeRecord {
   file: TFile;
@@ -19,6 +20,19 @@ export interface ProjectHomeRecord {
 
 const LEGACY_TASK_REGEX = /^- \[([ xX])\] (.+)$/;
 const migrationLocks = new Map<string, Promise<ProjectHomeRecord | null>>();
+const projectWriteQueues = new Map<string, Promise<void>>();
+
+function enqueueProjectWrite<T>(projectPath: string, operation: () => Promise<T>): Promise<T> {
+  const key = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
+  const previous = projectWriteQueues.get(key) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(operation);
+  const settled = current.then(() => undefined, () => undefined);
+  projectWriteQueues.set(key, settled);
+  void settled.finally(() => {
+    if (projectWriteQueues.get(key) === settled) projectWriteQueues.delete(key);
+  });
+  return current;
+}
 
 function taskId(task: ProjectConsoleTask, index: number): string {
   if (task.id) return task.id;
@@ -150,7 +164,7 @@ async function loadProjectHomeInternal(
       type: "未分类",
       status: "planning",
       statusHistory: [],
-      createdAt: new Date().toISOString().slice(0, 10),
+      createdAt: formatDate(new Date()),
       tasks: [],
       deliverables: [],
       overview: { markdown: "" },
@@ -207,9 +221,9 @@ async function loadProjectHomeInternal(
 
     if (changed) await app.vault.modify(file, JSON.stringify(data, null, 2));
 
-    // 先把原文和结构化数据安全写入 .home，再移除旧文档。
-    if (overviewFile) await app.vault.delete(overviewFile);
-    if (timelineFile) await app.vault.delete(timelineFile);
+    // 先把原文和结构化数据安全写入 .home，再把旧文档移入可恢复的 Vault 回收站。
+    if (overviewFile) await app.vault.trash(overviewFile, false);
+    if (timelineFile) await app.vault.trash(timelineFile, false);
 
     const canonicalPath = `${projectPath.replace(/\/+$/, "")}/${PROJECT_HOME_FILENAME}`;
     const canonical = app.vault.getAbstractFileByPath(canonicalPath);
@@ -239,14 +253,41 @@ export async function loadProjectHome(
 }
 
 export async function saveProjectHome(app: App, projectPath: string, data: ProjectConsoleData): Promise<boolean> {
-  const file = findProjectHomeFile(app, projectPath, data.name);
-  if (!file) return false;
-  try {
-    const normalized = normalizeData(data).data;
-    await app.vault.modify(file, JSON.stringify(normalized, null, 2));
-    return true;
-  } catch (error) {
-    console.error(`[ProjectHomeStore] 保存项目主页失败: ${projectPath}`, error);
-    return false;
-  }
+  return enqueueProjectWrite(projectPath, async () => {
+    const file = findProjectHomeFile(app, projectPath, data.name);
+    if (!file) return false;
+    try {
+      const normalized = normalizeData(data).data;
+      await app.vault.modify(file, JSON.stringify(normalized, null, 2));
+      return true;
+    } catch (error) {
+      console.error(`[ProjectHomeStore] 保存项目主页失败: ${projectPath}`, error);
+      return false;
+    }
+  });
+}
+
+/**
+ * 在按项目串行化的临界区中重新读取最新数据并修改，避免多个 UI 操作整文件互相覆盖。
+ * mutator 返回 false 时不写入。
+ */
+export async function mutateProjectHome(
+  app: App,
+  projectPath: string,
+  mutator: (data: ProjectConsoleData) => boolean | void | Promise<boolean | void>,
+): Promise<boolean> {
+  return enqueueProjectWrite(projectPath, async () => {
+    const record = await loadProjectHome(app, projectPath);
+    if (!record) return false;
+    try {
+      const shouldSave = await mutator(record.data);
+      if (shouldSave === false) return false;
+      const normalized = normalizeData(record.data).data;
+      await app.vault.modify(record.file, JSON.stringify(normalized, null, 2));
+      return true;
+    } catch (error) {
+      console.error(`[ProjectHomeStore] 更新项目主页失败: ${projectPath}`, error);
+      return false;
+    }
+  });
 }

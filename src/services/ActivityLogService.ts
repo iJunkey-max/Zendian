@@ -6,12 +6,13 @@
  * - 计算每日/每月统计数据
  * - 生成热力图数据
  *
- * 数据存储：.obsidian/plugins/zendian/activity-log.json
+ * 数据存储：<Vault.configDir>/plugins/zendian/activity-log.json
  */
 
-import { App, TFile, TFolder } from "obsidian";
+import { App } from "obsidian";
 import type { EventBus } from "../core/event-bus";
 import { Events } from "../core/event-bus";
+import { getPluginDataPath, getPluginDataRoot } from "../utils/plugin-paths";
 
 /** 活动类型 */
 export type ActivityType = "note_created" | "note_edited" | "task_completed" | "file_opened";
@@ -95,19 +96,24 @@ export class ActivityLogService {
     lastSyncTime: 0,
   };
 
-  private dataPath = ".obsidian/plugins/zendian/activity-log.json";
+  private readonly dataPath: string;
+  private readonly dataRoot: string;
   private saveDebounceTimer: number | null = null;
   private statsNotifyTimer: number | null = null;
+  private saveQueue: Promise<void> = Promise.resolve();
   private readonly SAVE_DEBOUNCE = 2000;  // 2 秒防抖保存
 
-  constructor(private app: App, private events?: EventBus) {}
+  constructor(private app: App, private events?: EventBus) {
+    this.dataRoot = getPluginDataRoot(app);
+    this.dataPath = getPluginDataPath(app, "activity-log.json");
+  }
 
   /** 初始化 — 加载历史数据 */
   async load(): Promise<void> {
     try {
-      const file = this.app.vault.getAbstractFileByPath(this.dataPath);
-      if (file instanceof TFile) {
-        const content = await this.app.vault.read(file);
+      const adapter = this.app.vault.adapter;
+      if (await adapter.exists(this.dataPath)) {
+        const content = await adapter.read(this.dataPath);
         this.data = JSON.parse(content);
         this.data.dailyActivities ??= {};
         this.data.focusSessions ??= [];
@@ -122,6 +128,16 @@ export class ActivityLogService {
       }
     } catch (e) {
       console.warn("[ActivityLog] 无法加载历史数据，使用空数据:", e);
+      try {
+        const adapter = this.app.vault.adapter;
+        if (await adapter.exists(this.dataPath)) {
+          const backupPath = getPluginDataPath(this.app, `activity-log.corrupt-${Date.now()}.json`);
+          await adapter.copy(this.dataPath, backupPath);
+          console.warn(`[ActivityLog] 已备份不可读日志到 ${backupPath}`);
+        }
+      } catch (backupError) {
+        console.error("[ActivityLog] 备份不可读日志失败:", backupError);
+      }
       this.data = { dailyActivities: {}, lastSyncTime: 0 };
     }
   }
@@ -458,7 +474,7 @@ export class ActivityLogService {
       window.clearTimeout(this.saveDebounceTimer);
     }
     this.saveDebounceTimer = window.setTimeout(() => {
-      this.save();
+      void this.save();
       this.saveDebounceTimer = null;
     }, this.SAVE_DEBOUNCE);
   }
@@ -474,23 +490,18 @@ export class ActivityLogService {
 
   /** 保存到磁盘 */
   private async save(): Promise<void> {
+    this.data.lastSyncTime = Date.now();
+    const content = JSON.stringify(this.data, null, 2);
+    const write = this.saveQueue
+      .catch(() => undefined)
+      .then(async () => {
+        const adapter = this.app.vault.adapter;
+        if (!(await adapter.exists(this.dataRoot))) await adapter.mkdir(this.dataRoot);
+        await adapter.write(this.dataPath, content);
+      });
+    this.saveQueue = write.catch(() => undefined);
     try {
-      const content = JSON.stringify(this.data, null, 2);
-      const file = this.app.vault.getAbstractFileByPath(this.dataPath);
-
-      if (file instanceof TFile) {
-        await this.app.vault.modify(file, content);
-      } else {
-        // 确保目录存在
-        const dirPath = this.dataPath.substring(0, this.dataPath.lastIndexOf("/"));
-        const dir = this.app.vault.getAbstractFileByPath(dirPath);
-        if (!(dir instanceof TFolder)) {
-          await this.app.vault.createFolder(dirPath);
-        }
-        await this.app.vault.create(this.dataPath, content);
-      }
-
-      this.data.lastSyncTime = Date.now();
+      await write;
     } catch (e) {
       console.error("[ActivityLog] 保存失败:", e);
     }

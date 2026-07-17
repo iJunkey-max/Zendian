@@ -11,7 +11,7 @@
 import { App, TFile, TFolder } from "obsidian";
 import { CacheManager } from "./CacheManager";
 import { findProjectHomeFile, PROJECT_HOME_FILENAME } from "./ProjectHomeFileResolver";
-import { loadProjectHome, saveProjectHome } from "./ProjectHomeStore";
+import { loadProjectHome, mutateProjectHome, saveProjectHome } from "./ProjectHomeStore";
 import type {
   ProjectMetadata,
   ProjectStatistics,
@@ -25,6 +25,7 @@ import type { ProjectConsoleData, ProjectConsoleTask, ProjectConsoleDeliverable 
 import type { TaskSyncService } from "../../services/TaskSyncService";
 import { normalizeProjectStatus, normalizeStatusBeforePause } from "../project-status";
 import { isDeliverablePath, registerDeliverablePaths } from "./DeliverablePathRegistry";
+import { formatDate } from "../../utils/date";
 
 export class ProjectDataService {
   private cache: CacheManager;
@@ -104,6 +105,18 @@ export class ProjectDataService {
       console.error(`[ProjectDataService] 保存项目数据失败: ${projectPath}`, error);
       return false;
     }
+  }
+
+  async mutateProjectConsoleData(
+    projectPath: string,
+    mutator: (data: ProjectConsoleData) => boolean | void | Promise<boolean | void>,
+  ): Promise<boolean> {
+    const saved = await mutateProjectHome(this.app, projectPath, mutator);
+    if (saved) {
+      this.cache.invalidate(`console:${projectPath}`);
+      this.cache.invalidatePattern(`stats:${projectPath}*`);
+    }
+    return saved;
   }
 
   /**
@@ -257,14 +270,11 @@ export class ProjectDataService {
    * 添加任务
    */
   async addTask(projectPath: string, task: Partial<TaskData>): Promise<boolean> {
-    const data = await this.getProjectConsoleData(projectPath);
-    if (!data) return false;
-
     const newTask: ProjectConsoleTask = {
       id: `task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
       text: task.text || "",
       completed: false,
-      created: new Date().toISOString().slice(0, 10),
+      created: formatDate(new Date()),
       due: task.due,
       dueTime: task.dueTime,
       priority: task.priority,
@@ -272,41 +282,39 @@ export class ProjectDataService {
       updatedAt: new Date().toISOString(),
     };
 
-    data.tasks.push(newTask);
-    return await this.saveProjectConsoleData(projectPath, data);
+    return this.mutateProjectConsoleData(projectPath, (data) => {
+      data.tasks.push(newTask);
+    });
   }
 
   /**
    * 更新任务
    */
   async updateTask(projectPath: string, taskIndex: number, updates: Partial<TaskData>): Promise<boolean> {
-    const data = await this.getProjectConsoleData(projectPath);
-    if (!data || !data.tasks[taskIndex]) return false;
-
-    const task = data.tasks[taskIndex];
-    if (updates.text !== undefined) task.text = updates.text;
-    if (updates.completed !== undefined) {
-      task.completed = updates.completed;
-      task.completedAt = updates.completed ? new Date().toISOString() : undefined;
-    }
-    if (updates.due !== undefined) task.due = updates.due;
-    if (updates.dueTime !== undefined) task.dueTime = updates.dueTime;
-    if (updates.priority !== undefined) task.priority = updates.priority;
-    if (updates.tags !== undefined) task.tags = updates.tags;
-    task.updatedAt = new Date().toISOString();
-
-    return await this.saveProjectConsoleData(projectPath, data);
+    return this.mutateProjectConsoleData(projectPath, (data) => {
+      const task = data.tasks[taskIndex];
+      if (!task) return false;
+      if (updates.text !== undefined) task.text = updates.text;
+      if (updates.completed !== undefined) {
+        task.completed = updates.completed;
+        task.completedAt = updates.completed ? new Date().toISOString() : undefined;
+      }
+      if (updates.due !== undefined) task.due = updates.due;
+      if (updates.dueTime !== undefined) task.dueTime = updates.dueTime;
+      if (updates.priority !== undefined) task.priority = updates.priority;
+      if (updates.tags !== undefined) task.tags = updates.tags;
+      task.updatedAt = new Date().toISOString();
+    });
   }
 
   /**
    * 删除任务
    */
   async deleteTask(projectPath: string, taskIndex: number): Promise<boolean> {
-    const data = await this.getProjectConsoleData(projectPath);
-    if (!data) return false;
-
-    data.tasks.splice(taskIndex, 1);
-    return await this.saveProjectConsoleData(projectPath, data);
+    return this.mutateProjectConsoleData(projectPath, (data) => {
+      if (!data.tasks[taskIndex]) return false;
+      data.tasks.splice(taskIndex, 1);
+    });
   }
 
   // ============================================================
@@ -403,7 +411,7 @@ export class ProjectDataService {
       icon: data.icon || "folder",
       type: data.type || "未分类",
       description: data.description || "",
-      createdAt: data.createdAt || new Date().toISOString().slice(0, 10),
+      createdAt: data.createdAt || formatDate(new Date()),
       status: normalizeProjectStatus(data.status),
       statusBeforePause: normalizeStatusBeforePause(data.statusBeforePause),
       statusHistory: Array.isArray(data.statusHistory)

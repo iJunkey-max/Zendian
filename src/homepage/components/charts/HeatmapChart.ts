@@ -331,12 +331,17 @@ export class HeatmapChart {
     const dateObj = new Date(date);
     const formattedDate = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
 
-    this.tooltip.innerHTML = `
-      <div class="chart-tooltip-title">${formattedDate}</div>
-      <div class="chart-tooltip-content">
-        <span class="chart-tooltip-value">${value} 次活动</span>
-      </div>
-    `;
+    this.tooltip.replaceChildren();
+    const title = document.createElement("div");
+    title.className = "chart-tooltip-title";
+    title.textContent = formattedDate;
+    const content = document.createElement("div");
+    content.className = "chart-tooltip-content";
+    const count = document.createElement("span");
+    count.className = "chart-tooltip-value";
+    count.textContent = `${value} 次活动`;
+    content.appendChild(count);
+    this.tooltip.append(title, content);
 
     this.tooltip.style.display = "block";
     this.tooltip.style.left = `${e.clientX + 10}px`;

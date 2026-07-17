@@ -248,7 +248,7 @@ export interface ProjectConsoleDeliverable {
 /**
  * 主页持久化数据（homepage-data.json）
  *
- * 存储路径：.obsidian/plugins/zendian/homepage-data.json
+ * 存储路径：<Vault.configDir>/plugins/zendian/homepage-data.json
  * 注：项目数据来自 vault 文件夹扫描，不在此存储
  */
 export interface HomepageData {

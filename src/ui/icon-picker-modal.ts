@@ -4,6 +4,8 @@
  */
 
 import { App, Modal, getIcon } from "obsidian";
+import { getPluginDataPath } from "../utils/plugin-paths";
+import { parseSafeSvg } from "../utils/safe-svg";
 
 const STYLE_ID = "zendian-icon-picker-style";
 
@@ -125,7 +127,7 @@ export class IconPickerModal extends Modal {
     }
 
     try {
-      const dirPath = `.obsidian/plugins/zendian/icons/${library}`;
+      const dirPath = `${getPluginDataPath(this.app, "icons")}/${library}`;
       const listing = await (this.app as any).vault.adapter.list(dirPath);
       const names = (listing.files as string[])
         .filter((f: string) => f.endsWith(".svg"))
@@ -206,10 +208,9 @@ export class IconPickerModal extends Modal {
     if (this.svgCache.has(key)) return this.svgCache.get(key)!.cloneNode(true) as SVGElement;
 
     try {
-      const path = `.obsidian/plugins/zendian/icons/${library}/${icon}.svg`;
+      const path = `${getPluginDataPath(this.app, "icons")}/${library}/${icon}.svg`;
       const text = await (this.app as any).vault.adapter.read(path);
-      const doc = new DOMParser().parseFromString(text, "image/svg+xml");
-      const svg = doc.querySelector("svg");
+      const svg = parseSafeSvg(text);
       if (svg) {
         svg.removeAttribute("width");
         svg.removeAttribute("height");

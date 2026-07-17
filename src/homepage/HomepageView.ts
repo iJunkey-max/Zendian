@@ -35,6 +35,7 @@ import {
   findProjectHomeFile,
   PROJECT_HOME_FILENAME,
 } from "./services/ProjectHomeFileResolver";
+import { formatDate } from "../utils/date";
 
 export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
 
@@ -377,6 +378,9 @@ export class HomepageView extends ItemView {
   private weatherService!: HomepageWeatherService;
   private projectScanService!: HomepageProjectScanService;
   private activityLogService!: ActivityLogService;
+  private projectRefreshTimer: number | null = null;
+  private projectRefreshRunning = false;
+  private projectRefreshQueued = false;
   private currentTodoTab: TodoTabKey = "all";
   private currentStickyIndex = 0;
   private currentProjectFilter: ProjectFilter = DEFAULT_FILTER;
@@ -413,10 +417,13 @@ export class HomepageView extends ItemView {
     await this.dataService.load();
 
     // 监听 vault 文件变化，增量更新项目扫描
-    this.registerEvent(this.app.vault.on("create", () => this.onProjectVaultChange()));
-    this.registerEvent(this.app.vault.on("modify", () => this.onProjectVaultChange()));
-    this.registerEvent(this.app.vault.on("delete", () => this.onProjectVaultChange()));
-    this.registerEvent(this.app.vault.on("rename", () => this.onProjectVaultChange()));
+    this.registerEvent(this.app.vault.on("create", (file) => this.onProjectVaultChange(file.path)));
+    this.registerEvent(this.app.vault.on("modify", (file) => this.onProjectVaultChange(file.path)));
+    this.registerEvent(this.app.vault.on("delete", (file) => this.onProjectVaultChange(file.path)));
+    this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
+      this.onProjectVaultChange(file.path);
+      this.onProjectVaultChange(oldPath);
+    }));
     this.registerDomEvent(window, "resize", () => {
       if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);
       this.resizeFrame = window.requestAnimationFrame(() => {
@@ -474,6 +481,11 @@ export class HomepageView extends ItemView {
       window.cancelAnimationFrame(this.resizeFrame);
       this.resizeFrame = null;
     }
+    if (this.projectRefreshTimer !== null) {
+      window.clearTimeout(this.projectRefreshTimer);
+      this.projectRefreshTimer = null;
+    }
+    this.projectRefreshQueued = false;
     if (this.unsubSettings) {
       this.unsubSettings();
       this.unsubSettings = null;
@@ -1466,9 +1478,43 @@ export class HomepageView extends ItemView {
     return `${d.getMonth() + 1}/${d.getDate()}`;
   }
 
-  private onProjectVaultChange(): void {
+  private onProjectVaultChange(path: string): void {
+    const categories = this.dependencies.settingsManager.getSettings().homepage.projectCategories;
+    let changedProjectPath: string | null = null;
+    const relevant = categories.some((category) => {
+      const root = getProjectCategoryFolder(category);
+      if (path === root) return true;
+      if (!path.startsWith(`${root}/`)) return false;
+      const projectFolder = path.slice(root.length + 1).split("/")[0];
+      if (projectFolder) changedProjectPath = `${root}/${projectFolder}`;
+      return true;
+    });
+    if (!relevant) return;
+
+    if (changedProjectPath) this.projectScanService.invalidate(changedProjectPath);
     this.projectScanService.markDirty();
-    this.loadProjects();
+    if (this.projectRefreshTimer !== null) window.clearTimeout(this.projectRefreshTimer);
+    this.projectRefreshTimer = window.setTimeout(() => {
+      this.projectRefreshTimer = null;
+      void this.refreshProjectsAfterVaultChange();
+    }, 250);
+  }
+
+  private async refreshProjectsAfterVaultChange(): Promise<void> {
+    if (this.projectRefreshRunning) {
+      this.projectRefreshQueued = true;
+      return;
+    }
+    this.projectRefreshRunning = true;
+    try {
+      await this.loadProjects();
+    } finally {
+      this.projectRefreshRunning = false;
+      if (this.projectRefreshQueued) {
+        this.projectRefreshQueued = false;
+        void this.refreshProjectsAfterVaultChange();
+      }
+    }
   }
 
   // ── 待办 ──────────────────────────────────────────────────
@@ -1571,7 +1617,7 @@ export class HomepageView extends ItemView {
 
     new HomepageTaskCreateModal(this.app, this.allProjects, async (projectPath, text, due, dueTime, priority) => {
       const success = await this.dependencies.taskSyncService.addTask(projectPath, text, {
-        created: new Date().toISOString().slice(0, 10),
+        created: formatDate(new Date()),
         due: due || undefined,
         dueTime: dueTime || undefined,
         priority,
@@ -1640,7 +1686,7 @@ export class HomepageView extends ItemView {
       const dateSpan = right.createSpan({ cls: "homepage-todo-date", text: dueLabel });
 
       // 逾期标红
-      const today = new Date().toISOString().slice(0, 10);
+      const today = formatDate(new Date());
       if (task.due < today) {
         dateSpan.style.color = "var(--text-error)";
         dateSpan.style.fontWeight = "600";
@@ -1775,8 +1821,11 @@ export class HomepageView extends ItemView {
    * 格式化截止日期
    */
   private formatDueDate(due: string): string {
-    const today = new Date().toISOString().slice(0, 10);
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const now = new Date();
+    const tomorrowDate = new Date(now);
+    tomorrowDate.setDate(now.getDate() + 1);
+    const today = formatDate(now);
+    const tomorrow = formatDate(tomorrowDate);
 
     if (due === today) return "今天";
     if (due === tomorrow) return "明天";
@@ -1887,8 +1936,9 @@ export class HomepageView extends ItemView {
       event.stopPropagation();
       const folder = this.getInspirationNotesFolder();
       if (folder) {
+        if (!window.confirm(`将笔记“${note.label || note.path}”移入 Obsidian 回收站？`)) return;
         const file = this.app.vault.getAbstractFileByPath(note.path);
-        if (file instanceof TFile) await this.app.vault.delete(file);
+        if (file instanceof TFile) await this.app.vault.trash(file, false);
       } else {
         await this.dataService.deleteQuickNote(note.id);
       }

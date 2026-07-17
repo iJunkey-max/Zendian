@@ -61,8 +61,10 @@ export default class ZENdianPlugin extends Plugin {
   public projectMetadataService!: ProjectMetadataService;
   public taskSyncService!: TaskSyncService;
   private focusClock?: FocusClockController;
+  private unloading = false;
 
   async onload() {
+    this.unloading = false;
     // 1. 初始化核心服务
     this.events = new EventBus();
     this.settingsManager = new SettingsManager(this, this.events);
@@ -90,7 +92,9 @@ export default class ZENdianPlugin extends Plugin {
       this.events,
       this.activityLogService,
     );
-    this.app.workspace.onLayoutReady(() => this.focusClock?.load());
+    this.app.workspace.onLayoutReady(() => {
+      if (!this.unloading) this.focusClock?.load();
+    });
 
     // 2. 注册功能模块
     this.moduleManager.register(new AutoHideModule());
@@ -183,22 +187,24 @@ export default class ZENdianPlugin extends Plugin {
       })
     );
 
-    // 6. 监听 vault 事件 — 自动记录活动
-    this.registerEvent(
-      this.app.vault.on("create", (file) => {
-        if (file instanceof TFile && file.extension === "md") {
-          this.activityLogService.logActivity("note_created", file.path);
-        }
-      })
-    );
-
-    this.registerEvent(
-      this.app.vault.on("modify", (file) => {
-        if (file instanceof TFile && file.extension === "md") {
-          this.activityLogService.logActivity("note_edited", file.path);
-        }
-      })
-    );
+    // 6. Vault 初始化期间会为已有文件触发 create；布局就绪后再开始记录。
+    this.app.workspace.onLayoutReady(() => {
+      if (this.unloading) return;
+      this.registerEvent(
+        this.app.vault.on("create", (file) => {
+          if (file instanceof TFile && file.extension === "md") {
+            this.activityLogService.logActivity("note_created", file.path);
+          }
+        })
+      );
+      this.registerEvent(
+        this.app.vault.on("modify", (file) => {
+          if (file instanceof TFile && file.extension === "md") {
+            this.activityLogService.logActivity("note_edited", file.path);
+          }
+        })
+      );
+    });
 
     // 7. 注册设置面板
     this.addSettingTab(
@@ -207,9 +213,13 @@ export default class ZENdianPlugin extends Plugin {
   }
 
   onunload() {
+    this.unloading = true;
     this.focusClock?.unload();
-    // 强制保存活动日志
-    this.activityLogService?.flush();
+    // 在卸载清理期间立即启动所有待处理写入。
+    void Promise.all([
+      this.settingsManager?.flush(),
+      this.activityLogService?.flush(),
+    ]).catch((error) => console.error("[ZENdian] 卸载前保存失败", error));
     destroyServiceManager();
     this.moduleManager?.unloadAll();
     this.events?.clear();

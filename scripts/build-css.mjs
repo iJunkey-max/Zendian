@@ -24,6 +24,17 @@ const CSS_MERGE_ORDER = [
   "css/ui/style-settings-ui.css",
 ];
 
+function countUnescapedQuotes(text, quote) {
+  let count = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== quote) continue;
+    let backslashes = 0;
+    for (let j = i - 1; j >= 0 && text[j] === "\\"; j--) backslashes++;
+    if (backslashes % 2 === 0) count++;
+  }
+  return count;
+}
+
 function build() {
   const parts = [];
 
@@ -63,8 +74,8 @@ function build() {
       const line = lines[i].trim();
 
       // 检测未闭合的字符串
-      const singleQuotes = (line.match(/'/g) || []).length;
-      const doubleQuotes = (line.match(/"/g) || []).length;
+      const singleQuotes = countUnescapedQuotes(line, "'");
+      const doubleQuotes = countUnescapedQuotes(line, '"');
 
       if (singleQuotes % 2 !== 0 || doubleQuotes % 2 !== 0) {
         console.warn(`⚠️  Possible unclosed string in ${relPath}:${i + 1}`);

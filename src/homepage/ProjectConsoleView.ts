@@ -32,6 +32,7 @@ import {
   getProjectSystemDirectory,
   LEGACY_PROJECT_CONSOLE_FOLDER,
 } from "./services/ProjectHomeFileResolver";
+import { formatDate } from "../utils/date";
 
 export const VIEW_TYPE_PROJECT_CONSOLE = "zendian-project-console";
 
@@ -344,7 +345,7 @@ class AddTaskModal extends Modal {
         this.cb({
           text: v,
           completed: false,
-          created: new Date().toISOString().slice(0, 10),
+          created: formatDate(new Date()),
           due: this.due.trim() || undefined,
           dueTime: this.dueTime.trim() || undefined,
           priority: this.priority,
@@ -824,13 +825,26 @@ export class ProjectConsoleView extends FileView {
     }
 
     this.data.status = nextStatus;
-    this.data.updatedAt = new Date().toISOString().slice(0, 10);
+    this.data.updatedAt = formatDate(new Date());
     this.data.statusHistory = [
       ...previousHistory,
       { from: previousStatus, to: nextStatus, changedAt: new Date().toISOString() },
     ];
 
-    const saved = await this.save();
+    const saved = await this.services.projectData.mutateProjectConsoleData(this.projPath, (latest) => {
+      const latestStatus = normalizeProjectStatus(latest.status);
+      if (nextStatus === "paused" && latestStatus !== "paused") {
+        latest.statusBeforePause = latestStatus;
+      } else if (nextStatus !== "paused") {
+        latest.statusBeforePause = undefined;
+      }
+      latest.status = nextStatus;
+      latest.updatedAt = formatDate(new Date());
+      latest.statusHistory = [
+        ...(latest.statusHistory || []),
+        { from: latestStatus, to: nextStatus, changedAt: new Date().toISOString() },
+      ];
+    });
     if (!saved) {
       this.data.status = previousStatus;
       this.data.statusBeforePause = previousBeforePause;
@@ -842,6 +856,7 @@ export class ProjectConsoleView extends FileView {
     }
 
     new Notice(`项目状态已改为${getProjectStatusOption(nextStatus).label}`);
+    await this.loadProjectData();
     this.render();
   }
 
@@ -877,7 +892,7 @@ export class ProjectConsoleView extends FileView {
     try {
       const { ExportService } = await import("./services/ExportService");
       const exportService = new ExportService(this.app);
-      const timestamp = new Date().toISOString().slice(0, 10);
+      const timestamp = formatDate(new Date());
       const fileName = `${this.data!.name}_报告_${timestamp}`;
       const extension = format === "markdown" ? "md" : format;
       const outputPath = `${getProjectSystemDirectory(this.app, this.projPath)}/${fileName}.${extension}`;
@@ -905,8 +920,13 @@ export class ProjectConsoleView extends FileView {
     input.focus();
     input.select();
     const save = async () => {
-      d.description = input.value.trim();
-      await this.save();
+      const description = input.value.trim();
+      d.description = description;
+      await this.services.projectData.mutateProjectConsoleData(this.projPath, (latest) => {
+        latest.description = description;
+        latest.updatedAt = formatDate(new Date());
+      });
+      await this.loadProjectData();
       this.render();
     };
     input.addEventListener("keydown", (event) => {
@@ -1139,7 +1159,7 @@ export class ProjectConsoleView extends FileView {
       dueEl.createSpan({ text: t.dueTime ? `${t.due} ${t.dueTime}` : t.due });
 
       // 检查是否逾期
-      const today = new Date().toISOString().slice(0, 10);
+      const today = formatDate(new Date());
       if (t.due < today && !t.completed) {
         dueEl.addClass("zc-due-overdue");
       }
@@ -1199,11 +1219,9 @@ export class ProjectConsoleView extends FileView {
           description,
           sourcePaths: paths,
         });
-        const nextData: ProjectConsoleData = {
-          ...this.data!,
-          deliverables: [...this.data!.deliverables, release],
-        };
-        if (!(await this.services.projectData.saveProjectConsoleData(this.projPath, nextData))) {
+        if (!(await this.services.projectData.mutateProjectConsoleData(this.projPath, (latest) => {
+          latest.deliverables = [...latest.deliverables, release];
+        }))) {
           throw new Error("发布包已生成，但项目记录未写入；请勿重复使用同一发布名称");
         }
         this.services.clearProjectCache(this.projPath);
@@ -1261,13 +1279,11 @@ export class ProjectConsoleView extends FileView {
         remove.appendChild(svg("trash"));
         remove.addEventListener("click", async () => {
           if (!window.confirm(`删除“${item.name}”？\n这会删除项目记录和对应 ZIP，但不会删除任何源文件。`)) return;
-          const nextData: ProjectConsoleData = {
-            ...this.data!,
-            deliverables: this.data!.deliverables.filter((candidate) =>
+          if (!(await this.services.projectData.mutateProjectConsoleData(this.projPath, (latest) => {
+            latest.deliverables = latest.deliverables.filter((candidate) =>
               candidate.id ? candidate.id !== item.id : candidate !== item
-            ),
-          };
-          if (!(await this.services.projectData.saveProjectConsoleData(this.projPath, nextData))) {
+            );
+          }))) {
             new Notice("交付物记录删除失败");
             return;
           }
@@ -1333,25 +1349,6 @@ export class ProjectConsoleView extends FileView {
   }
 
   // ── 工具 ──────────────────────────────────────────
-
-  private async save(): Promise<boolean> {
-    if (!this.data) return false;
-    const f = this.file;
-    if (f instanceof TFile) {
-      let legacyTasks: ProjectConsoleTask[] = [];
-      try {
-        const stored = JSON.parse(await this.app.vault.read(f)) as ProjectConsoleData;
-        legacyTasks = stored.tasks || [];
-      } catch {
-        // Invalid JSON is handled by the view's load state.
-      }
-      return this.services.projectData.saveProjectConsoleData(
-        this.projPath,
-        { ...this.data, tasks: legacyTasks },
-      );
-    }
-    return false;
-  }
 
   private toDisplayPriority(priority: Task["priority"]): import("./types").TaskPriority | undefined {
     const map = { urgent: "P0", high: "P1", medium: "P2", low: "P3" } as const;
@@ -1613,7 +1610,7 @@ export class ProjectConsoleView extends FileView {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    const dateOnly = (d: Date) => d.toISOString().slice(0, 10);
+    const dateOnly = (d: Date) => formatDate(d);
 
     if (dateOnly(date) === dateOnly(today)) {
       return "今天";
@@ -1806,7 +1803,7 @@ export function createDefaultConsoleData(name: string, icon: string, type: Proje
     type,
     status: "planning",
     statusHistory: [],
-    createdAt: new Date().toISOString().slice(0, 10),
+    createdAt: formatDate(new Date()),
     tasks: [],
     deliverables: [],
     overview: { markdown: desc },

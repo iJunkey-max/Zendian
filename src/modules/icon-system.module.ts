@@ -7,10 +7,14 @@ import { getIcon, requestUrl } from "obsidian";
 import type { IFeatureModule, ModuleContext } from "../types/module.types";
 import type { PluginSettings } from "../types/settings.types";
 import { IconPickerModal } from "../ui/icon-picker-modal";
+import { getPluginDataPath } from "../utils/plugin-paths";
+import { parseSafeSvg } from "../utils/safe-svg";
 
 const STYLE_ID = "zendian-icon-system";
 const EXPLORER = '.workspace-leaf-content[data-type="file-explorer"]';
-const PLUGIN_DIR = ".obsidian/plugins/zendian";
+const MAX_ZIP_ENTRY_BYTES = 512 * 1024;
+const MAX_ZIP_TOTAL_BYTES = 50 * 1024 * 1024;
+const MAX_ZIP_ENTRIES = 10_000;
 
 // ─── 预置图标库注册表 ───
 
@@ -52,6 +56,7 @@ export class IconSystemModule implements IFeatureModule {
   private customIcons: Record<string, string> = {};
   private installedLibraries: string[] = [];
   private ctx!: ModuleContext;
+  private iconsRoot = "";
   private eventRefs: Array<() => void> = [];
 
   /** SVG 缓存：iconId → SVG 元素，避免重复解析 */
@@ -59,6 +64,7 @@ export class IconSystemModule implements IFeatureModule {
 
   async load(ctx: ModuleContext): Promise<void> {
     this.ctx = ctx;
+    this.iconsRoot = getPluginDataPath(ctx.app, "icons");
     this.syncSettings(ctx.getSettings().iconSystem);
     this.apply();
     this.registerFileMenu();
@@ -115,7 +121,7 @@ export class IconSystemModule implements IFeatureModule {
     if (!this.installedLibraries.includes(name)) return;
 
     try {
-      const dirPath = `${PLUGIN_DIR}/icons/${name}`;
+      const dirPath = `${this.iconsRoot}/${name}`;
       await this.removeDirectory(dirPath);
     } catch {
       // 目录可能不存在，忽略
@@ -372,13 +378,10 @@ export class IconSystemModule implements IFeatureModule {
     const data = new Uint8Array(buffer);
     const adapter = this.ctx.app.vault.adapter;
 
-    // 安全限制
-    const MAX_FILE_SIZE = 512 * 1024; // 512KB per file
-    const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total
     let totalSize = 0;
 
     // 确保目录存在
-    const dirPath = `${PLUGIN_DIR}/icons/${libraryName}`;
+    const dirPath = `${this.iconsRoot}/${libraryName}`;
     try { await adapter.mkdir(dirPath); } catch { /* 可能已存在 */ }
 
     // 解析 zip 中央目录
@@ -405,32 +408,30 @@ export class IconSystemModule implements IFeatureModule {
       }
 
       // 安全检查 4: 单文件大小限制
-      if (entry.data.length > MAX_FILE_SIZE) {
+      if (entry.data.length > MAX_ZIP_ENTRY_BYTES) {
         console.warn(`[ZENdian] File too large (${entry.data.length} bytes): ${fileName}`);
         continue;
       }
 
       // 安全检查 5: 总大小限制
       totalSize += entry.data.length;
-      if (totalSize > MAX_TOTAL_SIZE) {
-        console.error(`[ZENdian] ZIP archive exceeds maximum allowed size (${MAX_TOTAL_SIZE} bytes)`);
+      if (totalSize > MAX_ZIP_TOTAL_BYTES) {
+        console.error(`[ZENdian] ZIP archive exceeds maximum allowed size (${MAX_ZIP_TOTAL_BYTES} bytes)`);
         throw new Error("ZIP archive too large");
       }
 
-      const svgData = entry.data;
-      const svgText = new TextDecoder().decode(svgData);
-
-      // 安全检查 6: 基本 SVG 内容验证
-      const trimmed = svgText.trim();
-      if (!trimmed.toLowerCase().startsWith("<svg") || !trimmed.toLowerCase().includes("</svg>")) {
+      const svgText = new TextDecoder().decode(entry.data);
+      const safeSvg = parseSafeSvg(svgText);
+      if (!safeSvg) {
         console.warn(`[ZENdian] Invalid SVG content: ${fileName}`);
         continue;
       }
+      const safeSvgText = new XMLSerializer().serializeToString(safeSvg);
 
       const filePath = `${dirPath}/${fileName}`;
 
       try {
-        await adapter.write(filePath, svgText);
+        await adapter.write(filePath, safeSvgText);
       } catch (err) {
         console.warn(`[ZENdian] Failed to write ${filePath}:`, err);
       }
@@ -440,6 +441,7 @@ export class IconSystemModule implements IFeatureModule {
   /** 最小化 zip 条目解析器（支持 STORED 和 Deflate） */
   private async parseZipEntries(data: Uint8Array): Promise<Array<{ name: string; data: Uint8Array; isDirectory: boolean }>> {
     const entries: Array<{ name: string; data: Uint8Array; isDirectory: boolean }> = [];
+    if (data.length < 22) throw new Error("Invalid ZIP archive");
     const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
 
     // 查找中央目录结束记录 (EOCD)
@@ -451,9 +453,14 @@ export class IconSystemModule implements IFeatureModule {
 
     const centralDirOffset = view.getUint32(eocdOffset + 16, true);
     const numEntries = view.getUint16(eocdOffset + 10, true);
+    if (numEntries > MAX_ZIP_ENTRIES || centralDirOffset >= data.length) {
+      throw new Error("ZIP archive exceeds entry limits");
+    }
 
     let offset = centralDirOffset;
+    let declaredTotalSize = 0;
     for (let i = 0; i < numEntries; i++) {
+      if (offset + 46 > data.length) throw new Error("Truncated ZIP central directory");
       if (view.getUint32(offset, true) !== 0x02014b50) break;
 
       const compressionMethod = view.getUint16(offset + 10, true);
@@ -463,20 +470,32 @@ export class IconSystemModule implements IFeatureModule {
       const extraLen = view.getUint16(offset + 30, true);
       const commentLen = view.getUint16(offset + 32, true);
       const localHeaderOffset = view.getUint32(offset + 42, true);
+      const centralEntryEnd = offset + 46 + nameLen + extraLen + commentLen;
+      if (centralEntryEnd > data.length) throw new Error("Truncated ZIP entry");
+
+      declaredTotalSize += uncompressedSize;
+      if (uncompressedSize > MAX_ZIP_ENTRY_BYTES || declaredTotalSize > MAX_ZIP_TOTAL_BYTES) {
+        offset = centralEntryEnd;
+        continue;
+      }
 
       const nameBytes = data.slice(offset + 46, offset + 46 + nameLen);
       const name = new TextDecoder().decode(nameBytes);
       const isDirectory = name.endsWith("/");
 
       // 读取本地文件头获取实际数据偏移
+      if (localHeaderOffset + 30 > data.length || view.getUint32(localHeaderOffset, true) !== 0x04034b50) {
+        throw new Error("Invalid ZIP local header");
+      }
       const localNameLen = view.getUint16(localHeaderOffset + 26, true);
       const localExtraLen = view.getUint16(localHeaderOffset + 28, true);
       const dataOffset = localHeaderOffset + 30 + localNameLen + localExtraLen;
+      if (dataOffset + compressedSize > data.length) throw new Error("Truncated ZIP file data");
 
       let fileData: Uint8Array;
       if (compressionMethod === 0) {
         // STORED（无压缩）
-        fileData = data.slice(dataOffset, dataOffset + uncompressedSize);
+        fileData = data.slice(dataOffset, dataOffset + compressedSize);
       } else if (compressionMethod === 8) {
         // Deflate — 使用 DecompressionStream
         const compressed = data.slice(dataOffset, dataOffset + compressedSize);
@@ -493,6 +512,10 @@ export class IconSystemModule implements IFeatureModule {
             if (done) break;
             chunks.push(value);
             totalLen += value.length;
+            if (totalLen > MAX_ZIP_ENTRY_BYTES || totalLen > uncompressedSize + 1024) {
+              await reader.cancel();
+              throw new Error("Decompressed ZIP entry exceeds declared size");
+            }
           }
           fileData = new Uint8Array(totalLen);
           let pos = 0;
@@ -501,16 +524,16 @@ export class IconSystemModule implements IFeatureModule {
             pos += chunk.length;
           }
         } catch {
-          offset += 46 + nameLen + extraLen + commentLen;
+          offset = centralEntryEnd;
           continue;
         }
       } else {
-        offset += 46 + nameLen + extraLen + commentLen;
+        offset = centralEntryEnd;
         continue;
       }
 
       entries.push({ name, data: fileData, isDirectory });
-      offset += 46 + nameLen + extraLen + commentLen;
+      offset = centralEntryEnd;
     }
 
     return entries;
@@ -689,7 +712,7 @@ export class IconSystemModule implements IFeatureModule {
     if (!this.installedLibraries.includes(library)) return null;
     if (library.includes("..") || icon.includes("..")) return null;
 
-    const filePath = `${PLUGIN_DIR}/icons/${library}/${icon}.svg`;
+    const filePath = `${this.iconsRoot}/${library}/${icon}.svg`;
 
     try {
       const svgText = await this.ctx.app.vault.adapter.read(filePath);
@@ -700,9 +723,7 @@ export class IconSystemModule implements IFeatureModule {
   }
 
   private parseSvgString(svgText: string): SVGElement | null {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svgText, "image/svg+xml");
-    const svg = doc.querySelector("svg");
+    const svg = parseSafeSvg(svgText);
     if (!svg) return null;
 
     svg.removeAttribute("width");

@@ -7,7 +7,7 @@
 
 import { App } from "obsidian";
 import type { ProjectConsoleTask, TaskPriority as HomeTaskPriority } from "../homepage/types";
-import { loadProjectHome, saveProjectHome } from "../homepage/services/ProjectHomeStore";
+import { loadProjectHome, mutateProjectHome } from "../homepage/services/ProjectHomeStore";
 import type { ActivityLogService } from "./ActivityLogService";
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
@@ -79,16 +79,19 @@ export class TaskSyncService {
   }
 
   async toggleTask(projectPath: string, lineNumber: number, expectedRaw?: string): Promise<boolean> {
-    const record = await loadProjectHome(this.app, projectPath);
-    if (!record) return false;
-    const index = this.resolveTaskIndex(record.data.tasks, lineNumber, expectedRaw);
-    if (index < 0) return false;
-    const task = record.data.tasks[index];
-    task.completed = !task.completed;
-    task.completedAt = task.completed ? new Date().toISOString() : undefined;
-    task.updatedAt = new Date().toISOString();
-    const saved = await saveProjectHome(this.app, projectPath, record.data);
-    if (saved && task.completed) this.activityLog?.logActivity("task_completed", projectPath, { taskId: task.id });
+    let completedTaskId: string | null = null;
+    const saved = await mutateProjectHome(this.app, projectPath, (data) => {
+      const index = this.resolveTaskIndex(data.tasks, lineNumber, expectedRaw);
+      if (index < 0) return false;
+      const task = data.tasks[index];
+      task.completed = !task.completed;
+      task.completedAt = task.completed ? new Date().toISOString() : undefined;
+      task.updatedAt = new Date().toISOString();
+      if (task.completed) completedTaskId = task.id ?? expectedRaw ?? null;
+    });
+    if (saved && completedTaskId) {
+      this.activityLog?.logActivity("task_completed", projectPath, { taskId: completedTaskId });
+    }
     return saved;
   }
 
@@ -105,33 +108,31 @@ export class TaskSyncService {
   ): Promise<boolean> {
     const cleanText = text.trim();
     if (!cleanText) return false;
-    const record = await loadProjectHome(this.app, projectPath);
-    if (!record) return false;
     const now = new Date();
     const task: ProjectConsoleTask = {
       id: `task-${now.getTime().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
       text: cleanText,
       completed: false,
-      created: options?.created || now.toISOString().slice(0, 10),
+      created: options?.created || this.formatDate(now),
       due: options?.due,
       dueTime: options?.dueTime,
       priority: options?.priority ? TO_STORAGE_PRIORITY[options.priority] : "P2",
       tags: options?.tags?.map((tag) => tag.trim()).filter(Boolean),
       updatedAt: now.toISOString(),
     };
-    record.data.tasks.push(task);
-    record.data.updatedAt = now.toISOString().slice(0, 10);
-    return saveProjectHome(this.app, projectPath, record.data);
+    return mutateProjectHome(this.app, projectPath, (data) => {
+      data.tasks.push(task);
+      data.updatedAt = this.formatDate(now);
+    });
   }
 
   async deleteTask(projectPath: string, lineNumber: number, expectedRaw?: string): Promise<boolean> {
-    const record = await loadProjectHome(this.app, projectPath);
-    if (!record) return false;
-    const index = this.resolveTaskIndex(record.data.tasks, lineNumber, expectedRaw);
-    if (index < 0) return false;
-    record.data.tasks.splice(index, 1);
-    record.data.updatedAt = new Date().toISOString().slice(0, 10);
-    return saveProjectHome(this.app, projectPath, record.data);
+    return mutateProjectHome(this.app, projectPath, (data) => {
+      const index = this.resolveTaskIndex(data.tasks, lineNumber, expectedRaw);
+      if (index < 0) return false;
+      data.tasks.splice(index, 1);
+      data.updatedAt = this.getToday();
+    });
   }
 
   async getAllTasks(projectPaths: string[]): Promise<Task[]> {

@@ -64,15 +64,12 @@ export class HomepageProjectScanService {
         if (child.name === archiveFolder || child.name.startsWith("99")) continue;
         scannedPaths.add(child.path);
 
-        // 增量更新：检查缓存是否有效
+        // Vault 事件会精确失效发生变化的项目；其余项目直接复用缓存。
         const cached = this.cache.get(child.path);
-        const folderMtime = this.getFolderMtime(child);
-
-        if (cached && cached.updatedAt >= folderMtime) {
-          // 使用缓存（文件夹没有更新）
+        if (cached) {
           projects.push(cached);
         } else {
-          // 重新扫描（文件夹有更新或首次扫描）
+          // 重新扫描（项目发生变化或首次扫描）
           const project = await this.scanProject(child, typeLabel);
           if (project) {
             projects.push(project);
@@ -88,26 +85,6 @@ export class HomepageProjectScanService {
     this.lastScanTime = now;
     this.lastScanKey = scanKey;
     return projects.sort((a, b) => b.updatedAt - a.updatedAt);
-  }
-
-  /**
-   * 获取文件夹的最新修改时间
-   */
-  private getFolderMtime(folder: TFolder): number {
-    let maxMtime = 0;
-    for (const child of folder.children) {
-      if (child instanceof TFile) {
-        maxMtime = Math.max(maxMtime, child.stat.mtime);
-      } else if (child instanceof TFolder) {
-        // 只检查直接子文件夹的第一层文件
-        for (const subChild of child.children) {
-          if (subChild instanceof TFile) {
-            maxMtime = Math.max(maxMtime, subChild.stat.mtime);
-          }
-        }
-      }
-    }
-    return maxMtime;
   }
 
   /**

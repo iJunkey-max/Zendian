@@ -153,7 +153,7 @@ export class DeliverableReleaseService {
       throw new Error("交付物路径无效，已停止删除");
     }
     const file = this.app.vault.getAbstractFileByPath(archivePath);
-    if (file instanceof TFile) await this.app.vault.delete(file);
+    if (file instanceof TFile) await this.app.vault.trash(file, false);
   }
 
   private validateReleaseName(value: string): string {
