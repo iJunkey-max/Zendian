@@ -11,6 +11,7 @@ import { DEFAULT_SETTINGS, type PluginSettings } from "../types/settings.types";
 import { getProjectCategoryFolder } from "../homepage/project-categories";
 import { BUILTIN_LIBRARIES, type IconSystemModule } from "../modules/icon-system.module";
 import { IconPickerModal } from "./icon-picker-modal";
+import { DonationModal, type DonationChannel } from "./donation-modal";
 import { getProjectSubfolderName, validateProjectSubfolderTemplate } from "../homepage/project-subfolders";
 
 // ============================================================
@@ -916,6 +917,32 @@ export class ZENdianSettingTab extends PluginSettingTab {
       featureCard.createEl("div", { text: feat.title, cls: "zendian-about-feat-title" });
       featureCard.createEl("div", { text: feat.desc, cls: "zendian-about-feat-desc" });
     }
+
+    // ── Donation ──
+    const support = about.createDiv("zendian-about-support");
+    const supportHeading = support.createDiv("zendian-about-support-heading");
+    supportHeading.createEl("h3", { text: "支持项目" });
+    supportHeading.createEl("p", {
+      text: "如果 ZENdian 对你有所帮助，可以自愿赞赏，支持后续维护与改进。",
+    });
+    const supportActions = support.createDiv("zendian-about-support-actions");
+    const channels: Array<{ id: DonationChannel; name: string; desc: string }> = [
+      { id: "wechat", name: "微信赞赏", desc: "使用微信扫码" },
+      { id: "alipay", name: "支付宝赞赏", desc: "使用支付宝扫码" },
+    ];
+    for (const channel of channels) {
+      const button = supportActions.createEl("button", {
+        cls: `zendian-donation-button is-${channel.id}`,
+        attr: { type: "button", "aria-label": `打开${channel.name}二维码` },
+      });
+      button.createSpan({ cls: "zendian-donation-channel", text: channel.name });
+      button.createSpan({ cls: "zendian-donation-desc", text: channel.desc });
+      button.addEventListener("click", () => new DonationModal(this.app, channel.id).open());
+    }
+    support.createEl("p", {
+      cls: "zendian-about-support-note",
+      text: "赞赏完全自愿，不影响任何功能、更新或技术支持。",
+    });
 
     // ── Footer ──
     about.createDiv("zendian-about-footer").createEl("span", {

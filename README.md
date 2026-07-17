@@ -17,6 +17,7 @@
     <a href="#安装">安装</a> ·
     <a href="#快速开始">快速开始</a> ·
     <a href="#开发">开发</a> ·
+    <a href="#支持项目">支持项目</a> ·
     <a href="https://github.com/iJunkey-max/Zendian/releases">版本发布</a>
   </p>
 </div>
@@ -204,6 +205,27 @@ Zendian/
 ```
 
 核心模块通过统一生命周期加载，并通过 CSS 类名和自定义属性驱动界面样式。功能代码负责状态与数据，CSS 负责最终呈现，以降低对 Obsidian 动态 DOM 结构的耦合。
+
+## 支持项目
+
+如果 ZENdian 改善了你的 Obsidian 工作流，可以通过微信或支付宝自愿赞赏，支持项目的持续维护、兼容性修复与功能改进。
+
+<details>
+  <summary><strong>查看微信与支付宝收款码</strong></summary>
+  <br>
+  <table>
+    <tr>
+      <th align="center">微信支付</th>
+      <th align="center">支付宝</th>
+    </tr>
+    <tr>
+      <td align="center"><img src="./assets/donation/wechat.png" alt="ZENdian 微信赞赏码" width="300"></td>
+      <td align="center"><img src="./assets/donation/alipay.jpg" alt="ZENdian 支付宝赞赏码" width="300"></td>
+    </tr>
+  </table>
+</details>
+
+> 赞赏完全自愿，不会影响任何功能、版本更新或问题反馈。请在付款前核对收款信息。
 
 ## 反馈与贡献
 
