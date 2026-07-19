@@ -239,6 +239,7 @@ export interface OutlineSettings {
 export interface MobileSettings {
   cardLayoutPad: boolean;
   drawerPhoneFullWidth: boolean;
+  openPanelsInNewWindow: boolean;
 }
 
 /** UI 细节模块设置 */
@@ -567,6 +568,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   mobile: {
     cardLayoutPad: false,
     drawerPhoneFullWidth: false,
+    openPanelsInNewWindow: true,
   },
   uiDetail: {
     settingItemTitleIconRemove: false,

@@ -24,6 +24,17 @@ export class FolderCardsModule implements IFeatureModule {
   private observer: MutationObserver | null = null;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private initialPass = true;
+  private folderStates = new WeakMap<HTMLElement, boolean>();
+  private collapseTimers = new WeakMap<HTMLElement, number>();
+
+  private readonly onPointerDown = (event: PointerEvent): void => {
+    this.captureOpenFolderHeight(event.target);
+  };
+
+  private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    this.captureOpenFolderHeight(event.target);
+  };
 
   async load(ctx: ModuleContext): Promise<void> {
     const settings = ctx.getSettings().folderCards;
@@ -159,6 +170,10 @@ export class FolderCardsModule implements IFeatureModule {
       "  opacity: 0;",
       "  transform: translateY(-4px);",
       "}",
+      `${scope} .tree-item.nav-folder.zendian-folder-collapsing.is-collapsed > .nav-folder-children {`,
+      "  display: block !important;",
+      "  animation: zendian-rf-folder-collapse 190ms cubic-bezier(0.22, 1, 0.36, 1) both;",
+      "}",
       `${scope} .nav-folder-children.rf-empty {`,
       "  max-height: 0 !important;",
       "  margin: 0 !important;",
@@ -219,6 +234,18 @@ export class FolderCardsModule implements IFeatureModule {
       `body.folder-cards-enabled.rf-initial-pass ${EXPLORER} .tree-item.nav-folder > .nav-folder-children {`,
       "  transition: none !important;",
       "}",
+      "@keyframes zendian-rf-folder-collapse {",
+      "  from {",
+      "    max-height: var(--rf-content-height, 2000px);",
+      "    opacity: 1;",
+      "    transform: translateY(0);",
+      "  }",
+      "  to {",
+      "    max-height: 0;",
+      "    opacity: 0;",
+      "    transform: translateY(-4px);",
+      "  }",
+      "}",
       "@media (prefers-reduced-motion: reduce) {",
       `  ${scope} .tree-item.nav-folder, ${scope} .tree-item.nav-folder > .nav-folder-title, ${scope} .tree-item.nav-folder > .nav-folder-children {`,
       "    transition: none !important;",
@@ -250,6 +277,26 @@ export class FolderCardsModule implements IFeatureModule {
       "  font-weight: 600;",
       "  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);",
       "}",
+      `${scope} .tree-item.nav-folder > .nav-folder-children {`,
+      "  max-height: var(--rf-content-height, 2000px);",
+      "  overflow: hidden;",
+      "  opacity: 1;",
+      "  transform: translateY(0);",
+      "  transition: max-height 180ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);",
+      "}",
+      `${scope} .tree-item.nav-folder.is-collapsed > .nav-folder-children {`,
+      "  max-height: 0;",
+      "  opacity: 0;",
+      "  transform: translateY(-4px);",
+      "}",
+      `${scope} .tree-item.nav-folder.zendian-folder-collapsing.is-collapsed > .nav-folder-children {`,
+      "  display: block !important;",
+      "  animation: zendian-rf-folder-collapse 190ms cubic-bezier(0.22, 1, 0.36, 1) both;",
+      "}",
+      "@keyframes zendian-rf-folder-collapse {",
+      "  from { max-height: var(--rf-content-height, 2000px); opacity: 1; transform: translateY(0); }",
+      "  to { max-height: 0; opacity: 0; transform: translateY(-4px); }",
+      "}",
     ].join("\n");
     this.styleEl = document.createElement("style");
     this.styleEl.id = STYLE_ID;
@@ -271,6 +318,17 @@ export class FolderCardsModule implements IFeatureModule {
       current = current.parentElement;
     }
     return Math.min(depth, MAX_LEVELS);
+  }
+
+  private captureOpenFolderHeight(start: EventTarget | null): void {
+    if (!this.enabled) return;
+    const target = start instanceof HTMLElement ? start : null;
+    const title = target?.closest<HTMLElement>(`${EXPLORER} .nav-folder-title`);
+    const folder = title?.closest<HTMLElement>(".tree-item.nav-folder");
+    if (!folder || folder.classList.contains("is-collapsed")) return;
+
+    const children = folder.querySelector<HTMLElement>(":scope > .nav-folder-children");
+    if (children) setCSSVar(children, "--rf-content-height", `${children.scrollHeight}px`);
   }
 
   private applyDepths(): void {
@@ -296,9 +354,19 @@ export class FolderCardsModule implements IFeatureModule {
       const children = folder.querySelector<HTMLElement>(":scope > .nav-folder-children");
       if (children) {
         const hasItems = Boolean(children.querySelector(":scope > .tree-item"));
+        const isCollapsed = folder.classList.contains("is-collapsed");
+        const wasCollapsed = this.folderStates.get(folder);
+        if (!isCollapsed) {
+          folder.removeClass("zendian-folder-collapsing");
+        } else if (wasCollapsed === false && !this.initialPass) {
+          this.playCollapseAnimation(folder, children);
+        }
+        this.folderStates.set(folder, isCollapsed);
         folder.classList.toggle("rf-has-children", hasItems);
         children.classList.toggle("rf-empty", !hasItems);
-        setCSSVar(children, "--rf-content-height", `${children.scrollHeight}px`);
+        if (!isCollapsed) {
+          setCSSVar(children, "--rf-content-height", `${children.scrollHeight}px`);
+        }
       } else {
         folder.classList.remove("rf-has-children");
       }
@@ -318,6 +386,7 @@ export class FolderCardsModule implements IFeatureModule {
       node.removeAttribute("data-rf-depth");
       node.classList.remove("rf-empty");
       node.classList.remove("rf-has-children");
+      node.classList.remove("zendian-folder-collapsing");
       for (const variable of ["--rf-depth", "--rf-surface", "--rf-header-surface", "--rf-border", "--rf-content-surface", "--rf-content-height", "--rf-alpha"]) {
         removeCSSVar(node, variable);
       }
@@ -327,6 +396,8 @@ export class FolderCardsModule implements IFeatureModule {
   private connectObserver(): void {
     this.disconnectObserver();
     this.stopPolling();
+    document.addEventListener("pointerdown", this.onPointerDown, true);
+    document.addEventListener("keydown", this.onKeyDown, true);
     const explorer = document.querySelector(EXPLORER);
     if (explorer) {
       this.mountObserver(explorer);
@@ -360,8 +431,24 @@ export class FolderCardsModule implements IFeatureModule {
   }
 
   private disconnectObserver(): void {
+    document.removeEventListener("pointerdown", this.onPointerDown, true);
+    document.removeEventListener("keydown", this.onKeyDown, true);
     this.observer?.disconnect();
     this.observer = null;
+  }
+
+  private playCollapseAnimation(folder: HTMLElement, children: HTMLElement): void {
+    const fallbackHeight = children.scrollHeight || children.getBoundingClientRect().height;
+    if (fallbackHeight > 0) setCSSVar(children, "--rf-content-height", `${Math.round(fallbackHeight)}px`);
+    folder.addClass("zendian-folder-collapsing");
+
+    const existingTimer = this.collapseTimers.get(folder);
+    if (existingTimer) window.clearTimeout(existingTimer);
+    const timer = window.setTimeout(() => {
+      folder.removeClass("zendian-folder-collapsing");
+      this.collapseTimers.delete(folder);
+    }, 240);
+    this.collapseTimers.set(folder, timer);
   }
 
   private stopPolling(): void {

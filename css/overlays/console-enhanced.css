@@ -3366,7 +3366,6 @@
   border-top: 1px solid var(--zc-card-divider);
   border-radius: 0;
   box-shadow: none;
-  scrollbar-gutter: stable;
 }
 
 .zc-root .zc-workspace-primary .zc-list {
@@ -3559,7 +3558,6 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
 }
 
 .zc-root .zc-hero::before,
@@ -4110,7 +4108,6 @@
   background: transparent;
   border: 0;
   box-shadow: none;
-  scrollbar-gutter: stable;
 }
 
 .zc-root .zc-row {
@@ -4292,7 +4289,6 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .zc-root .zc-recent-activity .zc-summary-row {

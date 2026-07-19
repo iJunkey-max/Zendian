@@ -8,6 +8,7 @@
     padding: 4px 0;
 }
 
+
 /* Top navigation tabs */
 
 .zendian-nav {
@@ -1267,6 +1268,12 @@
     text-rendering: optimizeLegibility;
 }
 
+.zendian-settings-wrapper *,
+.zendian-settings-wrapper *::before,
+.zendian-settings-wrapper *::after {
+    box-sizing: border-box;
+}
+
 .zendian-toolbar {
     display: flex;
     align-items: flex-end;
@@ -1481,7 +1488,9 @@
 .zendian-advanced > .setting-item,
 .zendian-icon-section .setting-item {
     min-height: 52px;
-    padding: 10px 0;
+    width: 100%;
+    min-width: 0;
+    padding: 10px 14px;
     border-top: 1px solid var(--zd-settings-line);
 }
 
@@ -1505,12 +1514,19 @@
 
 .zendian-section-content .setting-item-control {
     gap: 7px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.zendian-section-content .setting-item-info {
+    min-width: 0;
 }
 
 .zendian-section-content input[type="text"],
 .zendian-section-content input[type="number"],
 .zendian-section-content select,
 .zendian-mobile-nav {
+    max-width: 100%;
     min-height: 30px;
     border-radius: 8px;
     font-size: 11.5px;

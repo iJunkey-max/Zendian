@@ -44,12 +44,25 @@ import { IconSystemModule } from "./modules/icon-system.module";
 import { BannerModule } from "./modules/banner.module";
 
 // Homepage
-import { HomepageView, VIEW_TYPE_HOMEPAGE } from "./homepage/HomepageView";
-import { ProjectConsoleView, VIEW_TYPE_PROJECT_CONSOLE } from "./homepage/ProjectConsoleView";
+import {
+  HomepageTaskCreatePopoutView,
+  HomepageView,
+  ProjectCreatePopoutView,
+  VIEW_TYPE_HOMEPAGE,
+  VIEW_TYPE_HOMEPAGE_TASK_CREATE,
+  VIEW_TYPE_PROJECT_CREATE,
+} from "./homepage/HomepageView";
+import {
+  ProjectConsoleView,
+  ProjectTaskCreatePopoutView,
+  VIEW_TYPE_PROJECT_CONSOLE,
+  VIEW_TYPE_PROJECT_TASK_CREATE,
+} from "./homepage/ProjectConsoleView";
 import { destroyServiceManager } from "./homepage/services";
 
 // UI
 import { ZENdianSettingTab } from "./ui/settings-tab";
+import { PopoutFormView, VIEW_TYPE_ZENDIAN_FORM_POPOUT } from "./ui/popout-form";
 
 export default class ZENdianPlugin extends Plugin {
   private events!: EventBus;
@@ -141,6 +154,26 @@ export default class ZENdianPlugin extends Plugin {
       (leaf) => new ProjectConsoleView(leaf, this.taskSyncService, this.settingsManager)
     );
     this.registerExtensions(["home"], VIEW_TYPE_PROJECT_CONSOLE);
+
+    this.registerView(
+      VIEW_TYPE_PROJECT_CREATE,
+      (leaf) => new ProjectCreatePopoutView(leaf, this.settingsManager)
+    );
+
+    this.registerView(
+      VIEW_TYPE_HOMEPAGE_TASK_CREATE,
+      (leaf) => new HomepageTaskCreatePopoutView(leaf, this.settingsManager, this.taskSyncService)
+    );
+
+    this.registerView(
+      VIEW_TYPE_PROJECT_TASK_CREATE,
+      (leaf) => new ProjectTaskCreatePopoutView(leaf, this.taskSyncService)
+    );
+
+    this.registerView(
+      VIEW_TYPE_ZENDIAN_FORM_POPOUT,
+      (leaf) => new PopoutFormView(leaf)
+    );
 
     // 监听空标签页，替换为主页
     this.registerEvent(

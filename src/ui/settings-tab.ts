@@ -512,6 +512,7 @@ const SECTION_SOURCE: TabDef[] = [
         settings: [
           toggle("card-layout-pad-open", "平板卡片布局", (s) => s.mobile.cardLayoutPad, (s, v) => ({ mobile: { ...s.mobile, cardLayoutPad: v } }), "在平板设备上启用卡片式笔记布局"),
           toggle("drawer-phone-full-width", "手机侧边栏全屏", (s) => s.mobile.drawerPhoneFullWidth, (s, v) => ({ mobile: { ...s.mobile, drawerPhoneFullWidth: v } }), "在手机端打开侧边栏时自动全屏显示，关闭后返回笔记"),
+          toggle("homepage-popout-panels", "面板使用新窗口", (s) => s.mobile.openPanelsInNewWindow ?? true, (s, v) => ({ mobile: { ...s.mobile, openPanelsInNewWindow: v } }), "开启后，新建项目、新建待办、灵感速记和全部列表等主页面板会优先在新窗口打开"),
         ],
       },
       {
@@ -802,7 +803,10 @@ export class ZENdianSettingTab extends PluginSettingTab {
   }
 
   display(): void {
-    const { containerEl } = this;
+    this.displayIn(this.containerEl);
+  }
+
+  displayIn(containerEl: HTMLElement): void {
     containerEl.empty();
     this.navItems.clear();
 
