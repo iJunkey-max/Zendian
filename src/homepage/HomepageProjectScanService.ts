@@ -16,7 +16,7 @@ import type {
 import type { ProjectCategory } from "../types/settings.types";
 import { loadProjectHome } from "./services/ProjectHomeStore";
 import { getProjectCategoryFolder } from "./project-categories";
-import { normalizeProjectStatus } from "./project-status";
+import { calculateProjectProgress, normalizeProjectStatus } from "./project-status";
 
 export class HomepageProjectScanService {
   private cache = new Map<string, HomepageProject>();
@@ -100,7 +100,8 @@ export class HomepageProjectScanService {
     const tasks = homeData?.tasks || [];
     const taskTotal = tasks.length;
     const taskDone = tasks.filter((task) => task.completed).length;
-    const progress = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
+    const status = normalizeProjectStatus(homeData?.status);
+    const progress = calculateProjectProgress(status, taskDone, taskTotal).percent;
     const priorityOrder: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
     const pendingTasks: ProjectTask[] = tasks
       .map((task, line) => ({ ...task, line }))
@@ -134,7 +135,7 @@ export class HomepageProjectScanService {
       recentFiles,
       pendingTasks,
       updatedAt,
-      status: normalizeProjectStatus(homeData?.status),
+      status,
       priority: homeData?.metadata?.priority === "urgent" ? "high" : homeData?.metadata?.priority,
       lastActiveTime: updatedAt,
       createdTime: homeData?.createdAt ? new Date(homeData.createdAt).getTime() : 0,

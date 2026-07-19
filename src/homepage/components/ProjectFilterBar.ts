@@ -14,14 +14,12 @@ import { PROJECT_STATUS_OPTIONS, type ProjectStatus } from "../project-status";
 export interface ProjectFilter {
   status: "all" | ProjectStatus;
   type: string;
-  priority: "all" | "high" | "medium" | "low";
-  sortBy: "activity" | "priority" | "time" | "name";
+  sortBy: "activity" | "time" | "name";
 }
 
 export const DEFAULT_FILTER: ProjectFilter = {
   status: "all",
   type: "all",
-  priority: "all",
   sortBy: "activity",
 };
 
@@ -68,22 +66,6 @@ export function renderProjectFilterBar(
     }
   );
 
-  // 优先级筛选
-  const prioritySelect = createSelect(
-    filters,
-    "优先级",
-    [
-      { value: "all", label: "全部" },
-      { value: "high", label: "高" },
-      { value: "medium", label: "中" },
-      { value: "low", label: "低" },
-    ],
-    currentFilter.priority,
-    (value) => {
-      onFilterChange({ ...currentFilter, priority: value as any });
-    }
-  );
-
   // 右侧：排序
   const sortGroup = container.createDiv({ cls: "homepage-sort-group" });
   sortGroup.createSpan({ cls: "homepage-filter-label", text: "排序：" });
@@ -93,7 +75,6 @@ export function renderProjectFilterBar(
     "",
     [
       { value: "activity", label: "最近活跃" },
-      { value: "priority", label: "优先级" },
       { value: "time", label: "创建时间" },
       { value: "name", label: "名称" },
     ],

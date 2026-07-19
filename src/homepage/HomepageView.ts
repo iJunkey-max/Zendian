@@ -18,7 +18,12 @@ import { IconPickerModal } from "../ui/icon-picker-modal";
 import type { HomepageProject, HomepageQuickNote, RecentNoteItem } from "./types";
 import type { ProjectCategory } from "../types/settings.types";
 import { getProjectCategoryFolder, getProjectTypeColor } from "./project-categories";
-import { getProjectStatusOption, type ProjectStatus } from "./project-status";
+import {
+  calculateProjectProgress,
+  getProjectStatusOption,
+  PROJECT_PROGRESS_STEPS,
+  type ProjectStatus,
+} from "./project-status";
 import { Events } from "../core/event-bus";
 import type { EventBus } from "../core/event-bus";
 import type { SettingsManager } from "../core/settings-manager";
@@ -1180,11 +1185,8 @@ export class HomepageView extends ItemView {
     });
     this.renderProjectStatusTag(nameRow, project.status);
 
-    // 进度条（使用主题色）
     const progressRow = info.createDiv({ cls: "homepage-project-progress-row" });
-    const bar = progressRow.createDiv({ cls: "homepage-project-progress-bar" });
-    bar.createDiv({ cls: "homepage-project-progress-fill", attr: { style: `width: ${project.progress}%` } });
-    progressRow.createSpan({ cls: "homepage-project-progress-text", text: `${project.progress}%` });
+    this.renderProjectProgress(progressRow, project, { compact: true });
 
     // 点击 → 弹出详情面板
     main.addEventListener("click", () => this.openProjectDetailPanel(project));
@@ -1257,11 +1259,8 @@ export class HomepageView extends ItemView {
     // 内容区域（可滚动）
     const body = panel.createDiv({ cls: "hp-detail-body" });
 
-    // 进度条
     const progressSection = body.createDiv({ cls: "hp-detail-progress" });
-    const barBg = progressSection.createDiv({ cls: "hp-detail-progress-bar" });
-    barBg.createDiv({ cls: "hp-detail-progress-fill", attr: { style: `width: ${project.progress}%` } });
-    progressSection.createSpan({ cls: "hp-detail-progress-text", text: `${project.progress}%` });
+    this.renderProjectProgress(progressSection, project);
 
     // 描述
     if (project.description) {
@@ -1367,6 +1366,144 @@ export class HomepageView extends ItemView {
     const categories = settings.homepage.projectCategories;
     const archiveFolder = settings?.homepage?.projectArchiveFolder || "99_归档";
     const projects = await this.projectScanService.getProjects(categories, archiveFolder);
+    {
+      let currentFilter: ProjectFilter = { ...DEFAULT_FILTER };
+      let searchQuery = "";
+
+      const projectTypes = Array.from(new Set(projects.map((project) => project.type))).filter(Boolean);
+      const activeProjects = projects.filter((project) => project.status !== "completed" && project.status !== "paused").length;
+      const progressProjects = projects.filter((project) => project.status !== "paused");
+      const averageProgress = progressProjects.length > 0
+        ? Math.round(progressProjects.reduce((sum, project) => sum + project.progress, 0) / progressProjects.length)
+        : 0;
+      const totalPendingTasks = projects.reduce((sum, project) => sum + Math.max(0, project.taskTotal - project.taskDone), 0);
+
+    const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay zendian-homepage" });
+    const panel = overlay.createDiv({ cls: "hp-all-panel hp-all-projects-panel" });
+
+    const header = panel.createDiv({ cls: "hp-detail-header" });
+    const icon = header.createDiv({ cls: "hp-detail-icon" });
+    icon.innerHTML = SVG_ICON.folder;
+    const info = header.createDiv({ cls: "hp-detail-header-info" });
+    info.createEl("h2", { text: "全部项目", cls: "hp-detail-title" });
+    info.createDiv({
+      cls: "hp-detail-meta-text",
+      text: projects.length > 0 ? `${projects.length} 个项目 · ${activeProjects} 个进行中 · ${totalPendingTasks} 个待办` : "还没有扫描到项目",
+    });
+    const closeBtn = header.createEl("button", {
+      cls: "hp-detail-close",
+      text: "×",
+      attr: { type: "button", title: "关闭", "aria-label": "关闭全部项目" },
+    });
+    closeBtn.addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", (event) => { if (event.target === overlay) overlay.remove(); });
+
+    const overview = panel.createDiv({ cls: "hp-all-project-overview" });
+    const overviewItems = [
+      { value: projects.length.toString(), label: "项目总数" },
+      { value: activeProjects.toString(), label: "推进中" },
+      { value: `${averageProgress}%`, label: "平均完成" },
+      { value: totalPendingTasks.toString(), label: "剩余待办" },
+    ];
+    for (const item of overviewItems) {
+      const stat = overview.createDiv({ cls: "hp-all-project-stat" });
+      stat.createDiv({ cls: "hp-all-project-stat-value", text: item.value });
+      stat.createDiv({ cls: "hp-all-project-stat-label", text: item.label });
+    }
+
+    const tools = panel.createDiv({ cls: "hp-all-project-tools" });
+    const searchWrap = tools.createDiv({ cls: "hp-all-project-search" });
+    searchWrap.innerHTML = SVG_ICON.search;
+    const searchInput = searchWrap.createEl("input", {
+      cls: "hp-all-project-search-input",
+      attr: {
+        type: "search",
+        placeholder: "搜索项目名称、分类或路径",
+        "aria-label": "搜索项目",
+      },
+    });
+    const filterWrap = tools.createDiv({ cls: "hp-all-project-filter-wrap" });
+    const body = panel.createDiv({ cls: "hp-all-body hp-all-project-body" });
+
+    const renderResults = () => {
+      body.empty();
+      let visibleProjects = applyFilterAndSort(projects, currentFilter);
+      const query = searchQuery.trim().toLowerCase();
+      if (query) {
+        visibleProjects = visibleProjects.filter((project) => {
+          const haystack = `${project.name} ${project.type} ${project.folderPath} ${project.description}`.toLowerCase();
+          return haystack.includes(query);
+        });
+      }
+
+      if (visibleProjects.length === 0) {
+        const empty = body.createDiv({ cls: "hp-all-project-empty" });
+        empty.createDiv({ cls: "homepage-empty-text", text: projects.length === 0 ? "暂无项目" : "没有符合条件的项目" });
+        empty.createDiv({ cls: "homepage-empty-hint", text: projects.length === 0 ? "新建项目后会出现在这里" : "试着放宽筛选或换个关键词" });
+        return;
+      }
+
+      const grouped = new Map<string, HomepageProject[]>();
+      for (const project of visibleProjects) {
+        if (!grouped.has(project.type)) grouped.set(project.type, []);
+        grouped.get(project.type)!.push(project);
+      }
+
+      for (const [type, items] of grouped) {
+        const tagColor = getProjectTypeColor(type);
+        const group = body.createDiv({ cls: "hp-all-project-group" });
+        const groupHead = group.createDiv({ cls: "hp-all-group-head hp-all-project-group-head" });
+        const label = groupHead.createDiv({ cls: "hp-all-project-group-label" });
+        label.createSpan({ cls: "hp-all-group-dot", attr: { style: `background: ${tagColor}` } });
+        label.createSpan({ text: type });
+        groupHead.createSpan({ cls: "hp-all-project-group-count", text: `${items.length} 个` });
+
+        const grid = group.createDiv({ cls: "hp-all-project-grid" });
+        for (const project of items) {
+          const card = grid.createEl("button", {
+            cls: "hp-all-project-card",
+            attr: { type: "button", "aria-label": `打开项目 ${project.name}` },
+          });
+
+          const cardTop = card.createDiv({ cls: "hp-all-project-card-top" });
+          const iconEl = cardTop.createDiv({ cls: "homepage-project-icon" });
+          this.renderProjectIcon(iconEl, project.folderPath);
+          const titleWrap = cardTop.createDiv({ cls: "hp-all-project-title-wrap" });
+          const titleLine = titleWrap.createDiv({ cls: "hp-all-project-title-line" });
+          titleLine.createDiv({ cls: "hp-all-project-name", text: project.name });
+          const metaRow = cardTop.createDiv({ cls: "hp-all-project-meta-row" });
+          metaRow.createSpan({
+            cls: "homepage-project-type-tag",
+            text: project.type,
+            attr: { style: `background: ${tagColor}20; color: ${tagColor};` },
+          });
+          this.renderProjectStatusTag(metaRow, project.status);
+          titleWrap.createDiv({ cls: "hp-all-project-path", text: project.folderPath });
+
+          const progress = card.createDiv({ cls: "hp-all-project-progress" });
+          this.renderProjectProgress(progress, project, { compact: true });
+
+          card.addEventListener("click", () => {
+            overlay.remove();
+            this.openProjectDetailPanel(project);
+          });
+        }
+      }
+    };
+
+    renderProjectFilterBar(filterWrap, currentFilter, projectTypes, (nextFilter) => {
+      currentFilter = nextFilter;
+      renderResults();
+    });
+    searchInput.addEventListener("input", () => {
+      searchQuery = searchInput.value;
+      renderResults();
+    });
+
+    renderResults();
+    setTimeout(() => searchInput.focus(), 50);
+    return;
+    }
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay" });
     const panel = overlay.createDiv({ cls: "hp-all-panel" });
@@ -1446,6 +1583,46 @@ export class HomepageView extends ItemView {
     tag.createSpan({ cls: "zd-project-status-dot", attr: { "aria-hidden": "true" } });
     tag.createSpan({ cls: "zd-project-status-label", text: status.label });
     return tag;
+  }
+
+  private renderProjectProgress(
+    container: HTMLElement,
+    project: Pick<HomepageProject, "status" | "taskDone" | "taskTotal">,
+    options: { compact?: boolean } = {},
+  ): void {
+    const progress = calculateProjectProgress(project.status, project.taskDone, project.taskTotal);
+    const wrap = container.createDiv({
+      cls: `zd-project-progress${options.compact ? " is-compact" : ""}${progress.isPaused ? " is-paused" : ""}`,
+      attr: {
+        "data-status": progress.status,
+        "aria-label": progress.isPaused
+          ? "项目暂停中，进度未激活"
+          : `项目进度 ${progress.percent}%`,
+      },
+    });
+
+    const track = wrap.createDiv({ cls: "zd-project-progress-track" });
+    for (let index = 0; index < PROJECT_PROGRESS_STEPS.length; index++) {
+      const step = PROJECT_PROGRESS_STEPS[index];
+      const state = progress.isPaused
+        ? "inactive"
+        : index < progress.nodeIndex || progress.status === "completed"
+          ? "done"
+          : index === progress.nodeIndex
+            ? "current"
+            : "todo";
+      track.createSpan({
+        cls: `zd-project-progress-node is-${state}`,
+        attr: {
+          title: step.label,
+          "aria-label": step.label,
+        },
+      });
+    }
+
+    if (!progress.isPaused) {
+      wrap.createSpan({ cls: "zd-project-progress-value", text: `${progress.percent}%` });
+    }
   }
 
   /** 检查项目是否有 .home 文件 */

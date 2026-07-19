@@ -21,11 +21,6 @@ export function filterProjects(projects: HomepageProject[], filter: ProjectFilte
     filtered = filtered.filter((p) => p.type === filter.type);
   }
 
-  // 按优先级筛选
-  if (filter.priority !== "all") {
-    filtered = filtered.filter((p) => p.priority === filter.priority);
-  }
-
   return filtered;
 }
 
@@ -42,15 +37,6 @@ export function sortProjects(projects: HomepageProject[], sortBy: ProjectFilter[
         const aActivity = a.lastActiveTime || 0;
         const bActivity = b.lastActiveTime || 0;
         return bActivity - aActivity;
-      });
-
-    case "priority":
-      // 按优先级排序（高 > 中 > 低）
-      const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
-      return sorted.sort((a, b) => {
-        const aScore = priorityOrder[a.priority || "low"] || 0;
-        const bScore = priorityOrder[b.priority || "low"] || 0;
-        return bScore - aScore;
       });
 
     case "time":

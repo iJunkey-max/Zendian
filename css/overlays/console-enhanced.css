@@ -4183,6 +4183,61 @@
   border-radius: inherit;
 }
 
+.zc-root .zc-status-progress-track.zd-project-progress-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  height: 1.45rem;
+  overflow: visible;
+  background: transparent;
+  border-radius: 0;
+}
+
+.zc-root .zc-status-progress-track.zd-project-progress-track::before {
+  content: "";
+  position: absolute;
+  left: 0.4rem;
+  right: 0.4rem;
+  top: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--zc-text) 18%, transparent);
+  transform: translateY(-50%);
+}
+
+.zc-root .zc-status-progress-track .zd-project-progress-node {
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--zc-text) 18%, transparent);
+  box-shadow:
+    0 0 0 2px var(--zc-surface),
+    0 1px 3px rgba(0, 0, 0, 0.16);
+}
+
+.zc-root .zc-status-progress-track .zd-project-progress-node.is-done {
+  background: #7b7f87;
+}
+
+.zc-root .zc-status-progress-track .zd-project-progress-node.is-current {
+  width: 0.78rem;
+  height: 0.78rem;
+  background: var(--zc-accent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--zc-accent) 16%, var(--zc-surface)),
+    0 0 0 4px color-mix(in srgb, var(--zc-accent) 12%, transparent),
+    0 2px 6px color-mix(in srgb, var(--zc-accent) 36%, transparent);
+}
+
+.zc-root .zc-status-progress-track.is-paused {
+  opacity: 0.48;
+  filter: grayscale(1);
+}
+
 .zc-root .zc-status-row {
   display: flex;
   min-width: 0;

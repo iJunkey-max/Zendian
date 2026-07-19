@@ -162,7 +162,7 @@ async function loadProjectHomeInternal(
       icon: "lucide-folder",
       description: "",
       type: "未分类",
-      status: "planning",
+      status: "initiated",
       statusHistory: [],
       createdAt: formatDate(new Date()),
       tasks: [],

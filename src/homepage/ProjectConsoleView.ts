@@ -12,7 +12,9 @@ import type {
 } from "./types";
 import { getProjectTypeColor } from "./project-categories";
 import {
+  calculateProjectProgress,
   PROJECT_STATUS_OPTIONS,
+  PROJECT_PROGRESS_STEPS,
   getProjectStatusOption,
   normalizeProjectStatus,
   normalizeStatusBeforePause,
@@ -683,9 +685,12 @@ export class ProjectConsoleView extends FileView {
   }
 
   private progress() {
-    if (!this.data) return { done: 0, total: 0, pct: 0 };
+    if (!this.data) {
+      return { done: 0, total: 0, pct: 0, isPaused: false, status: normalizeProjectStatus(undefined), nodeIndex: 0 };
+    }
     const t = this.data.tasks, total = t.length, done = t.filter((x) => x.completed).length;
-    return { done, total, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
+    const progress = calculateProjectProgress(this.data.status, done, total);
+    return { done, total, pct: progress.percent, isPaused: progress.isPaused, status: progress.status, nodeIndex: progress.nodeIndex };
   }
 
   // ── 渲染 ──────────────────────────────────────────
@@ -943,7 +948,8 @@ export class ProjectConsoleView extends FileView {
   private renderStats(p: HTMLElement) {
     if (!this.projectStats || !this.health) return;
 
-    const { done, total, pct } = this.progress();
+    const projectProgress = this.progress();
+    const { done, total, pct } = projectProgress;
     const files = this.projectStats.totalFiles;
     const delivers = this.data!.deliverables.length;
     const statusText = {
@@ -959,9 +965,27 @@ export class ProjectConsoleView extends FileView {
     const progress = section.createDiv({ cls: "zc-status-progress" });
     const progressHeader = progress.createDiv({ cls: "zc-status-progress-header" });
     progressHeader.createSpan({ text: "完成度" });
-    progressHeader.createSpan({ cls: "zc-status-progress-value", text: `${pct}%` });
-    const progressTrack = progress.createDiv({ cls: "zc-status-progress-track" });
-    progressTrack.createDiv({ cls: "zc-status-progress-fill", attr: { style: `width:${pct}%` } });
+    if (!projectProgress.isPaused) {
+      progressHeader.createSpan({ cls: "zc-status-progress-value", text: `${pct}%` });
+    }
+    const progressTrack = progress.createDiv({
+      cls: `zc-status-progress-track zd-project-progress-track${projectProgress.isPaused ? " is-paused" : ""}`,
+      attr: { "data-status": projectProgress.status },
+    });
+    for (let index = 0; index < PROJECT_PROGRESS_STEPS.length; index++) {
+      const step = PROJECT_PROGRESS_STEPS[index];
+      const state = projectProgress.isPaused
+        ? "inactive"
+        : index < projectProgress.nodeIndex || projectProgress.status === "completed"
+          ? "done"
+          : index === projectProgress.nodeIndex
+            ? "current"
+            : "todo";
+      progressTrack.createSpan({
+        cls: `zd-project-progress-node is-${state}`,
+        attr: { title: step.label, "aria-label": step.label },
+      });
+    }
 
     const rows: Array<[string, string, string?]> = [
       ["健康度", `${this.health.score} · ${statusText[this.health.status]}`],
@@ -1801,7 +1825,7 @@ export function createDefaultConsoleData(name: string, icon: string, type: Proje
     icon,
     description: desc,
     type,
-    status: "planning",
+    status: "initiated",
     statusHistory: [],
     createdAt: formatDate(new Date()),
     tasks: [],
