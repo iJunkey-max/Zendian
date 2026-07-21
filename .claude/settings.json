@@ -5,7 +5,14 @@
       "Bash(git commit *)",
       "Bash(git commit -m 'build: 更新构建产物 *)",
       "Bash(git commit -m 'docs: 二阶段修复完整报告 *)",
-      "Bash(git commit -m 'test: 添加测试验证清单和安装确认 *)"
+      "Bash(git commit -m 'test: 添加测试验证清单和安装确认 *)",
+      "Bash(node scripts/generate-test-vault.mjs ./test-vault)",
+      "PowerShell(npm run build)",
+      "Bash(timeout 30 tail -f /dev/null 2>&1 || echo \"Build completed\")",
+      "Read(//dev/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Junkey\\MyCode\\Zendian\\test-vault"
     ]
   }
 }
