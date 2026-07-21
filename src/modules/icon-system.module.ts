@@ -8,7 +8,7 @@ import type { IFeatureModule, ModuleContext } from "../types/module.types";
 import type { PluginSettings } from "../types/settings.types";
 import { IconPickerModal } from "../ui/icon-picker-modal";
 import { getPluginDataPath } from "../utils/plugin-paths";
-import { parseSafeSvg } from "../utils/safe-svg";
+import { normalizeSvgIconColors, parseSafeSvg } from "../utils/safe-svg";
 
 const STYLE_ID = "zendian-icon-system";
 const EXPLORER = '.workspace-leaf-content[data-type="file-explorer"]';
@@ -225,6 +225,7 @@ export class IconSystemModule implements IFeatureModule {
       ".zendian-icon svg {",
       "  width: 16px;",
       "  height: 16px;",
+      "  color: inherit;",
       "}",
       ".mod-root .workspace-tab-header .workspace-tab-header-inner-icon > svg:not(.zendian-injected-svg) {",
       "  display: none !important;",
@@ -731,6 +732,6 @@ export class IconSystemModule implements IFeatureModule {
     svg.style.width = "100%";
     svg.style.height = "100%";
 
-    return svg;
+    return normalizeSvgIconColors(svg);
   }
 }

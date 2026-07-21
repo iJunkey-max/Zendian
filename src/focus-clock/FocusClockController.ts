@@ -9,6 +9,7 @@ import type {
 } from "../services/ActivityLogService";
 import type { ActivityLogService } from "../services/ActivityLogService";
 import type { PluginSettings } from "../types/settings.types";
+import { openPopoutForm } from "../ui/popout-form";
 
 interface BreakState {
   status: "running" | "paused";
@@ -19,12 +20,25 @@ interface BreakState {
 
 export class FocusClockController {
   private panelEl: HTMLElement | null = null;
+  private panelCloseAction: (() => void) | null = null;
+  private panelOpening = false;
+  private isPopoutPanel = false;
+  private showingEndConfirmation = false;
   private ticker: number | null = null;
+  private animationFrame: number | null = null;
+  private dialEl: HTMLElement | null = null;
+  private dialTimeEl: HTMLElement | null = null;
+  private dialLabelEl: HTMLElement | null = null;
+  private controlsEl: HTMLElement | null = null;
+  private actionStageEl: HTMLElement | null = null;
+  private actionTransitionTimer: number | null = null;
+  private panelTransitionTimer: number | null = null;
   private settingsUnsub: (() => void) | null = null;
   private outsidePointerHandler: ((event: PointerEvent) => void) | null = null;
   private session: ActiveFocusSession | null = null;
   private breakState: BreakState | null = null;
   private selectedMinutes = 25;
+  private customDurationSelected = false;
   private temporarilyEnabledFocusMode = false;
   private completionFlashTimer: number | null = null;
 
@@ -73,22 +87,36 @@ export class FocusClockController {
     this.statusEl.empty();
   }
 
-  openPanel(): void {
+  openPanel(showEndConfirmation = false): void {
     if (!this.settingsManager.getSettings().editorEnhance.focusClockEnabled && !this.session && !this.breakState) {
       new Notice("请先在 ZENdian 设置中启用专注时钟");
       return;
     }
     if (this.panelEl) {
+      if (showEndConfirmation && this.session) {
+        this.showingEndConfirmation = true;
+        this.renderFocusActions(true);
+        return;
+      }
       this.closePanel();
       return;
     }
+    if (this.panelOpening) return;
+    if (this.settingsManager.getSettings().mobile.openPanelsInNewWindow ?? true) {
+      void this.openPanelInNewWindow(showEndConfirmation);
+      return;
+    }
+    this.openInlinePanel(showEndConfirmation);
+  }
+
+  private openInlinePanel(showEndConfirmation = false): void {
+    this.isPopoutPanel = false;
     this.panelEl = this.app.workspace.containerEl.createDiv({
       cls: "zendian-focus-clock-panel",
       attr: { role: "dialog", "aria-label": "专注时钟" },
     });
-    if (this.session) this.renderFocusDetail();
-    else if (this.breakState) this.renderBreakDetail();
-    else this.renderSetup();
+    this.showingEndConfirmation = showEndConfirmation;
+    this.renderCurrentPanel();
     this.positionPanel();
 
     window.setTimeout(() => {
@@ -98,6 +126,46 @@ export class FocusClockController {
       };
       document.addEventListener("pointerdown", this.outsidePointerHandler, true);
     });
+  }
+
+  private async openPanelInNewWindow(showEndConfirmation = false): Promise<void> {
+    this.panelOpening = true;
+    const opened = await openPopoutForm(this.app, {
+      title: "专注时钟",
+      icon: "timer",
+      size: { width: 400, height: 570 },
+      position: "bottom-right",
+      className: "zendian-focus-clock-popout",
+      render: (container, api) => {
+        const panel = container.createDiv({
+          cls: "zendian-focus-clock-workspace",
+          attr: { role: "dialog", "aria-label": "专注时钟" },
+        });
+        this.panelEl = panel;
+        this.panelCloseAction = api.close;
+        this.isPopoutPanel = true;
+        this.showingEndConfirmation = showEndConfirmation;
+        this.renderCurrentPanel();
+        return () => {
+          if (this.panelEl === panel) {
+            this.stopPanelAnimation();
+            this.panelEl = null;
+            this.panelCloseAction = null;
+            this.isPopoutPanel = false;
+            this.showingEndConfirmation = false;
+          }
+        };
+      },
+    });
+    this.panelOpening = false;
+    if (!opened && !this.panelEl) this.openInlinePanel(showEndConfirmation);
+  }
+
+  private renderCurrentPanel(): void {
+    this.resetPanelElements();
+    if (this.session) this.renderFocusDetail();
+    else if (this.breakState) this.renderBreakDetail();
+    else this.renderSetup();
   }
 
   togglePause(): void {
@@ -175,35 +243,69 @@ export class FocusClockController {
 
   private renderSetup(): void {
     if (!this.panelEl) return;
+    this.stopPanelAnimation();
+    this.resetPanelElements();
+    this.panelEl.removeClass("is-focus-session");
+    this.panelEl.addClass("is-setup-session");
     this.panelEl.empty();
     this.renderPanelHeader("专注时钟");
 
     const dial = this.panelEl.createDiv("zendian-focus-clock-dial");
     dial.style.setProperty("--zd-focus-progress", "0deg");
-    dial.createDiv({ cls: "zendian-focus-clock-dial-time", text: this.formatClock(this.selectedMinutes * 60) });
-    dial.createDiv({ cls: "zendian-focus-clock-dial-label", text: "准备专注" });
+    this.dialEl = dial;
+    this.dialTimeEl = dial.createDiv({ cls: "zendian-focus-clock-dial-time", text: this.formatClock(this.selectedMinutes * 60) });
+    this.dialLabelEl = dial.createDiv({ cls: "zendian-focus-clock-dial-label", text: "准备专注" });
 
-    const presets = this.panelEl.createDiv({ cls: "zendian-focus-clock-presets", attr: { role: "group", "aria-label": "选择专注时长" } });
+    const controls = this.panelEl.createDiv("zendian-focus-clock-controls");
+    this.controlsEl = controls;
+    const presets = controls.createDiv({ cls: "zendian-focus-clock-presets", attr: { role: "group", "aria-label": "选择专注时长" } });
     for (const minutes of [25, 50, 90]) {
       const button = presets.createEl("button", { text: `${minutes}`, attr: { type: "button", "aria-label": `${minutes} 分钟` } });
-      button.toggleClass("is-selected", minutes === this.selectedMinutes);
+      button.toggleClass("is-selected", !this.customDurationSelected && minutes === this.selectedMinutes);
       button.addEventListener("click", () => {
         this.selectedMinutes = minutes;
+        this.customDurationSelected = false;
         this.renderSetup();
       });
     }
-    const custom = presets.createEl("input", {
-      type: "number",
-      value: String(this.selectedMinutes),
-      attr: { min: "1", max: "180", step: "1", "aria-label": "自定义专注分钟数", title: "自定义分钟数" },
-    });
-    custom.addEventListener("change", () => {
-      this.selectedMinutes = Math.max(1, Math.min(180, Number(custom.value) || 25));
-      this.renderSetup();
-    });
+    const customSlot = presets.createDiv("zendian-focus-clock-custom-slot");
+    const openCustomInput = (): void => {
+      customSlot.empty();
+      const custom = customSlot.createEl("input", {
+        type: "number",
+        value: this.customDurationSelected ? String(this.selectedMinutes) : "",
+        placeholder: "输入分钟",
+        attr: { min: "1", max: "180", step: "1", "aria-label": "自定义专注分钟数" },
+      });
+      const applyCustomValue = (): boolean => {
+        const value = Number(custom.value);
+        if (!Number.isFinite(value) || value < 1) return false;
+        this.selectedMinutes = Math.max(1, Math.min(180, Math.round(value)));
+        this.customDurationSelected = true;
+        custom.value = String(this.selectedMinutes);
+        this.dialTimeEl!.textContent = this.formatClock(this.selectedMinutes * 60);
+        presets.querySelectorAll("button").forEach((button) => button.removeClass("is-selected"));
+        return true;
+      };
+      custom.addEventListener("input", () => { applyCustomValue(); });
+      custom.addEventListener("change", () => { applyCustomValue(); });
+      custom.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && applyCustomValue()) custom.blur();
+      });
+      custom.focus();
+      custom.select();
+    };
+    if (this.customDurationSelected) openCustomInput();
+    else {
+      const customButton = customSlot.createEl("button", {
+        text: "自定义",
+        attr: { type: "button", "aria-label": "输入自定义专注时长" },
+      });
+      customButton.addEventListener("click", openCustomInput);
+    }
 
     const activeFile = this.app.workspace.getActiveFile();
-    const targetField = this.panelEl.createDiv("zendian-focus-clock-field");
+    const targetField = controls.createDiv("zendian-focus-clock-field");
     targetField.createEl("label", { text: "专注目标" });
     const targetInput = targetField.createEl("input", {
       type: "text",
@@ -213,7 +315,7 @@ export class FocusClockController {
     });
 
     const breakMinutes = this.settingsManager.getSettings().editorEnhance.focusClockBreakMinutes;
-    const breakRow = this.panelEl.createDiv({ cls: "zendian-focus-clock-break-row" });
+    const breakRow = controls.createDiv({ cls: "zendian-focus-clock-break-row" });
     const breakToggle = breakRow.createEl("input", { type: "checkbox" });
     breakToggle.checked = breakMinutes > 0;
     breakRow.createSpan({ text: "完成后休息" });
@@ -226,7 +328,7 @@ export class FocusClockController {
     breakInput.disabled = !breakToggle.checked;
     breakToggle.addEventListener("change", () => { breakInput.disabled = !breakToggle.checked; });
 
-    const startButton = this.panelEl.createEl("button", {
+    const startButton = controls.createEl("button", {
       cls: "zendian-focus-clock-primary",
       attr: { type: "button" },
     });
@@ -240,65 +342,50 @@ export class FocusClockController {
     });
   }
 
-  private renderFocusDetail(showConfirmation = false): void {
+  private renderFocusDetail(showConfirmation = this.showingEndConfirmation): void {
     if (!this.panelEl || !this.session) return;
+    this.stopPanelAnimation();
+    this.resetPanelElements();
+    this.panelEl.removeClass("is-setup-session");
+    this.panelEl.addClass("is-focus-session");
     this.panelEl.empty();
     this.renderPanelHeader(this.session.status === "paused" ? "专注已暂停" : "正在专注");
-    const remaining = this.getFocusRemainingSeconds();
-    const progress = 1 - remaining / Math.max(1, this.session.plannedSeconds);
     const dial = this.panelEl.createDiv("zendian-focus-clock-dial");
-    dial.style.setProperty("--zd-focus-progress", `${Math.max(0, Math.min(1, progress)) * 360}deg`);
-    dial.createDiv({ cls: "zendian-focus-clock-dial-time", text: this.formatClock(remaining) });
-    dial.createDiv({ cls: "zendian-focus-clock-dial-label", text: this.session.status === "paused" ? "稍作停顿" : "保持此刻" });
-    this.panelEl.createDiv({ cls: "zendian-focus-clock-target", text: this.session.targetLabel });
+    this.dialEl = dial;
+    this.dialTimeEl = dial.createDiv({ cls: "zendian-focus-clock-dial-time" });
+    this.dialLabelEl = dial.createDiv({ cls: "zendian-focus-clock-dial-label", text: this.session.status === "paused" ? "稍作停顿" : "保持此刻" });
+    const controls = this.panelEl.createDiv("zendian-focus-clock-controls");
+    this.controlsEl = controls;
+    this.populateFocusControls(controls, showConfirmation);
 
-    if (showConfirmation) {
-      const confirmation = this.panelEl.createDiv("zendian-focus-clock-confirm");
-      confirmation.createDiv({ cls: "zendian-focus-clock-confirm-title", text: "结束本次专注？" });
-      const actions = confirmation.createDiv("zendian-focus-clock-confirm-actions");
-      const record = actions.createEl("button", { text: "完成并记录", attr: { type: "button" } });
-      record.addClass("is-primary");
-      record.addEventListener("click", () => this.completeFocusSession("ended", false));
-      const abandon = actions.createEl("button", { text: "放弃本次", attr: { type: "button" } });
-      abandon.addEventListener("click", () => this.completeFocusSession("abandoned", false));
-      return;
-    }
-
-    const actions = this.panelEl.createDiv("zendian-focus-clock-detail-actions");
-    const extend = actions.createEl("button", { attr: { type: "button", title: "延长 5 分钟", "aria-label": "延长 5 分钟" } });
-    setIcon(extend, "plus");
-    extend.createSpan({ text: "5 分钟" });
-    extend.addEventListener("click", () => {
-      if (!this.session) return;
-      this.session.plannedSeconds += 300;
-      this.activityLog.setActiveFocusSession(this.session);
-      this.renderFocusDetail();
-      this.renderStatus();
-    });
-    const toggle = actions.createEl("button", { attr: { type: "button" } });
-    setIcon(toggle, this.session.status === "paused" ? "play" : "pause");
-    toggle.createSpan({ text: this.session.status === "paused" ? "继续" : "暂停" });
-    toggle.addEventListener("click", () => this.togglePause());
+    this.updatePanelProgress();
+    if (this.session.status === "running") this.startPanelAnimation();
   }
 
   private renderBreakDetail(): void {
     if (!this.panelEl || !this.breakState) return;
+    this.stopPanelAnimation();
+    this.resetPanelElements();
+    this.panelEl.removeClass("is-setup-session");
+    this.panelEl.removeClass("is-focus-session");
     this.panelEl.empty();
     this.renderPanelHeader(this.breakState.status === "paused" ? "休息已暂停" : "休息一下");
-    const remaining = this.getBreakRemainingSeconds();
-    const progress = 1 - remaining / Math.max(1, this.breakState.plannedSeconds);
     const dial = this.panelEl.createDiv("zendian-focus-clock-dial is-break");
-    dial.style.setProperty("--zd-focus-progress", `${Math.max(0, Math.min(1, progress)) * 360}deg`);
-    dial.createDiv({ cls: "zendian-focus-clock-dial-time", text: this.formatClock(remaining) });
+    this.dialEl = dial;
+    this.dialTimeEl = dial.createDiv({ cls: "zendian-focus-clock-dial-time" });
     dial.createDiv({ cls: "zendian-focus-clock-dial-label", text: "让眼睛离开屏幕" });
-    const end = this.panelEl.createEl("button", { cls: "zendian-focus-clock-secondary", attr: { type: "button" } });
+    const controls = this.panelEl.createDiv("zendian-focus-clock-controls");
+    this.controlsEl = controls;
+    const end = controls.createEl("button", { cls: "zendian-focus-clock-secondary", attr: { type: "button" } });
     setIcon(end, "skip-forward");
     end.createSpan({ text: "结束休息" });
     end.addEventListener("click", () => this.endBreak());
+    this.updatePanelProgress();
+    if (this.breakState.status === "running") this.startPanelAnimation();
   }
 
   private renderPanelHeader(title: string): void {
-    if (!this.panelEl) return;
+    if (!this.panelEl || this.isPopoutPanel) return;
     const header = this.panelEl.createDiv("zendian-focus-clock-header");
     const titleWrap = header.createDiv("zendian-focus-clock-title");
     const icon = titleWrap.createSpan();
@@ -325,9 +412,12 @@ export class FocusClockController {
     this.activityLog.setActiveFocusSession(this.session);
     this.applyTemporaryFocusMode(true);
     document.body.addClass("zendian-focus-clock-active");
-    this.closePanel();
     this.startTicker();
     this.renderStatus();
+    if (this.panelEl) {
+      if (this.isPopoutPanel && this.controlsEl && this.dialEl && this.dialTimeEl) this.transitionSetupToFocus();
+      else this.renderFocusDetail();
+    }
   }
 
   private pauseFocus(): void {
@@ -337,7 +427,7 @@ export class FocusClockController {
     this.activityLog.setActiveFocusSession(this.session);
     this.stopTicker();
     this.renderStatus();
-    if (this.panelEl) this.renderFocusDetail();
+    if (this.panelEl) this.refreshFocusPanelControls();
   }
 
   private resumeFocus(): void {
@@ -347,7 +437,7 @@ export class FocusClockController {
     this.activityLog.setActiveFocusSession(this.session);
     this.startTicker();
     this.renderStatus();
-    if (this.panelEl) this.renderFocusDetail();
+    if (this.panelEl) this.refreshFocusPanelControls();
   }
 
   private completeFocusSession(status: FocusSessionRecord["status"], natural: boolean): void {
@@ -371,7 +461,7 @@ export class FocusClockController {
     this.stopTicker();
     this.applyTemporaryFocusMode(false);
     document.body.removeClass("zendian-focus-clock-active");
-    this.closePanel();
+    this.showingEndConfirmation = false;
 
     if (status === "abandoned") new Notice("本次专注已放弃");
     else {
@@ -379,7 +469,10 @@ export class FocusClockController {
       this.playChime();
     }
     if (breakMinutes > 0) this.startBreak(breakMinutes);
-    else if (status !== "abandoned") this.flashCompletion();
+    else {
+      if (status !== "abandoned") this.flashCompletion();
+      if (this.panelEl) this.renderSetup();
+    }
     this.renderStatus();
   }
 
@@ -392,19 +485,20 @@ export class FocusClockController {
     };
     document.body.addClass("zendian-focus-clock-active");
     this.startTicker();
+    if (this.panelEl) this.renderBreakDetail();
   }
 
   private endBreak(completed = false): void {
     this.breakState = null;
     this.stopTicker();
     document.body.removeClass("zendian-focus-clock-active");
-    this.closePanel();
     if (completed) {
       new Notice("休息结束，可以开始下一轮专注");
       this.playChime();
       this.flashCompletion();
     }
     this.renderStatus();
+    if (this.panelEl) this.renderSetup();
   }
 
   private finalizeActiveSegment(now: number): void {
@@ -419,21 +513,29 @@ export class FocusClockController {
   }
 
   private getFocusRemainingSeconds(): number {
+    return Math.ceil(this.getFocusRemainingExactSeconds());
+  }
+
+  private getFocusRemainingExactSeconds(): number {
     if (!this.session) return 0;
     let elapsed = this.session.segments.reduce((sum, segment) => sum + (segment.end - segment.start) / 1000, 0);
     if (this.session.status === "running" && this.session.activeSegmentStartedAt) {
       elapsed += (Date.now() - this.session.activeSegmentStartedAt) / 1000;
     }
-    return Math.max(0, Math.ceil(this.session.plannedSeconds - elapsed));
+    return Math.max(0, this.session.plannedSeconds - elapsed);
   }
 
   private getBreakRemainingSeconds(): number {
+    return Math.ceil(this.getBreakRemainingExactSeconds());
+  }
+
+  private getBreakRemainingExactSeconds(): number {
     if (!this.breakState) return 0;
     let elapsed = this.breakState.elapsedSeconds;
     if (this.breakState.status === "running" && this.breakState.activeStartedAt) {
       elapsed += (Date.now() - this.breakState.activeStartedAt) / 1000;
     }
-    return Math.max(0, Math.ceil(this.breakState.plannedSeconds - elapsed));
+    return Math.max(0, this.breakState.plannedSeconds - elapsed);
   }
 
   private startTicker(): void {
@@ -448,17 +550,164 @@ export class FocusClockController {
         return;
       }
       this.renderStatus();
-      if (this.panelEl) {
-        if (this.session) this.renderFocusDetail();
-        else if (this.breakState) this.renderBreakDetail();
-      }
     }, 1000);
+    this.startPanelAnimation();
   }
 
   private stopTicker(): void {
-    if (this.ticker === null) return;
-    window.clearInterval(this.ticker);
-    this.ticker = null;
+    if (this.ticker !== null) {
+      window.clearInterval(this.ticker);
+      this.ticker = null;
+    }
+    this.stopPanelAnimation();
+  }
+
+  private resetPanelElements(): void {
+    this.dialEl = null;
+    this.dialTimeEl = null;
+    this.dialLabelEl = null;
+    this.controlsEl = null;
+    this.actionStageEl = null;
+    if (this.actionTransitionTimer !== null) {
+      window.clearTimeout(this.actionTransitionTimer);
+      this.actionTransitionTimer = null;
+    }
+    if (this.panelTransitionTimer !== null) {
+      window.clearTimeout(this.panelTransitionTimer);
+      this.panelTransitionTimer = null;
+    }
+  }
+
+  private populateFocusControls(controls: HTMLElement, confirming = this.showingEndConfirmation): void {
+    if (!this.session) return;
+    controls.empty();
+    controls.createDiv({ cls: "zendian-focus-clock-target", text: this.session.targetLabel });
+    this.actionStageEl = controls.createDiv("zendian-focus-clock-action-stage");
+    this.renderFocusActions(confirming, false);
+  }
+
+  private transitionSetupToFocus(): void {
+    if (!this.panelEl || !this.session || !this.controlsEl || !this.dialEl || !this.dialTimeEl || !this.dialLabelEl) {
+      this.renderFocusDetail();
+      return;
+    }
+    const panel = this.panelEl;
+    const controls = this.controlsEl;
+    panel.removeClass("is-setup-session");
+    panel.addClass("is-focus-session");
+    this.dialLabelEl.textContent = "保持此刻";
+    controls.addClass("is-leaving");
+    this.updatePanelProgress();
+    this.startPanelAnimation();
+    if (this.panelTransitionTimer !== null) window.clearTimeout(this.panelTransitionTimer);
+    this.panelTransitionTimer = window.setTimeout(() => {
+      if (this.panelEl !== panel || this.controlsEl !== controls || !this.session) return;
+      this.populateFocusControls(controls, false);
+      controls.removeClass("is-leaving");
+      controls.addClass("is-entering");
+      this.panelTransitionTimer = window.setTimeout(() => {
+        controls.removeClass("is-entering");
+        this.panelTransitionTimer = null;
+      }, 260);
+    }, 150);
+  }
+
+  private refreshFocusPanelControls(): void {
+    if (!this.session) return;
+    if (this.dialLabelEl) this.dialLabelEl.textContent = this.session.status === "paused" ? "稍作停顿" : "保持此刻";
+    this.updatePanelProgress();
+    this.renderFocusActions(this.showingEndConfirmation);
+  }
+
+  private renderFocusActions(confirming = this.showingEndConfirmation, animate = true): void {
+    if (!this.actionStageEl || !this.session) return;
+    const stage = this.actionStageEl;
+    this.showingEndConfirmation = confirming;
+    const populate = (): void => {
+      if (!this.session || this.actionStageEl !== stage) return;
+      stage.empty();
+      stage.toggleClass("is-confirming", confirming);
+
+      if (confirming) {
+        const cancel = stage.createEl("button", { text: "继续", attr: { type: "button" } });
+        cancel.addEventListener("click", () => this.renderFocusActions(false));
+        const record = stage.createEl("button", { cls: "is-primary", text: "完成并记录", attr: { type: "button" } });
+        record.addEventListener("click", () => this.completeFocusSession("ended", false));
+        const abandon = stage.createEl("button", { cls: "is-danger", text: "放弃", attr: { type: "button" } });
+        abandon.addEventListener("click", () => this.completeFocusSession("abandoned", false));
+      } else {
+        const extend = stage.createEl("button", { attr: { type: "button", title: "延长 5 分钟", "aria-label": "延长 5 分钟" } });
+        setIcon(extend, "plus");
+        extend.createSpan({ text: "5 分钟" });
+        extend.addEventListener("click", () => {
+          if (!this.session) return;
+          this.session.plannedSeconds += 300;
+          this.activityLog.setActiveFocusSession(this.session);
+          this.updatePanelProgress();
+          this.renderStatus();
+        });
+        const toggle = stage.createEl("button", { attr: { type: "button" } });
+        setIcon(toggle, this.session.status === "paused" ? "play" : "pause");
+        toggle.createSpan({ text: this.session.status === "paused" ? "继续" : "暂停" });
+        toggle.addEventListener("click", () => this.togglePause());
+        const end = stage.createEl("button", { cls: "is-danger", attr: { type: "button" } });
+        setIcon(end, "square");
+        end.createSpan({ text: "结束" });
+        end.addEventListener("click", () => this.renderFocusActions(true));
+      }
+    };
+
+    const enter = (): void => {
+      stage.removeClass("is-leaving");
+      populate();
+      stage.removeClass("is-entering");
+      void stage.offsetWidth;
+      stage.addClass("is-entering");
+      this.actionTransitionTimer = window.setTimeout(() => {
+        stage.removeClass("is-entering");
+        this.actionTransitionTimer = null;
+      }, 220);
+    };
+
+    if (!animate || stage.childElementCount === 0) {
+      populate();
+      return;
+    }
+    if (this.actionTransitionTimer !== null) window.clearTimeout(this.actionTransitionTimer);
+    stage.removeClass("is-entering");
+    stage.addClass("is-leaving");
+    this.actionTransitionTimer = window.setTimeout(enter, 110);
+  }
+
+  private updatePanelProgress(): void {
+    if (!this.dialEl || !this.dialTimeEl) return;
+    const isBreak = Boolean(this.breakState);
+    const plannedSeconds = isBreak ? this.breakState?.plannedSeconds : this.session?.plannedSeconds;
+    const remaining = isBreak ? this.getBreakRemainingExactSeconds() : this.getFocusRemainingExactSeconds();
+    if (!plannedSeconds) return;
+    const progress = Math.max(0, Math.min(1, 1 - remaining / plannedSeconds));
+    this.dialEl.style.setProperty("--zd-focus-progress", `${progress * 360}deg`);
+    this.dialTimeEl.textContent = this.formatClock(remaining);
+  }
+
+  private startPanelAnimation(): void {
+    if (this.animationFrame !== null || !this.panelEl) return;
+    const animate = (): void => {
+      this.animationFrame = null;
+      if (!this.panelEl) return;
+      const running = this.session?.status === "running" || this.breakState?.status === "running";
+      if (!running) return;
+      this.updatePanelProgress();
+      this.animationFrame = this.panelEl.ownerDocument.defaultView?.requestAnimationFrame(animate) ?? null;
+    };
+    this.animationFrame = this.panelEl.ownerDocument.defaultView?.requestAnimationFrame(animate) ?? null;
+  }
+
+  private stopPanelAnimation(): void {
+    if (this.animationFrame === null) return;
+    const panelWindow = this.panelEl?.ownerDocument.defaultView;
+    panelWindow?.cancelAnimationFrame(this.animationFrame);
+    this.animationFrame = null;
   }
 
   private applyTemporaryFocusMode(active: boolean): void {
@@ -488,15 +737,23 @@ export class FocusClockController {
   }
 
   private openEndConfirmation(): void {
-    if (!this.panelEl) this.openPanel();
-    this.renderFocusDetail(true);
+    this.showingEndConfirmation = true;
+    this.openPanel(true);
   }
 
   private closePanel(): void {
-    this.panelEl?.remove();
+    const panel = this.panelEl;
+    const closeAction = this.panelCloseAction;
+    this.stopPanelAnimation();
     this.panelEl = null;
+    this.panelCloseAction = null;
+    this.isPopoutPanel = false;
+    this.showingEndConfirmation = false;
+    this.resetPanelElements();
+    panel?.remove();
     if (this.outsidePointerHandler) document.removeEventListener("pointerdown", this.outsidePointerHandler, true);
     this.outsidePointerHandler = null;
+    closeAction?.();
   }
 
   private positionPanel(): void {

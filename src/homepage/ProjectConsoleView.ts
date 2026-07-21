@@ -2,7 +2,7 @@
  * ProjectConsoleView — 项目控制台视图（仪表盘风格）
  */
 
-import { FileView, ItemView, type WorkspaceLeaf, type App, TFile, getIcon, Menu, Modal, Setting, Notice, MarkdownRenderer } from "obsidian";
+import { FileView, ItemView, type WorkspaceLeaf, type App, TFile, Menu, Modal, Setting, Notice, MarkdownRenderer } from "obsidian";
 import type {
   ProjectConsoleData,
   ProjectConsoleTask,
@@ -29,6 +29,8 @@ import type { DataChangeCallback, TimelineEvent } from "./services/types";
 import { renderTaskPriorityLabel } from "./components/TaskPriorityLabel";
 import { createTaskSchedulePicker } from "./components/TaskSchedulePicker";
 import type { SettingsManager } from "../core/settings-manager";
+import type { EventBus } from "../core/event-bus";
+import { Events } from "../core/event-bus";
 import { DeliverableReleaseService } from "./services/DeliverableReleaseService";
 import {
   getProjectSystemDirectory,
@@ -36,6 +38,7 @@ import {
 } from "./services/ProjectHomeFileResolver";
 import { formatDate } from "../utils/date";
 import { openPopoutForm } from "../ui/popout-form";
+import { resolveIconSvg } from "../utils/icon-renderer";
 
 export const VIEW_TYPE_PROJECT_CONSOLE = "zendian-project-console";
 export const VIEW_TYPE_PROJECT_TASK_CREATE = "zendian-project-task-create";
@@ -738,11 +741,13 @@ export class ProjectConsoleView extends FileView {
   private health: ProjectHealth | null = null;
   private timelineFilter: "all" | "files" | "tasks" | "project" | "checkpoints" = "all";
   private releaseService: DeliverableReleaseService;
+  private unsubSettings: (() => void) | null = null;
 
   constructor(
     l: WorkspaceLeaf,
     private taskSyncService: TaskSyncService,
     private settingsManager: SettingsManager,
+    private events: EventBus,
   ) {
     super(l);
     this.services = getServiceManager(this.app, taskSyncService);
@@ -800,6 +805,16 @@ export class ProjectConsoleView extends FileView {
     // onLoadFile 可能先于 onOpen 执行，此时 children[1] 不存在
     // onOpen 时 DOM 一定就绪，补渲染
     if (this.data) this.render();
+    this.unsubSettings ??= this.events.on(Events.SETTINGS_CHANGED, (changedKeys: string[]) => {
+      if (!changedKeys.includes("iconSystem") || !this.data) return;
+      const iconEl = this.containerEl.querySelector(".zc-hero-title-icon") as HTMLElement | null;
+      if (iconEl) void this.renderIcon(iconEl, this.data.icon);
+    });
+  }
+
+  async onClose() {
+    this.unsubSettings?.();
+    this.unsubSettings = null;
   }
 
   // ── 数据 ──────────────────────────────────────────
@@ -896,7 +911,7 @@ export class ProjectConsoleView extends FileView {
       cls: "zc-hero-icon zc-hero-title-icon",
       attr: { "aria-hidden": "true" },
     });
-    this.renderIcon(icon, d.icon);
+    void this.renderIcon(icon, d.icon);
     title.createSpan({ cls: "zc-hero-title-text", text: d.name });
     const meta = headingRow.createDiv({ cls: "zc-hero-meta" });
     meta.createSpan({ cls: "zc-hero-tag", text: d.type || "未分类", attr: { style: `--tag-color:${color}` } });
@@ -2342,15 +2357,11 @@ export class ProjectConsoleView extends FileView {
     });
   }
 
-  private renderIcon(el: HTMLElement, id: string) {
+  private async renderIcon(el: HTMLElement, id: string): Promise<void> {
     const customIcons = this.settingsManager.getSettings().iconSystem.customIcons;
     const customIcon = customIcons[this.projPath] || customIcons[this.file?.path || ""];
     const iconId = customIcon || id;
-    let icon: SVGElement | null = null;
-
-    if (iconId?.startsWith("lucide-")) {
-      icon = getIcon(iconId.slice(7));
-    }
+    let icon = await resolveIconSvg(this.app, iconId || "lucide-folder");
 
     el.empty();
     if (icon) {

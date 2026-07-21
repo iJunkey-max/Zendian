@@ -5,7 +5,7 @@
 
 import { App, Modal, getIcon } from "obsidian";
 import { getPluginDataPath } from "../utils/plugin-paths";
-import { parseSafeSvg } from "../utils/safe-svg";
+import { normalizeSvgIconColors, parseSafeSvg } from "../utils/safe-svg";
 
 const STYLE_ID = "zendian-icon-picker-style";
 
@@ -214,6 +214,7 @@ export class IconPickerModal extends Modal {
       if (svg) {
         svg.removeAttribute("width");
         svg.removeAttribute("height");
+        normalizeSvgIconColors(svg);
         this.svgCache.set(key, svg.cloneNode(true) as SVGElement);
         return svg;
       }

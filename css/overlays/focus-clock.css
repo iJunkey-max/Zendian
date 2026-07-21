@@ -36,7 +36,9 @@
 
 .zendian-focus-clock-status button:focus-visible,
 .zendian-focus-clock-panel button:focus-visible,
-.zendian-focus-clock-panel input:focus-visible {
+.zendian-focus-clock-panel input:focus-visible,
+.zendian-focus-clock-workspace button:focus-visible,
+.zendian-focus-clock-workspace input:focus-visible {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 2px;
 }
@@ -45,6 +47,11 @@
   width: 14px;
   height: 14px;
   stroke-width: 1.9;
+}
+
+.zendian-focus-clock-status :is(.zendian-focus-clock-entry, .zendian-focus-clock-time) > svg {
+  width: 16px;
+  height: 16px;
 }
 
 .zendian-focus-clock-time {
@@ -61,7 +68,7 @@
   inset: 2px;
   border-radius: 6px;
   background: conic-gradient(
-    from -90deg,
+    from 0deg,
     color-mix(in srgb, var(--interactive-accent) 35%, transparent) var(--zd-focus-progress),
     transparent 0
   );
@@ -95,20 +102,93 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   padding-bottom: 24px;
 }
 
-.zendian-focus-clock-panel {
+.zendian-focus-clock-panel,
+.zendian-focus-clock-workspace {
   --zd-focus-panel-accent: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+.zendian-focus-clock-panel {
   position: fixed;
   z-index: var(--layer-popover, 1000);
   width: min(340px, calc(100vw - 24px));
   padding: 14px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 16px;
-  color: var(--text-normal);
   background:
     radial-gradient(circle at 50% 22%, color-mix(in srgb, var(--zd-focus-panel-accent) 9%, transparent), transparent 38%),
     var(--background-primary);
   box-shadow: 0 18px 48px rgb(0 0 0 / 0.18), 0 3px 12px rgb(0 0 0 / 0.1);
   animation: zendian-focus-clock-in 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.zendian-popout-form.zendian-focus-clock-popout {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  margin: 0;
+  padding: 20px clamp(18px, 5vw, 28px);
+  overflow-y: auto;
+  background: var(--background-primary);
+}
+
+.zendian-popout-form.zendian-focus-clock-popout::before {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: min(78vw, 420px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--interactive-accent) 13%, transparent), transparent 68%);
+  content: "";
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: zendian-focus-clock-breathe 5.6s ease-in-out infinite;
+}
+
+.zendian-focus-clock-workspace {
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 216px 220px;
+  align-content: center;
+  gap: 20px;
+  width: min(100%, 320px);
+  min-height: 476px;
+  margin: auto;
+}
+
+.zendian-focus-clock-workspace .zendian-focus-clock-controls {
+  box-sizing: border-box;
+  min-height: 220px;
+  transition:
+    opacity 150ms ease,
+    transform 240ms cubic-bezier(0.2, 0.78, 0.25, 1);
+}
+
+.zendian-focus-clock-workspace.is-setup-session .zendian-focus-clock-controls {
+  padding-top: 0;
+}
+
+.zendian-focus-clock-workspace.is-focus-session .zendian-focus-clock-controls:not(.is-leaving) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.zendian-focus-clock-workspace .zendian-focus-clock-controls.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+}
+
+.zendian-focus-clock-workspace .zendian-focus-clock-controls.is-entering {
+  animation: zendian-focus-clock-controls-in 260ms cubic-bezier(0.2, 0.78, 0.25, 1) both;
 }
 
 .zendian-focus-clock-header {
@@ -161,9 +241,9 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   margin: 14px auto 16px;
   border-radius: 50%;
   background: conic-gradient(
-    from -90deg,
-    var(--zd-focus-panel-accent) var(--zd-focus-progress),
-    color-mix(in srgb, var(--text-muted) 13%, transparent) 0
+    from 0deg,
+    var(--zd-focus-panel-accent) 0deg var(--zd-focus-progress),
+    color-mix(in srgb, var(--text-muted) 13%, transparent) var(--zd-focus-progress) 360deg
   );
   box-shadow: 0 10px 28px color-mix(in srgb, var(--zd-focus-panel-accent) 13%, transparent);
 }
@@ -207,6 +287,38 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   letter-spacing: -0.045em;
 }
 
+.zendian-focus-clock-workspace .zendian-focus-clock-dial {
+  align-self: center;
+  width: 208px;
+  height: 208px;
+  margin: 0 auto;
+  transition: transform 360ms cubic-bezier(0.2, 0.78, 0.25, 1);
+  box-shadow:
+    0 16px 48px color-mix(in srgb, var(--zd-focus-panel-accent) 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--zd-focus-panel-accent) 7%, transparent);
+}
+
+.zendian-focus-clock-workspace.is-setup-session .zendian-focus-clock-dial {
+  transform: translateY(-24px);
+}
+
+.zendian-focus-clock-workspace.is-focus-session .zendian-focus-clock-dial {
+  transform: translateY(28px);
+}
+
+.zendian-focus-clock-workspace .zendian-focus-clock-dial::before {
+  inset: 8px;
+}
+
+.zendian-focus-clock-workspace .zendian-focus-clock-dial-time {
+  font-size: 42px;
+}
+
+.zendian-focus-clock-workspace .zendian-focus-clock-dial-label {
+  margin-top: 7px;
+  font-size: 12px;
+}
+
 .zendian-focus-clock-dial-label {
   margin-top: 4px;
   color: var(--text-muted);
@@ -232,6 +344,15 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   background: var(--background-secondary);
   box-shadow: none;
   text-align: center;
+}
+
+.zendian-focus-clock-custom-slot {
+  min-width: 0;
+}
+
+.zendian-focus-clock-custom-slot input::placeholder {
+  color: var(--text-faint);
+  font-size: 11px;
 }
 
 .zendian-focus-clock-presets button {
@@ -330,14 +451,21 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   white-space: nowrap;
 }
 
-.zendian-focus-clock-detail-actions {
+.zendian-focus-clock-workspace .zendian-focus-clock-target {
+  margin: 0 12px 14px;
+  line-height: 28px;
+}
+
+.zendian-focus-clock-detail-actions,
+.zendian-focus-clock-action-stage {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
 .zendian-focus-clock-detail-actions button,
-.zendian-focus-clock-confirm-actions button {
+.zendian-focus-clock-confirm-actions button,
+.zendian-focus-clock-action-stage button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -367,14 +495,41 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
 
 .zendian-focus-clock-confirm-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
-.zendian-focus-clock-confirm-actions button.is-primary {
+.zendian-focus-clock-detail-actions button.is-danger,
+.zendian-focus-clock-confirm-actions button.is-danger,
+.zendian-focus-clock-action-stage button.is-danger {
+  color: var(--text-error);
+}
+
+.zendian-focus-clock-confirm-actions button.is-primary,
+.zendian-focus-clock-action-stage button.is-primary {
   border-color: var(--interactive-accent);
   color: var(--text-on-accent);
   background: var(--interactive-accent);
+}
+
+.zendian-focus-clock-action-stage.is-entering > button {
+  animation: zendian-focus-clock-action-in 200ms cubic-bezier(0.2, 0.78, 0.25, 1) both;
+}
+
+.zendian-focus-clock-action-stage.is-leaving {
+  pointer-events: none;
+}
+
+.zendian-focus-clock-action-stage.is-leaving > button {
+  animation: zendian-focus-clock-action-out 110ms ease-in both;
+}
+
+.zendian-focus-clock-action-stage.is-entering > button:nth-child(2) {
+  animation-delay: 18ms;
+}
+
+.zendian-focus-clock-action-stage.is-entering > button:nth-child(3) {
+  animation-delay: 36ms;
 }
 
 @keyframes zendian-focus-clock-in {
@@ -382,6 +537,32 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes zendian-focus-clock-breathe {
+  0%, 100% { opacity: 0.42; transform: translate(-50%, -50%) scale(0.9); }
+  50% { opacity: 0.86; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@keyframes zendian-focus-clock-action-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes zendian-focus-clock-action-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-3px); }
+}
+
+@keyframes zendian-focus-clock-controls-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .zendian-focus-clock-panel { animation: none; }
+  .zendian-focus-clock-panel,
+  .zendian-focus-clock-workspace { animation: none; }
+  .zendian-popout-form.zendian-focus-clock-popout::before { animation: none; }
+  .zendian-focus-clock-action-stage:is(.is-entering, .is-leaving) > button { animation: none; }
+  .zendian-focus-clock-workspace .zendian-focus-clock-dial,
+  .zendian-focus-clock-workspace .zendian-focus-clock-controls { transition: none; }
+  .zendian-focus-clock-workspace .zendian-focus-clock-controls.is-entering { animation: none; }
 }

@@ -37,7 +37,7 @@ ZENdian 是一款面向 Obsidian 的工作空间增强插件。它在不改变 M
 - 同时适配桌面端、平板与手机端，并支持 Obsidian 原生浅色/深色模式。
 
 > [!IMPORTANT]
-> ZENdian 当前要求 **Obsidian 1.12.7 或更高版本**。升级前建议备份知识库，并阅读对应版本的 [Release Notes](./RELEASE_NOTES_3.2.00.md)。
+> ZENdian 当前要求 **Obsidian 1.12.7 或更高版本**。升级前建议备份知识库，并阅读对应版本的 [Release Notes](./RELEASE_NOTES_3.2.01.md)。
 
 ## 核心能力
 
@@ -159,7 +159,7 @@ npm run build
 
 - 插件会尽可能迁移既有设置；
 - V2 用户应先备份知识库，再升级至 V3；
-- V3.2.00 会继续识别既有 `.home` 项目数据和旧交付物目录；
+- V3.2.01 会继续识别既有 `.home` 项目数据和旧交付物目录；
 - 跨大版本升级前，请阅读 [更新日志](./CHANGELOG.md) 与对应发布说明。
 
 ## 开发
@@ -242,8 +242,9 @@ Pull Request 应保持改动范围清晰，并确保 `npm run check` 与 `npm ru
 
 ## 版本与许可
 
-- 当前版本：**V3.2.00**
+- 当前版本：**V3.2.01**
 - [更新日志](./CHANGELOG.md)
+- [V3.2.01 发布说明](./RELEASE_NOTES_3.2.01.md)
 - [V3.2.00 发布说明](./RELEASE_NOTES_3.2.00.md)
 - [V3.1.04 发布说明](./RELEASE_NOTES_3.1.04.md)
 - [V3.1.03 发布说明](./RELEASE_NOTES_3.1.03.md)

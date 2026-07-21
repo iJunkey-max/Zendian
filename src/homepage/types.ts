@@ -72,6 +72,7 @@ export interface ProjectTask {
 export interface HomepageProject {
   id: string;
   name: string;
+  icon: string;
   folderPath: string;
   type: ProjectType;
   progress: number;

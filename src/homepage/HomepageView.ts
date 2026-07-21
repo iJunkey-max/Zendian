@@ -42,6 +42,7 @@ import {
 } from "./services/ProjectHomeFileResolver";
 import { formatDate } from "../utils/date";
 import { openPopoutForm, type PopoutFormOptions } from "../ui/popout-form";
+import { resolveIconSvg } from "../utils/icon-renderer";
 
 export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
 export const VIEW_TYPE_PROJECT_CREATE = "zendian-project-create";
@@ -749,9 +750,10 @@ export class HomepageView extends ItemView {
 
     this.renderDashboard();
 
-    // 监听设置变更，自动刷新天气
+    // 主页设置变化重建面板；图标系统变化只重绘项目列表，保留当前筛选状态。
     this.unsubSettings = this.dependencies.events.on(Events.SETTINGS_CHANGED, (changedKeys: string[]) => {
       if (changedKeys.includes("homepage")) this.renderDashboard();
+      else if (changedKeys.includes("iconSystem")) this.renderFilteredProjects();
     });
     this.unsubActivityStats = this.dependencies.events.on(Events.ACTIVITY_STATS_CHANGED, () => void this.loadMonthlyStats());
   }
@@ -1399,17 +1401,14 @@ export class HomepageView extends ItemView {
     for (const note of notes) {
       const item = list.createDiv({ cls: "homepage-recent-item" });
 
-      // 左侧：图标 + 标题
+      // 图标 + 内容；标题与元数据分行，避免窄屏互相挤压
       const left = item.createDiv({ cls: "homepage-recent-item-left" });
       const iconWrap = left.createDiv({ cls: "homepage-recent-icon" });
       iconWrap.innerHTML = SVG_ICON.fileText;
-      left.createSpan({ cls: "homepage-recent-title", text: note.title });
+      const content = left.createDiv({ cls: "homepage-recent-content" });
+      content.createSpan({ cls: "homepage-recent-title", text: note.title });
 
-      // 右侧：标签 + 时间
-      const right = item.createDiv({ cls: "homepage-recent-item-right" });
-      if (note.tags.length > 0) {
-        right.createSpan({ cls: "homepage-recent-tag", text: note.tags[0] });
-      }
+      const right = content.createDiv({ cls: "homepage-recent-item-right" });
       right.createSpan({ cls: "homepage-recent-time", text: this.formatTimestamp(note.mtime) });
 
       item.addEventListener("click", () => this.openFile(note.path));
@@ -1482,7 +1481,7 @@ export class HomepageView extends ItemView {
 
     // 图标（使用主题色）
     const iconEl = main.createDiv({ cls: "homepage-project-icon" });
-    this.renderProjectIcon(iconEl, project.folderPath);
+    this.renderProjectIcon(iconEl, project);
 
     // 信息
     const info = main.createDiv({ cls: "homepage-project-info" });
@@ -1505,38 +1504,20 @@ export class HomepageView extends ItemView {
   // ── 图标集成 ──────────────────────────────────────────────
 
   /**
-   * 渲染项目图标：优先使用图标系统赋予的自定义图标，否则用默认 folder 图标
+   * 渲染项目图标：路径级图标覆盖项目元数据图标，最后才降级为 folder。
+   * 项目元数据是主页项目卡片的稳定数据源，避免依赖图标系统是否启用。
    */
-  private renderProjectIcon(el: HTMLElement, folderPath: string): void {
+  private renderProjectIcon(el: HTMLElement, project: Pick<HomepageProject, "folderPath" | "icon">): void {
     const settings = this.dependencies.settingsManager.getSettings();
     const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
-    const iconId = customIcons[folderPath];
+    const iconId = customIcons[project.folderPath] || project.icon || "lucide-folder";
 
-    if (iconId && iconId.startsWith("lucide-")) {
-      const name = iconId.replace("lucide-", "");
-      const svg = getIcon(name);
-      if (svg) {
-        el.innerHTML = "";
-        el.appendChild(svg);
-        return;
-      }
-    }
-
-    // 降级：默认 folder 图标
     el.innerHTML = SVG_ICON.folder;
-  }
-
-  /**
-   * 获取项目图标 SVG 元素（供弹窗使用）
-   */
-  private getProjectIconSvg(folderPath: string): SVGElement | null {
-    const settings = this.dependencies.settingsManager.getSettings();
-    const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
-    const iconId = customIcons[folderPath];
-    if (iconId && iconId.startsWith("lucide-")) {
-      return getIcon(iconId.replace("lucide-", ""));
-    }
-    return null;
+    void resolveIconSvg(this.app, iconId).then((svg) => {
+      if (!svg || !el.isConnected) return;
+      el.empty();
+      el.appendChild(svg);
+    });
   }
 
   // ── 项目详情面板 ──────────────────────────────────────────
@@ -1553,7 +1534,7 @@ export class HomepageView extends ItemView {
     // 头部
     const header = panel.createDiv({ cls: "hp-detail-header" });
     const iconWrap = header.createDiv({ cls: "hp-detail-icon" });
-    this.renderProjectIcon(iconWrap, project.folderPath);
+    this.renderProjectIcon(iconWrap, project);
     const headerInfo = header.createDiv({ cls: "hp-detail-header-info" });
     headerInfo.createEl("h2", { text: project.name, cls: "hp-detail-title" });
     const metaRow = headerInfo.createDiv({ cls: "hp-detail-meta" });
@@ -1736,7 +1717,7 @@ export class HomepageView extends ItemView {
         });
         const cardTop = card.createDiv({ cls: "hp-all-project-card-top" });
         const iconEl = cardTop.createDiv({ cls: "homepage-project-icon" });
-        this.renderProjectIcon(iconEl, project.folderPath);
+        this.renderProjectIcon(iconEl, project);
         const titleWrap = cardTop.createDiv({ cls: "hp-all-project-title-wrap" });
         titleWrap.createDiv({ cls: "hp-all-project-name", text: project.name });
         titleWrap.createDiv({ cls: "hp-all-project-path", text: project.folderPath });
@@ -1872,7 +1853,7 @@ export class HomepageView extends ItemView {
 
           const cardTop = card.createDiv({ cls: "hp-all-project-card-top" });
           const iconEl = cardTop.createDiv({ cls: "homepage-project-icon" });
-          this.renderProjectIcon(iconEl, project.folderPath);
+          this.renderProjectIcon(iconEl, project);
           const titleWrap = cardTop.createDiv({ cls: "hp-all-project-title-wrap" });
           const titleLine = titleWrap.createDiv({ cls: "hp-all-project-title-line" });
           titleLine.createDiv({ cls: "hp-all-project-name", text: project.name });
@@ -1938,7 +1919,7 @@ export class HomepageView extends ItemView {
       for (const p of items) {
         const row = group.createDiv({ cls: "hp-all-row" });
         const iconEl = row.createDiv({ cls: "homepage-project-icon" });
-        this.renderProjectIcon(iconEl, p.folderPath);
+        this.renderProjectIcon(iconEl, p);
         row.createSpan({ cls: "hp-all-row-name", text: p.name });
         this.renderProjectStatusTag(row, p.status);
         row.createSpan({ cls: "hp-all-row-progress", text: `${p.progress}%` });

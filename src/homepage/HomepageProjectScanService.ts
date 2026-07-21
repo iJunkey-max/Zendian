@@ -126,6 +126,7 @@ export class HomepageProjectScanService {
     return {
       id: folderPath,
       name,
+      icon: homeData?.icon || "lucide-folder",
       folderPath,
       type,
       progress,

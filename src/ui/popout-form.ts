@@ -14,6 +14,7 @@ export interface PopoutFormOptions {
     width: number;
     height: number;
   };
+  position?: "bottom-right";
   className?: string;
   render: (container: HTMLElement, api: PopoutFormApi) => void | (() => void) | Promise<void | (() => void)>;
 }
@@ -30,13 +31,40 @@ export async function openPopoutForm(app: App, options: PopoutFormOptions): Prom
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     sessions.set(id, { ...options, id });
     latestSessionId = id;
-    const leaf = app.workspace.openPopoutLeaf({ size: options.size });
+    const display = window.screen as Screen & { availLeft?: number; availTop?: number };
+    const availLeft = display.availLeft ?? 0;
+    const availTop = display.availTop ?? 0;
+    const leaf = app.workspace.openPopoutLeaf({
+      size: options.size,
+      ...(options.position === "bottom-right" ? {
+        x: Math.max(availLeft, availLeft + display.availWidth - options.size.width - 24),
+        y: Math.max(availTop, availTop + display.availHeight - options.size.height - 24),
+      } : {}),
+    });
     await leaf.setViewState({
       type: VIEW_TYPE_ZENDIAN_FORM_POPOUT,
       active: true,
       state: { sessionId: id },
     });
     void app.workspace.revealLeaf(leaf);
+    if (options.position === "bottom-right") {
+      const popoutWindow = leaf.view.containerEl.ownerDocument.defaultView;
+      const settleWindow = (): void => {
+        if (!popoutWindow || popoutWindow.closed) return;
+        popoutWindow.resizeTo(options.size.width, options.size.height);
+        const currentDisplay = popoutWindow.screen as Screen & { availLeft?: number; availTop?: number };
+        const currentLeft = currentDisplay.availLeft ?? 0;
+        const currentTop = currentDisplay.availTop ?? 0;
+        const width = Math.min(popoutWindow.outerWidth || options.size.width, currentDisplay.availWidth - 32);
+        const height = Math.min(popoutWindow.outerHeight || options.size.height, currentDisplay.availHeight - 32);
+        popoutWindow.moveTo(
+          currentLeft + currentDisplay.availWidth - width - 16,
+          currentTop + currentDisplay.availHeight - height - 16,
+        );
+      };
+      settleWindow();
+      popoutWindow?.requestAnimationFrame(settleWindow);
+    }
     return true;
   } catch (error) {
     console.warn("[ZENdian] Failed to open popout form.", error);
