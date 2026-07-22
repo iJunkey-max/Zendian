@@ -50,7 +50,7 @@ export class CacheManager {
     // 更新访问时间
     this.accessOrder.set(key, now);
     this.stats.hits++;
-    return entry.data as T;
+    return structuredClone(entry.data) as T;
   }
 
   /**
@@ -65,7 +65,7 @@ export class CacheManager {
     }
 
     const entry: CacheEntry<T> = {
-      data,
+      data: structuredClone(data),
       timestamp: now,
       version: options?.key || String(now),
     };
@@ -104,7 +104,12 @@ export class CacheManager {
    * 使匹配的缓存失效（支持通配符）
    */
   invalidatePattern(pattern: string): void {
-    const regex = new RegExp(pattern.replace(/\*/g, ".*"));
+    const regex = new RegExp(
+      `^${pattern
+        .split("*")
+        .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join(".*")}$`,
+    );
     const keysToDelete: string[] = [];
 
     for (const key of this.cache.keys()) {

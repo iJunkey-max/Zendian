@@ -72,7 +72,7 @@ export class ProjectDataService {
       const { file, data } = record;
 
       // 数据验证和规范化
-      const normalized = this.normalizeConsoleData(data, projectPath);
+      const normalized = this.normalizeConsoleData(data);
       registerDeliverablePaths(projectPath, normalized.deliverables);
       this.rememberDeliverableFolders(projectPath, normalized.deliverables);
 
@@ -99,6 +99,7 @@ export class ProjectDataService {
       // 使缓存失效
       this.cache.invalidate(`console:${projectPath}`);
       this.cache.invalidatePattern(`stats:${projectPath}*`);
+      this.cache.invalidatePattern(`health:${projectPath}*`);
 
       return true;
     } catch (error) {
@@ -115,6 +116,7 @@ export class ProjectDataService {
     if (saved) {
       this.cache.invalidate(`console:${projectPath}`);
       this.cache.invalidatePattern(`stats:${projectPath}*`);
+      this.cache.invalidatePattern(`health:${projectPath}*`);
     }
     return saved;
   }
@@ -404,7 +406,7 @@ export class ProjectDataService {
   // 辅助方法
   // ============================================================
 
-  private normalizeConsoleData(data: ProjectConsoleData, projectPath: string): ProjectConsoleData {
+  private normalizeConsoleData(data: ProjectConsoleData): ProjectConsoleData {
     return {
       ...data,
       name: data.name || "未命名项目",

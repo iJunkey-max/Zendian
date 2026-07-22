@@ -39,7 +39,7 @@ export function renderProjectFilterBar(
   const filters = container.createDiv({ cls: "homepage-filter-group" });
 
   // 状态筛选
-  const statusSelect = createSelect(
+  createSelect(
     filters,
     "状态",
     [
@@ -53,7 +53,7 @@ export function renderProjectFilterBar(
   );
 
   // 类型筛选
-  const typeSelect = createSelect(
+  createSelect(
     filters,
     "类型",
     [
@@ -70,7 +70,7 @@ export function renderProjectFilterBar(
   const sortGroup = container.createDiv({ cls: "homepage-sort-group" });
   sortGroup.createSpan({ cls: "homepage-filter-label", text: "排序：" });
 
-  const sortSelect = createSelect(
+  createSelect(
     sortGroup,
     "",
     [

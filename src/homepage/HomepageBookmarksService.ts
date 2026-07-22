@@ -5,7 +5,7 @@ import { HomepageBookmarksAdapter } from "./HomepageAdapters";
 export class HomepageBookmarksService {
   private readonly adapter: HomepageBookmarksAdapter;
 
-  constructor(private app: App) {
+  constructor(app: App) {
     this.adapter = new HomepageBookmarksAdapter(app);
   }
 

@@ -58,19 +58,8 @@ export class ServiceManager {
 
     console.log("[ServiceManager] 初始化数据服务...");
 
-    // 预加载常用数据（可选）
-    // await this.preloadCommonData();
-
     this.initialized = true;
     console.log("[ServiceManager] 数据服务初始化完成");
-  }
-
-  /**
-   * 预加载常用数据
-   */
-  private async preloadCommonData(): Promise<void> {
-    // 可以在这里预加载一些常用的项目数据
-    // 例如：最近访问的项目、收藏的项目等
   }
 
   // ============================================================
@@ -153,12 +142,17 @@ export class ServiceManager {
   }
 
   private async flushClosedEditSessions(): Promise<void> {
-    for (const [sessionId, session] of this.editSessions) {
+    const sessions = Array.from(this.editSessions.entries());
+    for (const [sessionId, session] of sessions) {
       if (this.isFileOpen(session.filePath)) continue;
-      await this.snapshots.completeEditSession(sessionId, Date.now());
-      this.editSessions.delete(sessionId);
-      this.fileOpenTimes.delete(session.filePath);
-      this.clearProjectCache(session.projectPath);
+      try {
+        await this.snapshots.completeEditSession(sessionId, Date.now());
+        this.editSessions.delete(sessionId);
+        this.fileOpenTimes.delete(session.filePath);
+        this.clearProjectCache(session.projectPath);
+      } catch (error) {
+        console.error(`[ServiceManager] 收尾编辑会话失败: ${session.filePath}`, error);
+      }
     }
   }
 
@@ -329,8 +323,7 @@ export class ServiceManager {
   /**
    * 销毁服务管理器
    */
-  destroy(): void {
-    void this.flushClosedEditSessions();
+  async destroy(): Promise<void> {
     for (const ref of this.workspaceEventRefs) this.app.workspace.offref(ref);
     this.workspaceEventRefs = [];
     if (this.fileWatcherRef) {
@@ -340,7 +333,16 @@ export class ServiceManager {
     this.fileWatcher.destroy();
     this.snapshotCallbacks.clear();
     this.snapshotTrackingPromises.clear();
+
+    const sessions = Array.from(this.editSessions.entries());
     this.editSessions.clear();
+    for (const [sessionId, session] of sessions) {
+      try {
+        await this.snapshots.completeEditSession(sessionId, Date.now());
+      } catch (error) {
+        console.error(`[ServiceManager] 收尾编辑会话失败: ${session.filePath}`, error);
+      }
+    }
     this.fileOpenTimes.clear();
     this.clearAllCache();
     this.initialized = false;
@@ -367,9 +369,8 @@ export function getServiceManager(app: App, taskSyncService?: TaskSyncService): 
 /**
  * 销毁全局服务管理器
  */
-export function destroyServiceManager(): void {
-  if (globalServiceManager) {
-    globalServiceManager.destroy();
-    globalServiceManager = null;
-  }
+export async function destroyServiceManager(): Promise<void> {
+  const manager = globalServiceManager;
+  globalServiceManager = null;
+  if (manager) await manager.destroy();
 }

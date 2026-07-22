@@ -6,7 +6,6 @@ import { FileView, ItemView, type WorkspaceLeaf, type App, TFile, Menu, Modal, S
 import type {
   ProjectConsoleData,
   ProjectConsoleTask,
-  ProjectConsoleDeliverable,
   ProjectRecentFile,
   ProjectType,
 } from "./types";
@@ -280,7 +279,6 @@ class AddTaskModal extends Modal {
   private dueTime = "";
   private priority: TaskPriority = "P2";
   private tags: string[] = [];
-  private tagInput = "";
   private destroySchedulePicker: (() => void) | null = null;
   private cb: (t: ProjectConsoleTask) => void;
 
@@ -1097,7 +1095,10 @@ export class ProjectConsoleView extends FileView {
     input.value = d.description || "";
     input.focus();
     input.select();
+    let saving = false;
     const save = async () => {
+      if (saving) return;
+      saving = true;
       const description = input.value.trim();
       d.description = description;
       await this.services.projectData.mutateProjectConsoleData(this.projPath, (latest) => {
@@ -1808,26 +1809,6 @@ export class ProjectConsoleView extends FileView {
         return;
       }
       void this.openSubmitDeliverablePanel(d.type);
-      return;
-      new SubmitDeliverableModal(this.app, this.projPath, d.type, this.releaseService, async (name, description, paths) => {
-        const release = await this.releaseService.publish({
-          projectPath: this.projPath,
-          projectType: d.type,
-          releaseName: name,
-          description,
-          sourcePaths: paths,
-        });
-        if (!(await this.services.projectData.mutateProjectConsoleData(this.projPath, (latest) => {
-          latest.deliverables = [...latest.deliverables, release];
-        }))) {
-          throw new Error("发布包已生成，但项目记录未写入；请勿重复使用同一发布名称");
-        }
-        this.services.clearProjectCache(this.projPath);
-        this.services.timeline.clearCache(this.projPath);
-        await this.loadProjectData();
-        this.render();
-        new Notice(`已发布交付物：${release.name}`);
-      }).open();
     });
 
     const list = scroll.createDiv({ cls: "zc-release-list" });
@@ -1983,14 +1964,6 @@ export class ProjectConsoleView extends FileView {
     checkpointButton.prepend(svg("flag"));
     checkpointButton.addEventListener("click", () => {
       void this.openCreateCheckpointPanel(c);
-      return;
-      new CreateCheckpointModal(this.app, async (name) => {
-        await this.services.snapshots.createCheckpoint(this.projPath, name);
-        this.services.timeline.clearCache(this.projPath);
-        new Notice("项目检查点已创建");
-        c.empty();
-        await this.timeline(c);
-      }).open();
     });
 
     const filters = [
@@ -2077,7 +2050,7 @@ export class ProjectConsoleView extends FileView {
 
           // 事件内容
           const content = eventEl.createDiv({ cls: "zc-timeline-content" });
-          const title = content.createDiv({ cls: "zc-timeline-title", text: event.title });
+          content.createDiv({ cls: "zc-timeline-title", text: event.title });
 
           if (event.description) {
             content.createDiv({ cls: "zc-timeline-desc", text: event.description });

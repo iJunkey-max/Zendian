@@ -15,7 +15,7 @@ import { ActivityLogService } from "../services/ActivityLogService";
 import { QuickNoteModal, renderQuickNoteForm } from "./QuickNoteModal";
 import { createDefaultConsoleData } from "./ProjectConsoleView";
 import { IconPickerModal } from "../ui/icon-picker-modal";
-import type { HomepageProject, HomepageQuickNote, RecentNoteItem } from "./types";
+import type { HomepageProject, HomepageQuickNote } from "./types";
 import type { ProjectCategory } from "../types/settings.types";
 import { getProjectCategoryFolder, getProjectTypeColor } from "./project-categories";
 import {
@@ -694,6 +694,10 @@ export class HomepageView extends ItemView {
   private allProjects: HomepageProject[] = [];
   private unsubSettings: (() => void) | null = null;
   private unsubActivityStats: (() => void) | null = null;
+  private searchBoxEl: HTMLElement | null = null;
+  private searchPanelEl: HTMLElement | null = null;
+  private searchDebounceTimer: number | null = null;
+  private animationObserver: IntersectionObserver | null = null;
 
   constructor(leaf: WorkspaceLeaf, private dependencies: HomepageDependencies) {
     super(leaf);
@@ -747,6 +751,12 @@ export class HomepageView extends ItemView {
         this.loadHeatmap();
       });
     });
+    this.registerDomEvent(document, "click", (event) => {
+      const searchBox = this.searchBoxEl;
+      if (searchBox && !searchBox.contains(event.target as Node)) {
+        this.searchPanelEl?.removeClass("is-visible");
+      }
+    });
 
     this.renderDashboard();
 
@@ -760,6 +770,12 @@ export class HomepageView extends ItemView {
 
   private renderDashboard(): void {
     this.stopClock();
+    this.animationObserver?.disconnect();
+    this.animationObserver = null;
+    if (this.searchDebounceTimer !== null) window.clearTimeout(this.searchDebounceTimer);
+    this.searchDebounceTimer = null;
+    this.searchBoxEl = null;
+    this.searchPanelEl = null;
     const settings = this.dependencies.settingsManager.getSettings().homepage;
     const container = this.containerEl.children[1] as HTMLElement | undefined;
     if (!container) return;
@@ -794,6 +810,12 @@ export class HomepageView extends ItemView {
 
   async onClose(): Promise<void> {
     this.stopClock();
+    this.animationObserver?.disconnect();
+    this.animationObserver = null;
+    if (this.searchDebounceTimer !== null) window.clearTimeout(this.searchDebounceTimer);
+    this.searchDebounceTimer = null;
+    this.searchBoxEl = null;
+    this.searchPanelEl = null;
     if (this.resizeFrame !== null) {
       window.cancelAnimationFrame(this.resizeFrame);
       this.resizeFrame = null;
@@ -841,18 +863,22 @@ export class HomepageView extends ItemView {
       attr: { type: "text", placeholder: "搜索笔记..." },
     });
     const searchPanel = searchBox.createDiv({ cls: "homepage-search-panel" });
-
-    let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+    this.searchBoxEl = searchBox;
+    this.searchPanelEl = searchPanel;
 
     searchInput.addEventListener("input", () => {
-      if (searchDebounce) clearTimeout(searchDebounce);
+      if (this.searchDebounceTimer !== null) window.clearTimeout(this.searchDebounceTimer);
       const query = searchInput.value.trim();
       if (!query) {
+        this.searchDebounceTimer = null;
         searchPanel.removeClass("is-visible");
         searchPanel.empty();
         return;
       }
-      searchDebounce = setTimeout(() => this.renderSearchResults(searchPanel, query), 200);
+      this.searchDebounceTimer = window.setTimeout(() => {
+        this.searchDebounceTimer = null;
+        this.renderSearchResults(searchPanel, query);
+      }, 200);
     });
 
     searchInput.addEventListener("keydown", (e) => {
@@ -868,12 +894,6 @@ export class HomepageView extends ItemView {
       }
     });
 
-    // 点击外部关闭搜索面板
-    this.registerDomEvent(document, "click", (e) => {
-      if (!searchBox.contains(e.target as Node)) {
-        searchPanel.removeClass("is-visible");
-      }
-    });
     // 天气卡片
     const weatherCard = right.createDiv({ cls: "homepage-weather-card" });
     const weatherIconWrap = weatherCard.createDiv({ cls: "homepage-weather-icon-wrap" });
@@ -881,7 +901,7 @@ export class HomepageView extends ItemView {
     const weatherInfo = weatherCard.createDiv({ cls: "homepage-weather-info" });
     weatherInfo.createDiv({ cls: "homepage-weather-temp", text: "--°C" });
     weatherInfo.createDiv({ cls: "homepage-weather-desc", text: "加载中..." });
-    const weatherSep = weatherCard.createDiv({ cls: "homepage-weather-separator" });
+    weatherCard.createDiv({ cls: "homepage-weather-separator" });
     const weatherLoc = weatherCard.createDiv({ cls: "homepage-weather-location" });
     weatherLoc.createSpan({ cls: "homepage-weather-location-text", text: "" });
     const locIcon = weatherLoc.createSpan({ cls: "homepage-icon" });
@@ -1752,9 +1772,8 @@ export class HomepageView extends ItemView {
       className: "zendian-homepage",
       render: (container, api) => this.renderAllProjectsPanel(container, projects, api.close),
     })) return;
-    {
-      let currentFilter: ProjectFilter = { ...DEFAULT_FILTER };
-      let searchQuery = "";
+    let currentFilter: ProjectFilter = { ...DEFAULT_FILTER };
+    let searchQuery = "";
 
       const projectTypes = Array.from(new Set(projects.map((project) => project.type))).filter(Boolean);
       const activeProjects = projects.filter((project) => project.status !== "completed" && project.status !== "paused").length;
@@ -1888,48 +1907,6 @@ export class HomepageView extends ItemView {
 
     renderResults();
     setTimeout(() => searchInput.focus(), 50);
-    return;
-    }
-
-    const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay" });
-    const panel = overlay.createDiv({ cls: "hp-all-panel" });
-
-    // 头部
-    const header = panel.createDiv({ cls: "hp-detail-header" });
-    header.createEl("h2", { text: "全部项目", cls: "hp-detail-title" });
-    const closeBtn = header.createDiv({ cls: "hp-detail-close", text: "×" });
-    closeBtn.addEventListener("click", () => overlay.remove());
-    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
-
-    // 按类型分组
-    const grouped = new Map<string, HomepageProject[]>();
-    for (const p of projects) {
-      if (!grouped.has(p.type)) grouped.set(p.type, []);
-      grouped.get(p.type)!.push(p);
-    }
-
-    const body = panel.createDiv({ cls: "hp-all-body" });
-    for (const [type, items] of grouped) {
-      const tagColor = getProjectTypeColor(type);
-      const group = body.createDiv({ cls: "hp-all-group" });
-      const groupHead = group.createDiv({ cls: "hp-all-group-head" });
-      groupHead.createSpan({ cls: "hp-all-group-dot", attr: { style: `background: ${tagColor}` } });
-      groupHead.createSpan({ text: `${type}（${items.length}）` });
-
-      for (const p of items) {
-        const row = group.createDiv({ cls: "hp-all-row" });
-        const iconEl = row.createDiv({ cls: "homepage-project-icon" });
-        this.renderProjectIcon(iconEl, p);
-        row.createSpan({ cls: "hp-all-row-name", text: p.name });
-        this.renderProjectStatusTag(row, p.status);
-        row.createSpan({ cls: "hp-all-row-progress", text: `${p.progress}%` });
-        row.addEventListener("click", () => { overlay.remove(); this.openProjectDetailPanel(p); });
-      }
-    }
-
-    if (projects.length === 0) {
-      body.createDiv({ cls: "homepage-empty-text", text: "暂无项目" });
-    }
   }
 
   // ── 新建项目弹窗 ──────────────────────────────────────────
@@ -2825,6 +2802,7 @@ export class HomepageView extends ItemView {
   // ══════════════════════════════════════════════════════════
 
   private initAnimations(): void {
+    this.animationObserver?.disconnect();
     const sections = this.containerEl.querySelectorAll(".homepage-card");
     const observer = new IntersectionObserver(
       (entries) => {
@@ -2837,6 +2815,7 @@ export class HomepageView extends ItemView {
       },
       { threshold: 0.1 }
     );
+    this.animationObserver = observer;
 
     sections.forEach((section, i) => {
       (section as HTMLElement).style.animationDelay = `${i * 0.08}s`;
@@ -2884,46 +2863,6 @@ export class HomepageView extends ItemView {
       const leaf = this.app.workspace.getLeaf(false);
       await leaf.openFile(file);
     }
-  }
-
-  /** 根据文件路径和任务文本推断标签类型 */
-  private inferTaskTag(filePath: string, text: string): { label: string; type: string } {
-    const pathLower = filePath.toLowerCase();
-    const textLower = text.toLowerCase();
-
-    // 工作相关
-    if (pathLower.includes("工作") || pathLower.includes("work") || pathLower.includes("项目") ||
-        textLower.includes("会议") || textLower.includes("报告") || textLower.includes("需求")) {
-      return { label: "工作", type: "work" };
-    }
-    // 学习相关
-    if (pathLower.includes("学习") || pathLower.includes("study") || pathLower.includes("笔记") ||
-        pathLower.includes("课程") || textLower.includes("学习") || textLower.includes("阅读")) {
-      return { label: "学习", type: "study" };
-    }
-    // 生活相关
-    if (pathLower.includes("生活") || pathLower.includes("life") || pathLower.includes("日常") ||
-        textLower.includes("购物") || textLower.includes("健身") || textLower.includes("旅行")) {
-      return { label: "生活", type: "life" };
-    }
-    // 默认
-    return { label: "待办", type: "default" };
-  }
-
-  /** 格式化待办日期：今天/明天/具体日期 */
-  private formatTodoDate(ts: number): string {
-    const now = new Date();
-    const date = new Date(ts);
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const tomorrowStart = todayStart + 86_400_000;
-    const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-
-    if (targetDay === todayStart) return "今天";
-    if (targetDay === tomorrowStart) return "明天";
-
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${m}-${d}`;
   }
 
   private formatTimestamp(ts: number): string {

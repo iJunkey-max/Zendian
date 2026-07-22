@@ -46,7 +46,6 @@ export class IconPickerModal extends Modal {
   private currentLibrary: string;
   private allIcons: Map<string, string[]> = new Map();
   private onChooseCallback: (iconId: string | null) => void;
-  private librarySelect: HTMLSelectElement | null = null;
   private inputEl: HTMLInputElement | null = null;
   private gridEl: HTMLDivElement | null = null;
   private svgCache = new Map<string, SVGElement>();
@@ -73,7 +72,6 @@ export class IconPickerModal extends Modal {
       select.createEl("option", { value: lib, text: lib });
     }
     select.value = this.currentLibrary;
-    this.librarySelect = select;
 
     const input = nav.createEl("input", {
       cls: "zendian-icon-picker-input",
@@ -180,7 +178,7 @@ export class IconPickerModal extends Modal {
         });
       }
 
-      const label = item.createSpan({
+      item.createSpan({
         cls: "zendian-icon-picker-label",
         text: iconName,
       });

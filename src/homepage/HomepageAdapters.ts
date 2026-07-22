@@ -1,5 +1,5 @@
 import { App, TFile } from "obsidian";
-import type { HomepageBookmarkEntry, HomepageDailyNoteSettings, HomepageDailyNoteSummary } from "./types";
+import type { HomepageBookmarkEntry } from "./types";
 
 type InternalPluginsLike = {
   getPluginById?: (id: string) => unknown;
@@ -16,25 +16,6 @@ function normalizePath(path: string): string {
 
 function getString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function formatDate(date: Date, pattern: string): string {
-  const tokens: Array<[string, string]> = [
-    ["YYYY", `${date.getFullYear()}`],
-    ["MM", `${date.getMonth() + 1}`.padStart(2, "0")],
-    ["DD", `${date.getDate()}`.padStart(2, "0")],
-    ["HH", `${date.getHours()}`.padStart(2, "0")],
-    ["mm", `${date.getMinutes()}`.padStart(2, "0")],
-    ["ss", `${date.getSeconds()}`.padStart(2, "0")],
-    ["M", `${date.getMonth() + 1}`],
-    ["D", `${date.getDate()}`],
-  ];
-
-  let result = pattern || "YYYY-MM-DD";
-  for (const [token, replacement] of tokens) {
-    result = result.replace(new RegExp(token, "g"), replacement);
-  }
-  return result;
 }
 
 function basenameFromPath(path: string): string {
@@ -165,88 +146,5 @@ export class HomepageBookmarksAdapter {
     }
 
     return null;
-  }
-}
-
-export class HomepageDailyNoteAdapter {
-  constructor(private app: App) {}
-
-  async resolveToday(settings: HomepageDailyNoteSettings): Promise<HomepageDailyNoteSummary> {
-    const defaults = this.readCoreDailyNoteDefaults();
-    const folder = normalizePath(settings.folder || defaults.folder || "");
-    const dateFormat = settings.dateFormat || defaults.dateFormat || "YYYY-MM-DD";
-    const templatePath = settings.templatePath || defaults.templatePath || "";
-    const title = formatDate(new Date(), dateFormat);
-    const path = folder ? `${folder}/${title}.md` : `${title}.md`;
-    const exists = await this.fileExists(path);
-
-    return {
-      enabled: settings.enabled,
-      title,
-      path,
-      exists,
-      dateLabel: title,
-      folder,
-      templatePath,
-      source: defaults.source,
-    };
-  }
-
-  async openToday(settings: HomepageDailyNoteSettings): Promise<TFile> {
-    const note = await this.resolveToday(settings);
-    const existing = this.app.vault.getAbstractFileByPath(note.path);
-    if (existing instanceof TFile) {
-      const leaf = this.app.workspace.getLeaf(false);
-      await leaf.openFile(existing);
-      return existing;
-    }
-
-    await this.ensureFolderExists(note.path);
-    const created = await this.app.vault.create(note.path, `# ${note.title}\n`);
-    const leaf = this.app.workspace.getLeaf(false);
-    await leaf.openFile(created);
-    return created;
-  }
-
-  private readCoreDailyNoteDefaults(): Pick<HomepageDailyNoteSummary, "folder" | "templatePath" | "source"> & { dateFormat?: string } {
-    const internalPlugins = (this.app as unknown as { internalPlugins?: InternalPluginsLike }).internalPlugins;
-    const plugin = internalPlugins?.getPluginById?.("daily-notes") ?? internalPlugins?.["daily-notes"];
-    if (!plugin || !isRecord(plugin)) {
-      return { folder: "", templatePath: "", source: "settings" };
-    }
-
-    const candidate = plugin.instance ?? plugin.settings ?? plugin.options ?? plugin;
-    if (!isRecord(candidate)) {
-      return { folder: "", templatePath: "", source: "settings" };
-    }
-
-    return {
-      folder: getString(candidate.folder ?? candidate.targetFolder ?? candidate.defaultFolder),
-      templatePath: getString(candidate.templatePath ?? candidate.template ?? candidate.templateFilePath),
-      dateFormat: getString(candidate.dateFormat ?? candidate.format ?? candidate.dateTemplate),
-      source: "core-plugin",
-    };
-  }
-
-  private async fileExists(path: string): Promise<boolean> {
-    try {
-      return await this.app.vault.adapter.exists(path);
-    } catch {
-      return false;
-    }
-  }
-
-  private async ensureFolderExists(filePath: string): Promise<void> {
-    const parts = filePath.split("/");
-    if (parts.length <= 1) return;
-
-    const folderParts = parts.slice(0, -1);
-    let current = "";
-    for (const part of folderParts) {
-      current = current ? `${current}/${part}` : part;
-      if (!(await this.fileExists(current))) {
-        await this.app.vault.createFolder(current);
-      }
-    }
   }
 }

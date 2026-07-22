@@ -17,7 +17,6 @@ export class CardLayoutModule implements IFeatureModule {
   readonly id = "card-layout";
   readonly name = "卡片布局";
 
-  private ctx!: ModuleContext;
   private classes: ClassTracker;
 
   constructor() {
@@ -25,7 +24,6 @@ export class CardLayoutModule implements IFeatureModule {
   }
 
   async load(ctx: ModuleContext): Promise<void> {
-    this.ctx = ctx;
     this.applyAll(ctx.getSettings().cardLayout);
   }
 

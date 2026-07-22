@@ -22,11 +22,9 @@ export class AutoHideModule implements IFeatureModule {
   readonly id = "auto-hide";
   readonly name = "自动隐藏";
 
-  private ctx!: ModuleContext;
   private appliedClasses = new Set<string>();
 
   async load(ctx: ModuleContext): Promise<void> {
-    this.ctx = ctx;
     this.applyAll(ctx.getSettings().autoHide);
   }
 

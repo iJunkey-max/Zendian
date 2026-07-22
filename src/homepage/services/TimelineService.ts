@@ -12,7 +12,7 @@
 import { App, TFile, TFolder } from "obsidian";
 import { CacheManager } from "./CacheManager";
 import { findProjectHomeFile } from "./ProjectHomeFileResolver";
-import type { TimelineEvent, TimelineData, FileActivity } from "./types";
+import type { TimelineEvent, TimelineData } from "./types";
 import type { ProjectConsoleData } from "../types";
 import type { TaskSyncService } from "../../services/TaskSyncService";
 import { getProjectStatusOption, normalizeProjectStatus } from "../project-status";

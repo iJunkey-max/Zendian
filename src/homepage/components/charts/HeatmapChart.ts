@@ -9,7 +9,7 @@
  */
 
 import type { HeatmapData, HeatmapOptions } from "./types";
-import { formatNumber, debounce } from "./ChartUtils";
+import { debounce } from "./ChartUtils";
 
 type ResolvedHeatmapOptions = Omit<Required<HeatmapOptions>, "padding"> & {
   padding: Required<NonNullable<HeatmapOptions["padding"]>>;
@@ -103,7 +103,7 @@ export class HeatmapChart {
     this.svg.innerHTML = "";
 
     // 计算布局
-    const { cellSize, cellGap, padding } = this.options;
+    const { cellSize, cellGap } = this.options;
     const totalCellSize = cellSize + cellGap;
 
     // 按周分组数据

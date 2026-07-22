@@ -143,7 +143,7 @@ export class ActivityLogService {
   }
 
   /** 记录活动 */
-  logActivity(type: ActivityType, filePath: string, metadata?: Record<string, any>): void {
+  logActivity(type: ActivityType, _filePath: string, _metadata?: Record<string, any>): void {
     const today = this.getToday();
 
     // 确保今日记录存在

@@ -23,26 +23,6 @@ export interface HomepageBookmarkEntry {
   level: number;
 }
 
-/** 每日笔记设置 */
-export interface HomepageDailyNoteSettings {
-  enabled: boolean;
-  folder: string;
-  dateFormat: string;
-  templatePath: string;
-}
-
-/** 每日笔记解析结果 */
-export interface HomepageDailyNoteSummary {
-  enabled: boolean;
-  title: string;
-  path: string;
-  exists: boolean;
-  dateLabel: string;
-  folder: string;
-  templatePath: string;
-  source: string;
-}
-
 // ============================================================
 // 主页新增业务类型
 // ============================================================
@@ -116,15 +96,6 @@ export interface HomepageWeatherData {
   iconColorDark: string;
   location: string;
   updatedAt: number;
-}
-
-/** 每日笔记分类配置 */
-export interface DailyNoteCategory {
-  id: string;
-  label: string;
-  icon: string;
-  folder: string;
-  color: string;
 }
 
 /** 最近笔记摘要 */

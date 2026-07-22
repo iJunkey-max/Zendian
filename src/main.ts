@@ -252,8 +252,8 @@ export default class ZENdianPlugin extends Plugin {
     void Promise.all([
       this.settingsManager?.flush(),
       this.activityLogService?.flush(),
+      destroyServiceManager(),
     ]).catch((error) => console.error("[ZENdian] 卸载前保存失败", error));
-    destroyServiceManager();
     this.moduleManager?.unloadAll();
     this.events?.clear();
   }

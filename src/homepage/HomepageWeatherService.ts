@@ -86,6 +86,7 @@ interface GeoResult {
 }
 
 interface CacheEntry {
+  location: string;
   data: HomepageWeatherData;
   timestamp: number;
 }
@@ -99,8 +100,13 @@ export class HomepageWeatherService {
    * @param location 城市名或 "纬度,经度"
    */
   async getWeather(location: string): Promise<HomepageWeatherData | null> {
+    const cacheKey = location.trim().toLocaleLowerCase();
     // 检查缓存
-    if (this.cache && Date.now() - this.cache.timestamp < this.CACHE_TTL) {
+    if (
+      this.cache
+      && this.cache.location === cacheKey
+      && Date.now() - this.cache.timestamp < this.CACHE_TTL
+    ) {
       return this.cache.data;
     }
 
@@ -136,7 +142,7 @@ export class HomepageWeatherService {
         updatedAt: Date.now(),
       };
 
-      this.cache = { data, timestamp: Date.now() };
+      this.cache = { location: cacheKey, data, timestamp: Date.now() };
       return data;
     } catch (e) {
       console.error("[ZENdian] Weather fetch error:", e);

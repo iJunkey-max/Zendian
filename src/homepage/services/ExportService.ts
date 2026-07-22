@@ -8,8 +8,8 @@
  * - 导出时间轴（Markdown）
  */
 
-import { App, TFile, TFolder, Notice } from "obsidian";
-import type { ProjectConsoleData, ProjectConsoleTask } from "../types";
+import { App, Notice } from "obsidian";
+import type { ProjectConsoleData } from "../types";
 import { getServiceManager } from "./index";
 import type { ServiceManager } from "./ServiceManager";
 
@@ -56,7 +56,7 @@ export class ExportService {
       case "json":
         return this.generateJsonReport(projectPath, data, options);
       case "csv":
-        return this.generateCsvReport(projectPath, data, options);
+        return this.generateCsvReport(data, options);
       default:
         throw new Error(`不支持的导出格式: ${options.format}`);
     }
@@ -255,7 +255,6 @@ export class ExportService {
   // ============================================================
 
   private async generateCsvReport(
-    projectPath: string,
     data: ProjectConsoleData,
     options: ExportOptions
   ): Promise<string> {

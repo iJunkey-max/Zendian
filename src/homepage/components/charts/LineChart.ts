@@ -14,7 +14,6 @@ import {
   calculatePoints,
   generateLinePath,
   generateFillPath,
-  adjustOpacity,
   formatNumber,
   debounce,
 } from "./ChartUtils";
@@ -121,7 +120,6 @@ export class LineChart {
 
   private renderGrid(): void {
     const { width, height, padding } = this.options;
-    const plotWidth = width - padding.left - padding.right;
     const plotHeight = height - padding.top - padding.bottom;
 
     const gridGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -158,9 +156,6 @@ export class LineChart {
 
   private renderData(): void {
     const { width, height, padding } = this.options;
-    const plotWidth = width - padding.left - padding.right;
-    const plotHeight = height - padding.top - padding.bottom;
-
     this.points = [];
 
     for (const dataset of this.data.datasets) {

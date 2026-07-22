@@ -4,7 +4,6 @@ import { Events } from "../core/event-bus";
 import type { SettingsManager } from "../core/settings-manager";
 import type {
   ActiveFocusSession,
-  FocusSegment,
   FocusSessionRecord,
 } from "../services/ActivityLogService";
 import type { ActivityLogService } from "../services/ActivityLogService";

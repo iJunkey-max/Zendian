@@ -101,10 +101,6 @@ function select(id: string, titleZh: string, options: { label: string; value: st
   return { id, titleZh, descZh, type: "select", get, set: (s, v) => set(s, v), options };
 }
 
-function num(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, opts?: { min?: number; max?: number; step?: number; format?: string }, descZh?: string): SettingDef {
-  return { id, titleZh, descZh, type: "number", get, set: (s, v) => set(s, v), ...opts };
-}
-
 function slider(id: string, titleZh: string, get: (s: PluginSettings) => number, set: (s: PluginSettings, v: number) => any, min: number, max: number, step: number, descZh?: string): SettingDef {
   return { id, titleZh, descZh, type: "number-slider", get, set: (s, v) => set(s, v), min, max, step };
 }

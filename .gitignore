@@ -1,6 +1,9 @@
 node_modules/
 .pnpm-store/
 dist/
+.claude/
+app_extracted/
+app.css
 
 *.asar
 *.log
