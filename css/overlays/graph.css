@@ -1,0 +1,200 @@
+/* ============================================================
+   ZENdian official Graph View enhancement
+   Visual-only: native Obsidian data, renderer and interaction stay intact.
+   ============================================================ */
+
+.zendian-graph {
+  --zd-graph-nebula: 0.55;
+  --zd-graph-h: var(--accent-h, 350);
+  --zd-graph-surface: hsl(var(--zd-graph-h) 20% 99% / 82%);
+  --zd-graph-border: hsl(var(--zd-graph-h) 24% 48% / 15%);
+  position: relative;
+  isolation: isolate;
+}
+
+.theme-dark .zendian-graph {
+  --zd-graph-surface: hsl(var(--zd-graph-h) 18% 11% / 80%);
+  --zd-graph-border: hsl(var(--zd-graph-h) 38% 78% / 13%);
+}
+
+.zendian-graph .view-content {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 62% 54% at 39% 42%, hsl(var(--zd-graph-h) 58% 61% / calc(var(--zd-graph-nebula) * 0.18)), transparent 72%),
+    radial-gradient(ellipse 48% 44% at 72% 62%, hsl(calc(var(--zd-graph-h) + 42) 42% 66% / calc(var(--zd-graph-nebula) * 0.13)), transparent 73%),
+    var(--background-primary);
+  contain: paint;
+}
+
+.theme-dark .zendian-graph .view-content {
+  background:
+    radial-gradient(ellipse 62% 54% at 39% 42%, hsl(var(--zd-graph-h) 58% 52% / calc(var(--zd-graph-nebula) * 0.19)), transparent 72%),
+    radial-gradient(ellipse 48% 44% at 72% 62%, hsl(calc(var(--zd-graph-h) + 42) 42% 48% / calc(var(--zd-graph-nebula) * 0.14)), transparent 73%),
+    var(--background-primary);
+}
+
+.zendian-graph .view-content::before,
+.zendian-graph .view-content::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: -22%;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+}
+
+.zendian-graph .view-content::before {
+  border-radius: 46% 54% 63% 37% / 39% 45% 55% 61%;
+  opacity: calc(var(--zd-graph-nebula) * 1.05);
+  background:
+    radial-gradient(ellipse at 33% 46%, hsl(var(--zd-graph-h) 64% 58% / 36%), transparent 32%),
+    radial-gradient(ellipse at 58% 42%, hsl(calc(var(--zd-graph-h) + 42) 46% 63% / 26%), transparent 34%),
+    radial-gradient(ellipse at 67% 67%, hsl(calc(var(--zd-graph-h) - 36) 42% 61% / 22%), transparent 31%),
+    conic-gradient(from 126deg at 52% 51%, transparent 0 16%, hsl(var(--zd-graph-h) 58% 57% / 22%) 24%, transparent 38% 62%, hsl(calc(var(--zd-graph-h) + 42) 40% 61% / 18%) 72%, transparent 86%);
+  -webkit-mask-image: var(--zd-graph-nebula-texture);
+  mask-image: var(--zd-graph-nebula-texture);
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: min(112vw, 1420px) min(112vw, 1420px);
+  mask-size: min(112vw, 1420px) min(112vw, 1420px);
+  filter: blur(8px) saturate(1.12) contrast(1.04);
+  mix-blend-mode: multiply;
+}
+
+.theme-dark .zendian-graph .view-content::before {
+  opacity: calc(var(--zd-graph-nebula) * 1.08);
+  filter: blur(14px) saturate(0.98);
+  mix-blend-mode: screen;
+}
+
+.zendian-graph .view-content::after {
+  opacity: 0;
+  background-image:
+    radial-gradient(circle at 23px 31px, hsl(var(--zd-graph-h) 54% 38% / 68%) 0 0.85px, transparent 1.6px),
+    radial-gradient(circle at 77px 54px, hsl(var(--zd-graph-h) 38% 48% / 58%) 0 0.95px, transparent 1.7px),
+    radial-gradient(circle at 51px 104px, hsl(var(--zd-graph-h) 58% 42% / 52%) 0 0.75px, transparent 1.5px);
+  background-size: 149px 127px, 229px 197px, 337px 281px;
+}
+
+.zendian-graph.is-zendian-graph-starfield .view-content::after {
+  opacity: calc(var(--zd-graph-nebula) * 0.68);
+}
+
+.theme-dark .zendian-graph.is-zendian-graph-starfield .view-content::after {
+  opacity: calc(var(--zd-graph-nebula) * 0.42);
+}
+
+.zendian-graph .graph-view,
+.zendian-graph .graph-view > canvas,
+.zendian-graph canvas {
+  position: relative;
+  z-index: 1;
+}
+
+.zendian-graph .graph-controls,
+.zendian-graph .graph-controls-button.mod-close,
+.zendian-graph .graph-controls-button.mod-open {
+  z-index: 3;
+}
+
+.zendian-graph .graph-controls:not(.is-close) {
+  width: 248px;
+  padding: 12px;
+  border: 1px solid var(--zd-graph-border);
+  border-radius: 12px;
+  background: var(--zd-graph-surface);
+  box-shadow: 0 16px 42px rgb(34 17 23 / 10%);
+  backdrop-filter: blur(12px) saturate(1.05);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.zendian-graph .graph-controls.is-close {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  padding: 5px;
+  overflow: visible;
+  border: 1px solid var(--zd-graph-border);
+  border-radius: 12px;
+  background: var(--zd-graph-surface);
+  box-shadow: 0 8px 24px rgb(34 17 23 / 8%);
+  backdrop-filter: blur(10px) saturate(1.04);
+}
+
+.zendian-graph .graph-controls.is-close .graph-controls-button {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  margin: 0;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.zendian-graph .graph-controls.is-close .graph-controls-button + .graph-controls-button {
+  margin-top: 2px;
+}
+
+.zendian-graph.is-zendian-graph-compact .graph-controls:not(.is-close) {
+  --input-height: 32px;
+  gap: 6px;
+}
+
+.zendian-graph.is-zendian-graph-compact .graph-control-section {
+  margin-bottom: 8px;
+}
+
+.zendian-graph .graph-controls input:focus-visible,
+.zendian-graph .graph-controls button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.zendian-graph.is-zendian-graph-local-boost canvas {
+  opacity: 1;
+}
+
+.zendian-graph.is-zendian-graph-motion .view-content::before {
+  animation: zd-official-graph-drift-a var(--zd-graph-drift-a, 64s) ease-in-out infinite alternate;
+  will-change: transform, border-radius;
+}
+
+.zendian-graph.is-zendian-graph-motion .view-content::after {
+  animation: zd-official-graph-drift-b var(--zd-graph-drift-b, 96s) linear infinite alternate;
+  will-change: transform;
+}
+
+@keyframes zd-official-graph-drift-a {
+  0% { transform: translate3d(-5%, -4%, 0) rotate(-5deg) scale(0.96, 1.07); border-radius: 46% 54% 63% 37% / 39% 45% 55% 61%; }
+  52% { transform: translate3d(5%, 3%, 0) rotate(4deg) scale(1.07, 0.94); border-radius: 61% 39% 42% 58% / 54% 63% 37% 46%; }
+  100% { transform: translate3d(10%, 8%, 0) rotate(-1deg) scale(0.98, 1.1); border-radius: 37% 63% 55% 45% / 62% 41% 59% 38%; }
+}
+
+@keyframes zd-official-graph-drift-b {
+  0% { transform: translate3d(-2%, 0, 0); }
+  100% { transform: translate3d(4%, -3%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zendian-graph .view-content::before,
+  .zendian-graph .view-content::after {
+    animation: none !important;
+    will-change: auto !important;
+  }
+}
+
+body.is-mobile .zendian-graph .view-content::before,
+body.is-mobile .zendian-graph .view-content::after,
+body.is-low-performance .zendian-graph .view-content::before,
+body.is-low-performance .zendian-graph .view-content::after {
+  animation: none !important;
+  will-change: auto !important;
+}
+
+body.is-mobile .zendian-graph .graph-controls,
+body.is-low-performance .zendian-graph .graph-controls {
+  backdrop-filter: none;
+}

@@ -42,6 +42,7 @@ import { FolderCardsModule } from "./modules/rainbow-folder.module";
 import { NewTabModule } from "./modules/new-tab.module";
 import { IconSystemModule } from "./modules/icon-system.module";
 import { BannerModule } from "./modules/banner.module";
+import { GraphModule } from "./modules/graph.module";
 
 // Homepage
 import {
@@ -133,6 +134,7 @@ export default class ZENdianPlugin extends Plugin {
     this.moduleManager.register(new NewTabModule());
     this.moduleManager.register(new IconSystemModule());
     this.moduleManager.register(new BannerModule());
+    this.moduleManager.register(new GraphModule());
 
     // 3. 加载所有模块
     await this.moduleManager.loadAll();
@@ -273,4 +275,5 @@ export default class ZENdianPlugin extends Plugin {
     leaf.setViewState({ type: VIEW_TYPE_HOMEPAGE, active: true });
     workspace.revealLeaf(leaf);
   }
+
 }

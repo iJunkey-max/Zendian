@@ -16,6 +16,7 @@ const CSS_MERGE_ORDER = [
   "css/design-system.css",           // 设计系统（基础样式）
   "css/base/border-theme.css",
   "css/overlays/phycat-overlay.css",
+  "css/overlays/graph.css",
   "css/overlays/banner.css",
   "css/overlays/focus-clock.css",
   "css/overlays/homepage.css",

@@ -29,6 +29,14 @@ const requiredPanelIds = [
   "checkbox-radius",
   "embed-border-radius",
   "homepage-project-archive",
+  "graph-view-enabled",
+  "graph-nebula-intensity",
+  "graph-motion-enabled",
+  "graph-motion-speed",
+  "graph-starfield-enabled",
+  "graph-local-boost",
+  "graph-compact-controls",
+  "graph-reset-defaults",
 ];
 
 const failures = [];

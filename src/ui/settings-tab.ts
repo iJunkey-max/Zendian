@@ -67,7 +67,14 @@ interface TextDef extends SettingBase {
   placeholder?: string;
 }
 
-type SettingDef = ToggleDef | SelectDef | NumberDef | SliderDef | TextDef;
+interface ButtonDef extends SettingBase {
+  type: "button";
+  buttonText: string;
+  get: (s: PluginSettings) => boolean;
+  set: (s: PluginSettings, val: boolean) => Partial<PluginSettings>;
+}
+
+type SettingDef = ToggleDef | SelectDef | NumberDef | SliderDef | TextDef | ButtonDef;
 
 interface SectionDef {
   id: string;
@@ -79,6 +86,7 @@ interface SectionDef {
   projectCategories?: boolean;
   projectSubfolders?: boolean;
   comingSoon?: boolean;
+  hideGroupReset?: boolean;
 }
 
 interface TabDef {
@@ -119,6 +127,10 @@ function advanced(def: SettingDef): SettingDef {
 
 function when(def: SettingDef, visible: (settings: PluginSettings) => boolean): SettingDef {
   return { ...def, visible };
+}
+
+function button(id: string, titleZh: string, buttonText: string, set: (s: PluginSettings) => Partial<PluginSettings>, descZh?: string): SettingDef {
+  return { id, titleZh, descZh, type: "button", buttonText, get: () => true, set: (s) => set(s) };
 }
 
 // ============================================================
@@ -233,6 +245,20 @@ const SECTION_SOURCE: TabDef[] = [
             { label: "居中", value: "center" }, { label: "左侧", value: "left" }, { label: "右侧", value: "right" },
           ], (s) => s.cardLayout.canvasMenu, (s, v) => ({ cardLayout: { ...s.cardLayout, canvasMenu: v as any } }), "设置白板卡片右键菜单的弹出位置"),
           toggle("media-embed-card-border-off", "移除媒体卡片边框", (s) => s.cardLayout.mediaEmbedBorderOff, (s, v) => ({ cardLayout: { ...s.cardLayout, mediaEmbedBorderOff: v } }), "移除图片、视频等媒体嵌入卡片的边框和阴影"),
+        ],
+      },
+      {
+        id: "graph-view", title: "Graph View", titleZh: "关系图谱",
+        hideGroupReset: true,
+        settings: [
+          toggle("graph-view-enabled", "关系图谱美化", (s) => s.graph.enabled, (s, v) => ({ graph: { ...s.graph, enabled: v } }), "美化 Obsidian 官方全局图谱与局部图谱，不替换其数据、布局或交互"),
+          when(slider("graph-nebula-intensity", "星云浓度", (s) => s.graph.nebulaIntensity, (s, v) => ({ graph: { ...s.graph, nebulaIntensity: v } }), 0, 1, 0.05, "调整官方图谱底层星云氛围，不改变节点和连线布局"), (s) => s.graph.enabled),
+          when(toggle("graph-motion-enabled", "星云持续漂移", (s) => s.graph.motionEnabled, (s, v) => ({ graph: { ...s.graph, motionEnabled: v } }), "桌面端缓慢漂移；移动端与减少动态效果模式始终静止"), (s) => s.graph.enabled),
+          when(slider("graph-motion-speed", "漂移速度", (s) => s.graph.motionSpeed, (s, v) => ({ graph: { ...s.graph, motionSpeed: v } }), 0.5, 1.5, 0.05, "调节三层星云的漂移速度"), (s) => s.graph.enabled && s.graph.motionEnabled),
+          when(toggle("graph-starfield-enabled", "显示星尘", (s) => s.graph.starfieldEnabled, (s, v) => ({ graph: { ...s.graph, starfieldEnabled: v } }), "显示低密度、不闪烁的星尘层"), (s) => s.graph.enabled),
+          when(toggle("graph-local-boost", "局部图谱增强", (s) => s.graph.localGraphBoost, (s, v) => ({ graph: { ...s.graph, localGraphBoost: v } }), "提高局部图谱文字与连线对比度"), (s) => s.graph.enabled),
+          when(toggle("graph-compact-controls", "紧凑控制面板", (s) => s.graph.compactControls, (s, v) => ({ graph: { ...s.graph, compactControls: v } }), "收紧官方图谱控制面板的尺寸与间距"), (s) => s.graph.enabled),
+          when(button("graph-reset-defaults", "恢复默认", "恢复", () => ({ graph: { ...DEFAULT_SETTINGS.graph } }), "恢复关系图谱的全部默认设置"), (s) => s.graph.enabled),
         ],
       },
       {
@@ -570,7 +596,7 @@ function sections(...ids: string[]): SectionDef[] {
 
 const MENU_CONFIG: TabDef[] = [
   { id: "zendian-about", name: "关于", icon: "info", sections: [], isAbout: true },
-  { id: "workspace", name: "工作区", icon: "layout-dashboard", sections: sections("card-layout", "tabs", "auto-hide", "ui-details") },
+  { id: "workspace", name: "工作区", icon: "layout-dashboard", sections: sections("card-layout", "graph-view", "tabs", "auto-hide", "ui-details") },
   { id: "reading", name: "编辑与阅读", icon: "book-open-text", sections: sections("focus-mode", "hover-indicator", "page-paragraph", "text-details") },
   { id: "content", name: "标题与内容", icon: "type", sections: sections("heading-system", "code-blockquote", "callout-embed", "list-table", "images", "banner") },
   { id: "files", name: "文件与图标", icon: "folder-tree", sections: sections("file-tree-basic", "file-tree-cards", "icon-system-main", "sidebar") },
@@ -964,7 +990,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
     const titleWrap = heading.createDiv();
     titleWrap.createEl("h3", { text: section.titleZh });
     if (context) titleWrap.createEl("span", { text: context, cls: "zendian-section-context" });
-    if (defs?.length) {
+    if (defs?.length && !section.hideGroupReset) {
       const reset = heading.createEl("button", { cls: "zendian-card-reset", text: "恢复本组" });
       reset.addEventListener("click", async () => {
         for (const def of defs) {
@@ -1696,6 +1722,13 @@ export class ZENdianSettingTab extends PluginSettingTab {
           });
         });
         break;
+
+      case "button":
+        row.addButton((control) => {
+          control.setButtonText(def.buttonText);
+          control.onClick(async () => update(true, true));
+        });
+        return;
     }
 
     row.addExtraButton((button) => button

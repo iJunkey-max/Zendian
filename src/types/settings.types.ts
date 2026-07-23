@@ -224,6 +224,17 @@ export interface CanvasSettings {
   immersive: boolean;
 }
 
+/** Obsidian 官方关系图谱美化设置 */
+export interface GraphSettings {
+  enabled: boolean;
+  nebulaIntensity: number;
+  motionEnabled: boolean;
+  motionSpeed: number;
+  starfieldEnabled: boolean;
+  localGraphBoost: boolean;
+  compactControls: boolean;
+}
+
 /** 滚动条模块设置 */
 export interface ScrollbarSettings {
   hide: boolean;
@@ -354,6 +365,7 @@ export interface PluginSettings {
   folderCards: FolderCardSettings;
   newTab: NewTabSettings;
   canvas: CanvasSettings;
+  graph: GraphSettings;
   scrollbar: ScrollbarSettings;
   outline: OutlineSettings;
   mobile: MobileSettings;
@@ -557,6 +569,15 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   },
   canvas: {
     immersive: false,
+  },
+  graph: {
+    enabled: true,
+    nebulaIntensity: 0.55,
+    motionEnabled: true,
+    motionSpeed: 0.75,
+    starfieldEnabled: true,
+    localGraphBoost: true,
+    compactControls: true,
   },
   scrollbar: {
     hide: false,
