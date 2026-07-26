@@ -351,7 +351,7 @@ const SECTION_SOURCE: TabDef[] = [
           toggle("border-focus-mode", "启用专注模式", (s) => s.editorEnhance.focusMode, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusMode: v } }), "降低非编辑行的透明度，减少视觉干扰，让注意力集中在当前正在编辑的段落。配合下方滑块可调节透明度强度"),
           { ...slider("line-normal-opacity", "普通行透明度", (s) => s.editorEnhance.focusModeOpacity, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeOpacity: v } }), 0.05, 1, 0.05, "降低非当前行的透明度，让注意力集中在正在编辑的段落"), visible: (s) => s.editorEnhance.focusMode },
           {
-            ...toggle("focus-mode-typewriter", "打字机滚动", (s) => s.editorEnhance.focusModeTypewriter, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeTypewriter: v } }), "输入时光标始终保持在屏幕垂直中央，减少视线跳动，适合长时间沉浸式写作"),
+            ...toggle("focus-mode-typewriter", "打字机滚动", (s) => s.editorEnhance.focusModeTypewriter, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusModeTypewriter: v } }), "编辑时自动使用源码模式，并将当前输入位置固定在视口约 55% 处；换行时周围内容轻柔滑动。手动滚动或切换到实时预览时会暂时暂停"),
             visible: (s) => s.editorEnhance.focusMode,
           },
           toggle("focus-clock-enabled", "启用专注时钟", (s) => s.editorEnhance.focusClockEnabled, (s, v) => ({ editorEnhance: { ...s.editorEnhance, focusClockEnabled: v } }), "在右下角状态栏显示专注时钟入口；专注进行时仅显示计时和图标控制"),

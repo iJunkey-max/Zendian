@@ -3376,33 +3376,100 @@ body {
     --line-active-bg: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
 }
 
-/* 底部留白：允许最后一行滚动到 75% 视口位置 */
-.border-focus-mode .markdown-source-view .cm-scroller {
-    padding-bottom: 75vh;
-}
-
 /* 非活动行：降噪层 */
 .border-focus-mode .cm-lineWrapping > .cm-line {
     opacity: var(--line-normal-opacity);
     filter: blur(0.5px);
     transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
-                filter 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
-                transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+                filter 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 /* 活动行：毛玻璃高亮层 */
 .border-focus-mode .cm-lineWrapping > .cm-line.cm-active {
     opacity: 1;
     filter: blur(0px);
-    transform: scale(1.02);
-    font-weight: 500;
     background-color: var(--line-active-bg);
     border-radius: 8px;
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05),
                 0 2px 8px rgba(0, 0, 0, 0.08);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    padding: 4px;
+}
+
+/* 打字机模式：真实光标固定，非活动内容消费短暂的视觉位移 */
+.cm-editor[data-zendian-typewriter-active] {
+    --zendian-typewriter-content-offset: 0px;
+    --zendian-typewriter-top-spacer: 0px;
+    --zendian-typewriter-bottom-spacer: 0px;
+}
+
+.cm-editor[data-zendian-typewriter-active] .cm-lineWrapping > .cm-line {
+    filter: none !important;
+    transition: opacity 0.12s cubic-bezier(0.2, 0.7, 0.2, 1),
+                background-color 0.12s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.cm-editor[data-zendian-typewriter-active] .cm-line:not(.cm-active) {
+    transform: translateY(var(--zendian-typewriter-content-offset)) !important;
+    will-change: transform;
+}
+
+.cm-editor[data-zendian-typewriter-active] .cm-line.cm-active {
+    transform: none !important;
+    background:
+        linear-gradient(
+            90deg,
+            color-mix(
+                in srgb,
+                var(--interactive-accent) 13%,
+                color-mix(in srgb, var(--background-primary) 76%, transparent)
+            ) 0%,
+            color-mix(
+                in srgb,
+                var(--interactive-accent) 10%,
+                color-mix(in srgb, var(--background-primary) 70%, transparent)
+            ) 62%,
+            color-mix(
+                in srgb,
+                var(--interactive-accent) 5%,
+                color-mix(in srgb, var(--background-primary) 48%, transparent)
+            ) 86%,
+            transparent 100%
+        ) !important;
+    border-radius: 8px !important;
+    box-shadow:
+        inset 0 1px 0 color-mix(in srgb, white 34%, transparent),
+        0 4px 14px rgba(35, 24, 32, 0.065) !important;
+    backdrop-filter: blur(7px) saturate(1.06);
+    -webkit-backdrop-filter: blur(7px) saturate(1.06);
+}
+
+.theme-dark .cm-editor[data-zendian-typewriter-active] .cm-line.cm-active {
+    box-shadow:
+        inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
+        0 5px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+.zendian-typewriter-spacer {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    pointer-events: none;
+    user-select: none;
+}
+
+.zendian-typewriter-spacer--top {
+    height: var(--zendian-typewriter-top-spacer);
+}
+
+.zendian-typewriter-spacer--bottom {
+    height: var(--zendian-typewriter-bottom-spacer);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cm-editor[data-zendian-typewriter-active] .cm-lineWrapping > .cm-line {
+        transition: none !important;
+    }
 }
 
 /* 异常处理：表格组件 */
@@ -4337,6 +4404,10 @@ body {
 
 .markdown-embed {
     border-radius: var(--embed-border-radius);
+}
+
+.markdown-embed .markdown-embed-title {
+    display: none;
 }
 
 /* ===== image ====== */

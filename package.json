@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "check:settings": "node scripts/check-settings-contract.mjs",
     "check:safety": "node scripts/check-safety-contract.mjs",
-    "check": "npm run typecheck && npm run check:settings && npm run check:safety"
+    "check:css": "node scripts/check-css-contract.mjs",
+    "check:typewriter": "node scripts/check-typewriter-contract.mjs",
+    "check": "npm run typecheck && npm run check:settings && npm run check:safety && npm run check:css && npm run check:typewriter"
   },
   "keywords": [
     "obsidian",

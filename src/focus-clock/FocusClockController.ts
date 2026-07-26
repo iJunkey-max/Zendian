@@ -711,28 +711,13 @@ export class FocusClockController {
 
   private applyTemporaryFocusMode(active: boolean): void {
     const settings = this.settingsManager.getSettings().editorEnhance;
-    if (active) {
-      const shouldEnableTemporarily = settings.focusClockAutoEnableFocusMode && !settings.focusMode;
-      if (shouldEnableTemporarily) {
-        this.temporarilyEnabledFocusMode = true;
-        document.body.addClass("border-focus-mode");
-        document.body.toggleClass("focus-mode-typewriter", settings.focusModeTypewriter);
-      } else if (this.temporarilyEnabledFocusMode) {
-        if (!settings.focusMode) {
-          document.body.removeClass("border-focus-mode");
-          document.body.removeClass("focus-mode-typewriter");
-        }
-        this.temporarilyEnabledFocusMode = false;
-      }
-      return;
-    }
-    if (this.temporarilyEnabledFocusMode) {
-      if (!settings.focusMode) {
-        document.body.removeClass("border-focus-mode");
-        document.body.removeClass("focus-mode-typewriter");
-      }
-      this.temporarilyEnabledFocusMode = false;
-    }
+    const shouldEnableTemporarily =
+      active &&
+      settings.focusClockAutoEnableFocusMode &&
+      !settings.focusMode;
+    if (shouldEnableTemporarily === this.temporarilyEnabledFocusMode) return;
+    this.temporarilyEnabledFocusMode = shouldEnableTemporarily;
+    this.events.emit(Events.FOCUS_MODE_TEMPORARY_CHANGED, shouldEnableTemporarily);
   }
 
   private openEndConfirmation(): void {

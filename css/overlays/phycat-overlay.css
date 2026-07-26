@@ -2275,6 +2275,15 @@ body.theme-light .markdown-source-view.mod-cm6 .cm-strikethrough:hover {
   box-shadow: 0 0 15px var(--primary-color) !important
 }
 
+/*
+ * Obsidian keeps a metadata container in transcluded notes, including when the
+ * embedded note has no visible properties. The rule above must not force that
+ * internal container back into view.
+ */
+.workspace-leaf-content[data-type="markdown"] .markdown-embed .metadata-container {
+  display: none !important
+}
+
 .metadata-properties-heading {
   display: none !important
 }

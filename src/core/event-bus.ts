@@ -42,4 +42,5 @@ export const Events = {
   SETTINGS_CHANGED: "settings:changed",
   THEME_CHANGED: "theme:changed",
   ACTIVITY_STATS_CHANGED: "activity:stats-changed",
+  FOCUS_MODE_TEMPORARY_CHANGED: "focus-mode:temporary-changed",
 } as const;
