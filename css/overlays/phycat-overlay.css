@@ -11,9 +11,9 @@ body {
   --blockquote-line-height: 1.6;
   --blockquote-padding: 0.75em 1em 0.75em 2.5em;
   --blockquote-margin: 0.75em 0;
-  --table-line-height: 1.4;
-  --table-cell-padding: 7px 10px;
-  --table-margin: 0.8em 0;
+  --table-line-height: 1.2;
+  --table-cell-padding: 3px 8px;
+  --table-margin: 0.65em 0;
   --letter-spacing: 0.2px;
   --code-line-height: 1.5;
   --code-block-padding-x: 14px;
@@ -23,7 +23,7 @@ body {
   --code-radius: 8px;
   --checkbox-size: 1.25rem;
   --checkmark-color: #ffffff;
-  --table-border-radius: 8px;
+  --table-border-radius: 6px;
   --text-faint: color-mix(in srgb, var(--primary-color), transparent 20%);
   --link-external-decoration-hover: none;
   --h1-line-height: 1.2;
@@ -2354,7 +2354,9 @@ sup a.footnote-ref {
 .markdown-preview-view table {
   border-collapse: separate !important;
   border-spacing: 0 !important;
-  width: 100%;
+  width: fit-content !important;
+  min-width: min(100%, 34rem);
+  max-width: 100%;
   margin: var(--table-margin);
   border: 1px solid var(--border-color);
   border-radius: var(--table-border-radius);
@@ -2362,6 +2364,7 @@ sup a.footnote-ref {
   background-color: var(--table-bg);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
+  font-size: 0.94em;
   line-height: var(--table-line-height)
 }
 
@@ -2373,7 +2376,10 @@ sup a.footnote-ref {
   border-left: none !important;
   border-right: 1px solid var(--table-border-inner);
   border-bottom: 1px solid var(--table-border-inner);
-  transition: all 0.2s ease
+  height: auto !important;
+  min-height: 0;
+  vertical-align: middle;
+  transition: background-color 0.14s ease, color 0.14s ease, box-shadow 0.14s ease
 }
 
 .markdown-preview-view table th:last-child,
@@ -2388,7 +2394,7 @@ sup a.footnote-ref {
 .markdown-preview-view table th {
   background-color: var(--table-th-bg) !important;
   color: var(--primary-color);
-  font-weight: bold;
+  font-weight: 650;
   white-space: nowrap;
   border-right: 1px solid var(--table-th-border) !important;
   border-bottom: 1px solid var(--table-th-border) !important
@@ -2439,20 +2445,25 @@ sup a.footnote-ref {
   border: 1px solid var(--border-color) !important;
   border-radius: var(--table-border-radius);
   border-collapse: separate !important;
-  margin-top: 1em;
-  margin-bottom: 1em;
-  width: 100%
+  margin-top: 0.65em;
+  margin-bottom: 0.65em;
+  width: fit-content !important;
+  min-width: min(100%, 34rem);
+  max-width: 100%;
+  font-size: 0.94em;
+  line-height: var(--table-line-height)
 }
 
 .markdown-source-view.mod-cm6 .cm-table-widget thead th {
   background-color: var(--table-th-bg) !important;
   color: var(--primary-color) !important;
-  font-weight: bold;
+  font-weight: 650;
   border-bottom: 1px solid var(--table-th-border) !important;
   border-right: 1px solid var(--table-th-border) !important;
   border-top: none !important;
   border-left: none !important;
-  position: relative
+  position: relative;
+  white-space: nowrap
 }
 
 .markdown-source-view.mod-cm6 .cm-table-widget tbody td {
@@ -2465,9 +2476,10 @@ sup a.footnote-ref {
 }
 
 .markdown-source-view.mod-cm6 .cm-table-widget .table-cell-wrapper {
-  padding: 10px 15px !important;
+  padding: var(--table-cell-padding) !important;
   display: block;
-  min-height: 100%
+  min-height: 0 !important;
+  line-height: var(--table-line-height)
 }
 
 .markdown-source-view.mod-cm6 .cm-table-widget th:last-child,

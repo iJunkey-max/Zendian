@@ -36,4 +36,25 @@ if (
   process.exit(1);
 }
 
+if (
+  !/--table-line-height:\s*1\.2;/.test(css) ||
+  !/--table-cell-padding:\s*3px 8px;/.test(css) ||
+  !/min-width:\s*min\(100%, 34rem\);/.test(css) ||
+  !/\.markdown-preview-view table\s*\{[\s\S]*?width:\s*fit-content !important;/.test(
+    css,
+  ) ||
+  !/\.table-cell-wrapper\s*\{\s*padding:\s*var\(--table-cell-padding\) !important;[\s\S]*?min-height:\s*0 !important;/.test(
+    css,
+  ) ||
+  !/body :is\(\.markdown-rendered, \.markdown-source-view\.mod-cm6\.is-live-preview\) table\s*\{\s*width:\s*fit-content !important;/.test(
+    borderCss,
+  ) ||
+  !/\.table-width-customized[\s\S]*?>div:has\(>table\)[\s\S]*?width:\s*var\(--table-width\) !important;/.test(
+    borderCss,
+  )
+) {
+  console.error("CSS 契约检查失败：Markdown 表格必须保持紧凑密度并尊重自定义宽度");
+  process.exit(1);
+}
+
 console.log("✓ CSS 契约检查通过");
