@@ -2,7 +2,7 @@
  * ProjectConsoleView — 项目控制台视图（仪表盘风格）
  */
 
-import { FileView, ItemView, type WorkspaceLeaf, type App, TFile, Menu, Modal, Setting, Notice, MarkdownRenderer } from "obsidian";
+import { FileView, ItemView, type WorkspaceLeaf, type App, TFile, TFolder, Menu, Modal, Setting, Notice, MarkdownRenderer } from "obsidian";
 import type {
   ProjectConsoleData,
   ProjectConsoleTask,
@@ -21,10 +21,11 @@ import {
 } from "./project-status";
 import { getServiceManager } from "./services";
 import type { ServiceManager, ProjectStatistics, ProjectHealth, ProjectCheckpoint } from "./services";
-import { LineChart, HeatmapChart } from "./components/charts";
+import { LineChart } from "./components/charts";
+import { mountActivityHeatmap } from "./components/ActivityHeatmap";
 import type { Task } from "../services/TaskSyncService";
 import { TaskSyncService } from "../services/TaskSyncService";
-import type { DataChangeCallback, TimelineEvent } from "./services/types";
+import type { DataChangeCallback, TaskStatistics, TimelineEvent } from "./services/types";
 import { renderTaskPriorityLabel } from "./components/TaskPriorityLabel";
 import { createTaskSchedulePicker } from "./components/TaskSchedulePicker";
 import type { SettingsManager } from "../core/settings-manager";
@@ -85,6 +86,16 @@ function relTime(mtime: number): string {
   if (dy < 7) return `${dy}天前`;
   const dt = new Date(mtime);
   return `${dt.getMonth() + 1}/${dt.getDate()}`;
+}
+
+function rebasePath(path: string, oldBase: string, newBase: string): string {
+  if (path === oldBase) return newBase;
+  return path.startsWith(`${oldBase}/`) ? `${newBase}${path.slice(oldBase.length)}` : path;
+}
+
+function getProjectNameFromPath(projectPath: string): string {
+  const folderName = projectPath.split("/").pop() || "";
+  return folderName.replace(/^\d+_/, "") || folderName;
 }
 
 class DeliverableFilePickerModal extends Modal {
@@ -740,6 +751,10 @@ export class ProjectConsoleView extends FileView {
   private timelineFilter: "all" | "files" | "tasks" | "project" | "checkpoints" = "all";
   private releaseService: DeliverableReleaseService;
   private unsubSettings: (() => void) | null = null;
+  private renameListenerRegistered = false;
+  private internalFolderRename = false;
+  private projectPathChangeQueue: Promise<void> = Promise.resolve();
+  private heatmapCleanup: (() => void) | null = null;
 
   constructor(
     l: WorkspaceLeaf,
@@ -767,10 +782,7 @@ export class ProjectConsoleView extends FileView {
   getExtension() { return "home"; }
 
   async onLoadFile(file: TFile) {
-    const parent = file.parent;
-    if (!parent) this.projPath = "";
-    else if (parent.name === LEGACY_PROJECT_CONSOLE_FOLDER) this.projPath = parent.parent?.path || parent.path;
-    else this.projPath = parent.path;
+    this.projPath = this.resolveProjectPath(file);
     await this.loadProjectData();
     await this.services.trackProjectSnapshots(this.projPath);
     this.services.timeline.clearCache(this.projPath);
@@ -788,6 +800,7 @@ export class ProjectConsoleView extends FileView {
   }
 
   async onUnloadFile() {
+    this.disposeHeatmap();
     const c = this.containerEl.children[1];
     if (c) { c.empty(); c.removeClass("zc-root"); }
     this.data = null;
@@ -808,11 +821,80 @@ export class ProjectConsoleView extends FileView {
       const iconEl = this.containerEl.querySelector(".zc-hero-title-icon") as HTMLElement | null;
       if (iconEl) void this.renderIcon(iconEl, this.data.icon);
     });
+    if (!this.renameListenerRegistered) {
+      this.renameListenerRegistered = true;
+      this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
+        if (this.internalFolderRename || !(file instanceof TFolder) || !this.projPath) return;
+        if (oldPath !== this.projPath && !this.projPath.startsWith(`${oldPath}/`)) return;
+        const newProjectPath = rebasePath(this.projPath, oldPath, file.path);
+        this.queueProjectPathChange(this.projPath, newProjectPath, true);
+      }));
+    }
   }
 
   async onClose() {
+    this.disposeHeatmap();
     this.unsubSettings?.();
     this.unsubSettings = null;
+  }
+
+  private resolveProjectPath(file: TFile | null): string {
+    const parent = file?.parent;
+    if (!parent) return "";
+    if (parent.name === LEGACY_PROJECT_CONSOLE_FOLDER) return parent.parent?.path || parent.path;
+    return parent.path;
+  }
+
+  private queueProjectPathChange(oldProjectPath: string, newProjectPath: string, syncName: boolean): void {
+    this.projectPathChangeQueue = this.projectPathChangeQueue
+      .catch(() => undefined)
+      .then(() => this.applyProjectPathChange(oldProjectPath, newProjectPath, syncName));
+  }
+
+  private async applyProjectPathChange(
+    oldProjectPath: string,
+    newProjectPath: string,
+    syncName: boolean,
+  ): Promise<void> {
+    if (!oldProjectPath || !newProjectPath || oldProjectPath === newProjectPath) return;
+
+    this.projPath = newProjectPath;
+    try {
+      await this.services.rebaseProjectPath(oldProjectPath, newProjectPath);
+    } catch (error) {
+      console.error("[ProjectConsoleView] 项目历史路径迁移失败", error);
+      new Notice("项目已重命名，但部分历史记录迁移失败");
+    }
+    try {
+      await this.migrateCustomIconPaths(oldProjectPath, newProjectPath);
+    } catch (error) {
+      console.error("[ProjectConsoleView] 项目图标路径迁移失败", error);
+      new Notice("项目已重命名，但自定义图标路径迁移失败");
+    }
+
+    if (syncName) {
+      const projectName = getProjectNameFromPath(newProjectPath);
+      const saved = await this.services.projectData.mutateProjectConsoleData(newProjectPath, (latest) => {
+        latest.name = projectName;
+        latest.updatedAt = formatDate(new Date());
+      });
+      if (!saved) new Notice("项目路径已更新，但项目名称同步失败，请重试编辑名称");
+    }
+
+    await this.loadProjectData();
+    this.render();
+  }
+
+  private async migrateCustomIconPaths(oldProjectPath: string, newProjectPath: string): Promise<void> {
+    const current = this.settingsManager.getSettings().iconSystem.customIcons;
+    let changed = false;
+    const migrated: Record<string, string> = {};
+    for (const [path, iconId] of Object.entries(current)) {
+      const nextPath = rebasePath(path, oldProjectPath, newProjectPath);
+      if (nextPath !== path) changed = true;
+      migrated[nextPath] = iconId;
+    }
+    if (changed) await this.settingsManager.update("iconSystem", { customIcons: migrated });
   }
 
   // ── 数据 ──────────────────────────────────────────
@@ -867,6 +949,7 @@ export class ProjectConsoleView extends FileView {
   // ── 渲染 ──────────────────────────────────────────
 
   private render() {
+    this.disposeHeatmap();
     const c = this.containerEl.children[1];
     if (!c) return;
     c.empty();
@@ -890,7 +973,10 @@ export class ProjectConsoleView extends FileView {
   /** 项目信息区 */
   private hero(p: HTMLElement) {
     const d = this.data!;
-    const color = getProjectTypeColor(d.type || "未分类");
+    const color = getProjectTypeColor(
+      d.type || "未分类",
+      this.settingsManager.getSettings().homepage.projectCategories,
+    );
     const breadcrumb = p.createEl("nav", {
       cls: "zc-breadcrumb",
       attr: { "aria-label": "项目路径" },
@@ -910,7 +996,17 @@ export class ProjectConsoleView extends FileView {
       attr: { "aria-hidden": "true" },
     });
     void this.renderIcon(icon, d.icon);
-    title.createSpan({ cls: "zc-hero-title-text", text: d.name });
+    const titleText = title.createSpan({ cls: "zc-hero-title-text", text: d.name });
+    const renameButton = headingRow.createEl("button", {
+      cls: "zc-hero-title-edit",
+      attr: {
+        type: "button",
+        title: "修改项目名称",
+        "aria-label": `修改项目名称：${d.name}`,
+      },
+    });
+    renameButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
+    renameButton.addEventListener("click", () => this.editProjectName(titleText, renameButton));
     const meta = headingRow.createDiv({ cls: "zc-hero-meta" });
     meta.createSpan({ cls: "zc-hero-tag", text: d.type || "未分类", attr: { style: `--tag-color:${color}` } });
     this.renderProjectStatusButton(meta);
@@ -937,6 +1033,125 @@ export class ProjectConsoleView extends FileView {
     exportBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
     exportBtn.createSpan({ text: "导出" });
     exportBtn.addEventListener("click", () => this.showExportMenu(exportBtn));
+  }
+
+  private editProjectName(titleText: HTMLElement, renameButton: HTMLButtonElement): void {
+    if (!this.data || titleText.querySelector("input")) return;
+    const previousName = this.data.name;
+    titleText.empty();
+    titleText.addClass("is-editing");
+    renameButton.disabled = true;
+    const input = titleText.createEl("input", {
+      cls: "zc-hero-title-input",
+      attr: {
+        type: "text",
+        value: previousName,
+        "aria-label": "项目名称",
+      },
+    });
+    input.value = previousName;
+    const syncInputWidth = () => {
+      const units = Array.from(input.value || previousName).reduce(
+        (total, character) => total + (/[^\x00-\xff]/.test(character) ? 2 : 1),
+        0,
+      );
+      input.style.setProperty("--zc-title-input-units", String(Math.min(40, Math.max(8, units))));
+    };
+    syncInputWidth();
+    input.addEventListener("input", syncInputWidth);
+    input.focus();
+    input.select();
+
+    let finished = false;
+    const cancel = () => {
+      if (finished) return;
+      finished = true;
+      this.render();
+    };
+    const save = async () => {
+      if (finished) return;
+      const nextName = input.value.trim();
+      if (!nextName || /[\\/:*?"<>|]/.test(nextName) || nextName === "." || nextName === "..") {
+        new Notice("请输入有效的项目名称，不能包含 \\ / : * ? \" < > |");
+        input.focus();
+        input.select();
+        return;
+      }
+      if (nextName === previousName) {
+        cancel();
+        return;
+      }
+
+      const projectFolder = this.app.vault.getAbstractFileByPath(this.projPath);
+      if (!(projectFolder instanceof TFolder)) {
+        new Notice("找不到项目文件夹，无法重命名");
+        cancel();
+        return;
+      }
+      const prefix = projectFolder.name.match(/^(\d+)_/)?.[1];
+      const nextFolderName = prefix ? `${prefix}_${nextName}` : nextName;
+      const parentPath = projectFolder.parent?.path;
+      const nextProjectPath = parentPath ? `${parentPath}/${nextFolderName}` : nextFolderName;
+      const existing = this.app.vault.getAbstractFileByPath(nextProjectPath);
+      if (existing && existing !== projectFolder) {
+        new Notice(`项目文件夹 ${nextFolderName} 已存在`);
+        input.focus();
+        input.select();
+        return;
+      }
+
+      finished = true;
+      input.disabled = true;
+      renameButton.disabled = true;
+      const oldProjectPath = this.projPath;
+      let temporaryPath = "";
+      try {
+        this.internalFolderRename = true;
+        if (oldProjectPath.toLocaleLowerCase() === nextProjectPath.toLocaleLowerCase()
+          && oldProjectPath !== nextProjectPath) {
+          temporaryPath = parentPath
+            ? `${parentPath}/.__zendian-rename-${Date.now()}`
+            : `.__zendian-rename-${Date.now()}`;
+          await this.app.vault.rename(projectFolder, temporaryPath);
+          const temporaryFolder = this.app.vault.getAbstractFileByPath(temporaryPath);
+          if (!(temporaryFolder instanceof TFolder)) throw new Error("临时项目目录不存在");
+          await this.app.vault.rename(temporaryFolder, nextProjectPath);
+        } else {
+          await this.app.vault.rename(projectFolder, nextProjectPath);
+        }
+      } catch (error) {
+        console.error("[ProjectConsoleView] 重命名项目失败", error);
+        if (temporaryPath) {
+          const temporaryFolder = this.app.vault.getAbstractFileByPath(temporaryPath);
+          if (temporaryFolder instanceof TFolder) {
+            try {
+              await this.app.vault.rename(temporaryFolder, oldProjectPath);
+            } catch (rollbackError) {
+              console.error("[ProjectConsoleView] 恢复临时项目目录失败", rollbackError);
+            }
+          }
+        }
+        new Notice("项目重命名失败，请检查目标名称或文件夹状态");
+        this.render();
+        return;
+      } finally {
+        this.internalFolderRename = false;
+      }
+
+      await this.applyProjectPathChange(oldProjectPath, nextProjectPath, true);
+      new Notice(`项目已重命名为 ${nextName}`);
+    };
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void save();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        cancel();
+      }
+    });
+    input.addEventListener("blur", () => void save());
   }
 
   private renderProjectStatusButton(container: HTMLElement): void {
@@ -1202,6 +1417,8 @@ export class ProjectConsoleView extends FileView {
         },
       });
       btn.addEventListener("click", () => {
+        if (this.tab === key) return;
+        this.disposeHeatmap();
         this.tab = key;
         tabBar.querySelectorAll<HTMLElement>(".zc-tab").forEach((e) => {
           e.removeClass("is-active");
@@ -1217,11 +1434,28 @@ export class ProjectConsoleView extends FileView {
     const layout = section.createDiv({ cls: "zc-workspace-layout" });
     const primary = layout.createDiv({ cls: "zc-workspace-primary" });
     const body = primary.createDiv({ cls: "zc-section-body" });
-    this.tabBody(body);
-
     const aside = layout.createEl("aside", { cls: "zc-workspace-aside" });
     this.renderStats(aside);
     this.renderRecentActivity(aside);
+    this.tabBody(body);
+  }
+
+  private createPanelShell(
+    container: HTMLElement,
+    options: { eyebrow: string; title: string; meta?: string; className?: string },
+  ): { heading: HTMLElement; meta: HTMLElement | null; body: HTMLElement } {
+    const heading = container.createDiv({
+      cls: `zc-content-heading${options.className ? ` ${options.className}` : ""}`,
+    });
+    const headingText = heading.createDiv({ cls: "zc-content-heading-copy" });
+    headingText.createDiv({ cls: "zc-content-eyebrow", text: options.eyebrow });
+    const titleRow = headingText.createDiv({ cls: "zc-content-title-row" });
+    titleRow.createEl("h2", { cls: "zc-content-title", text: options.title });
+    const meta = options.meta
+      ? titleRow.createSpan({ cls: "zc-content-count", text: options.meta })
+      : null;
+    const body = container.createDiv({ cls: "zc-scroll" });
+    return { heading, meta, body };
   }
 
   private tabBody(c: HTMLElement) {
@@ -1235,14 +1469,13 @@ export class ProjectConsoleView extends FileView {
   /** 任务列表 */
   private tasks(c: HTMLElement) {
     const d = this.data!;
-    const heading = c.createDiv({ cls: "zc-content-heading" });
-    const headingText = heading.createDiv({ cls: "zc-content-heading-copy" });
-    headingText.createDiv({ cls: "zc-content-eyebrow", text: "当前焦点" });
-    const titleRow = headingText.createDiv({ cls: "zc-content-title-row" });
-    titleRow.createEl("h2", { cls: "zc-content-title", text: "任务" });
     const remaining = d.tasks.filter((task) => !task.completed).length;
-    titleRow.createSpan({ cls: "zc-content-count", text: `${remaining} 项待处理` });
-    const add = heading.createEl("button", {
+    const shell = this.createPanelShell(c, {
+      eyebrow: "当前焦点",
+      title: "任务",
+      meta: `${remaining} 项待处理`,
+    });
+    const add = shell.heading.createEl("button", {
       cls: "zc-add-btn zc-add-btn--inline",
       attr: { type: "button", "aria-label": "添加任务" },
     });
@@ -1250,8 +1483,7 @@ export class ProjectConsoleView extends FileView {
     add.createSpan({ text: "添加任务" });
     add.addEventListener("click", () => this.openAddTaskModal());
 
-    const scroll = c.createDiv({ cls: "zc-scroll" });
-    const list = scroll.createDiv({ cls: "zc-list" });
+    const list = shell.body.createDiv({ cls: "zc-list" });
 
     if (!d.tasks.length) {
       const e = list.createDiv({ cls: "zc-empty" });
@@ -1784,18 +2016,14 @@ export class ProjectConsoleView extends FileView {
   /** 交付物 */
   private deliverables(c: HTMLElement) {
     const d = this.data!;
-    const scroll = c.createDiv({ cls: "zc-scroll" });
-    const header = scroll.createDiv("zc-release-header");
-    const headerCopy = header.createDiv("zc-release-header-copy");
-    headerCopy.createDiv({ cls: "zc-release-title", text: "交付物" });
-    headerCopy.createDiv({
-      cls: "zc-release-subtitle",
-      text: d.deliverables.length
-        ? `已发布 ${d.deliverables.filter((item) => item.format === "zip").length} 个版本`
-        : "将阶段成果封装为不可编辑的 ZIP",
+    const releaseCount = d.deliverables.filter((item) => item.format === "zip").length;
+    const shell = this.createPanelShell(c, {
+      eyebrow: "阶段成果",
+      title: "交付物",
+      meta: d.deliverables.length ? `${releaseCount} 个已发布版本` : "将成果封装为 ZIP",
     });
-    const submit = header.createEl("button", {
-      cls: "zc-release-submit",
+    const submit = shell.heading.createEl("button", {
+      cls: "zc-release-submit zc-panel-action",
       attr: { type: "button" },
     });
     submit.appendChild(svg("plus"));
@@ -1811,7 +2039,7 @@ export class ProjectConsoleView extends FileView {
       void this.openSubmitDeliverablePanel(d.type);
     });
 
-    const list = scroll.createDiv({ cls: "zc-release-list" });
+    const list = shell.body.createDiv({ cls: "zc-release-list" });
     if (!d.deliverables.length) {
       const e = list.createDiv({ cls: "zc-empty" });
       e.createDiv({ cls: "zc-empty-icon" }).innerHTML = SVG.package;
@@ -1884,8 +2112,12 @@ export class ProjectConsoleView extends FileView {
   /** 最近文件 */
   private files(c: HTMLElement) {
     const fs = this.recent(30);
-    const scroll = c.createDiv({ cls: "zc-scroll" });
-    const list = scroll.createDiv({ cls: "zc-list" });
+    const shell = this.createPanelShell(c, {
+      eyebrow: "工作记录",
+      title: "最近文件",
+      meta: `${fs.length} 个最近编辑`,
+    });
+    const list = shell.body.createDiv({ cls: "zc-list" });
     if (!fs.length) {
       const e = list.createDiv({ cls: "zc-empty" });
       e.createDiv({ cls: "zc-empty-icon" }).innerHTML = SVG.fileStack;
@@ -1949,15 +2181,13 @@ export class ProjectConsoleView extends FileView {
 
   /** 时间轴列表 */
   private async timeline(c: HTMLElement) {
-    const scroll = c.createDiv({ cls: "zc-scroll" });
-    const container = scroll.createDiv({ cls: "zc-timeline-container" });
-
-    const toolbar = container.createDiv({ cls: "zc-timeline-toolbar" });
-    const toolbarCopy = toolbar.createDiv({ cls: "zc-timeline-toolbar-copy" });
-    toolbarCopy.createDiv({ cls: "zc-timeline-heading", text: "项目活动" });
-    toolbarCopy.createDiv({ cls: "zc-timeline-kicker", text: "轻量快照 · 自动记录文本文件版本" });
-    const checkpointButton = toolbar.createEl("button", {
-      cls: "zc-timeline-checkpoint",
+    const shell = this.createPanelShell(c, {
+      eyebrow: "版本记录",
+      title: "项目活动",
+      meta: "文件、任务与检查点",
+    });
+    const checkpointButton = shell.heading.createEl("button", {
+      cls: "zc-timeline-checkpoint zc-panel-action",
       text: "创建检查点",
       attr: { type: "button" },
     });
@@ -1965,6 +2195,8 @@ export class ProjectConsoleView extends FileView {
     checkpointButton.addEventListener("click", () => {
       void this.openCreateCheckpointPanel(c);
     });
+
+    const container = shell.body.createDiv({ cls: "zc-timeline-container" });
 
     const filters = [
       { id: "all", label: "全部" },
@@ -1999,6 +2231,7 @@ export class ProjectConsoleView extends FileView {
       loading.remove();
 
       const visibleEvents = timelineData.events.filter((event) => this.matchesTimelineFilter(event));
+      if (shell.meta) shell.meta.textContent = `${visibleEvents.length} 条记录`;
 
       if (!visibleEvents.length) {
         const e = container.createDiv({ cls: "zc-empty" });
@@ -2213,11 +2446,20 @@ export class ProjectConsoleView extends FileView {
 
   /** 数据可视化 */
   private async analytics(c: HTMLElement) {
-    const scroll = c.createDiv({ cls: "zc-scroll" });
-    const container = scroll.createDiv({ cls: "zc-analytics-container" });
+    const shell = this.createPanelShell(c, {
+      eyebrow: "项目脉搏",
+      title: "数据",
+      meta: "趋势与活跃度",
+      className: "zc-analytics-heading",
+    });
+    shell.body.addClass("zc-analytics-scroll");
+    const container = shell.body.createDiv({ cls: "zc-analytics-container" });
 
-    // 显示加载状态
-    const loading = container.createDiv({ cls: "zc-loading", text: "加载数据..." });
+    const loading = container.createDiv({ cls: "zc-analytics-state" });
+    const loadingIcon = loading.createDiv({ cls: "zc-analytics-state-icon" });
+    loadingIcon.innerHTML = SVG.target;
+    loading.createDiv({ cls: "zc-analytics-state-title", text: "正在整理项目数据" });
+    loading.createDiv({ cls: "zc-analytics-state-copy", text: "任务趋势和年度活跃度即将就绪" });
 
     try {
       // 并行加载数据
@@ -2227,36 +2469,45 @@ export class ProjectConsoleView extends FileView {
         this.services.statistics.getTaskStatistics(this.projPath),
       ]);
 
+      if (!container.isConnected || this.tab !== "analytics") return;
+
       // 移除加载提示
       loading.remove();
 
       // 概览卡片
       this.renderOverviewCards(container, stats);
 
-      // 任务完成趋势图
-      this.renderTrendChart(container, trend);
-
-      // 活动热力图
-      this.renderHeatmap(container, heatmap);
+      const visuals = container.createDiv({ cls: "zc-analytics-visuals" });
+      this.renderTrendChart(visuals, trend);
+      this.renderHeatmap(visuals, heatmap);
 
     } catch (error) {
+      if (!container.isConnected || this.tab !== "analytics") return;
       loading.remove();
-      const errorEl = container.createDiv({ cls: "zc-error" });
-      errorEl.createDiv({ text: "加载数据失败" });
+      const errorEl = container.createDiv({ cls: "zc-analytics-state is-error" });
+      const errorIcon = errorEl.createDiv({ cls: "zc-analytics-state-icon" });
+      errorIcon.innerHTML = SVG.fileStack;
+      errorEl.createDiv({ cls: "zc-analytics-state-title", text: "无法加载项目数据" });
+      errorEl.createDiv({ cls: "zc-analytics-state-copy", text: "请确认项目主页可读，然后切换标签重试" });
       console.error("[ProjectConsoleView] 数据加载失败:", error);
     }
   }
 
   /** 渲染概览卡片 */
-  private renderOverviewCards(container: HTMLElement, stats: any) {
+  private renderOverviewCards(container: HTMLElement, stats: TaskStatistics) {
     const cards = container.createDiv({ cls: "zc-analytics-cards" });
 
-    const items = [
-      { label: "总任务", value: String(stats.total), icon: "📋" },
-      { label: "已完成", value: String(stats.completed), icon: "✅" },
-      { label: "进行中", value: String(stats.pending), icon: "⏳" },
-      { label: "完成率", value: `${stats.completionRate.toFixed(1)}%`, icon: "📊" },
-      { label: "逾期", value: String(stats.overdue), icon: "⚠️", warning: stats.overdue > 0 },
+    const items: Array<{
+      label: string;
+      value: string;
+      icon: keyof typeof SVG;
+      warning?: boolean;
+    }> = [
+      { label: "总任务", value: String(stats.total), icon: "fileStack" },
+      { label: "已完成", value: String(stats.completed), icon: "checkCircle" },
+      { label: "进行中", value: String(stats.pending), icon: "clock" },
+      { label: "完成率", value: `${stats.completionRate.toFixed(1)}%`, icon: "target" },
+      { label: "逾期", value: String(stats.overdue), icon: "flag", warning: stats.overdue > 0 },
     ];
 
     for (const item of items) {
@@ -2266,7 +2517,7 @@ export class ProjectConsoleView extends FileView {
       }
 
       const icon = card.createDiv({ cls: "zc-analytics-card-icon" });
-      icon.textContent = item.icon;
+      icon.innerHTML = SVG[item.icon];
 
       const content = card.createDiv({ cls: "zc-analytics-card-content" });
       content.createDiv({ cls: "zc-analytics-card-value", text: item.value });
@@ -2276,10 +2527,13 @@ export class ProjectConsoleView extends FileView {
 
   /** 渲染趋势图 */
   private renderTrendChart(container: HTMLElement, trend: Array<{ date: string; count: number }>) {
-    const section = container.createDiv({ cls: "zc-analytics-section" });
-    section.createDiv({ cls: "zc-analytics-section-title", text: "活动趋势（最近30天）" });
+    const section = container.createDiv({ cls: "zc-analytics-section zc-analytics-trend" });
+    const heading = section.createDiv({ cls: "zc-analytics-section-heading" });
+    heading.createDiv({ cls: "zc-analytics-section-title", text: "活动趋势" });
+    heading.createDiv({ cls: "zc-analytics-section-copy", text: "最近 30 天的项目变更次数" });
 
     const chartContainer = section.createDiv({ cls: "zc-chart-container" });
+    const palette = this.getAnalyticsPalette();
 
     // 准备数据
     const labels = trend.map((d) => {
@@ -2294,40 +2548,60 @@ export class ProjectConsoleView extends FileView {
       datasets: [{
         label: "活动次数",
         data,
-        color: "#3b82f6",
-        fillColor: "#3b82f6",
+        color: palette.accent,
+        fillColor: palette.accent,
       }],
     }, {
-      width: 800,
-      height: 250,
+      width: 640,
+      height: 190,
+      padding: { top: 12, right: 12, bottom: 30, left: 36 },
+      showLegend: false,
       showGrid: true,
       showTooltip: true,
       animate: true,
+      pointRadius: 2,
+      pointHoverRadius: 4,
     });
   }
 
   /** 渲染热力图 */
   private renderHeatmap(container: HTMLElement, heatmap: Map<string, number>) {
-    const section = container.createDiv({ cls: "zc-analytics-section" });
-    section.createDiv({ cls: "zc-analytics-section-title", text: "活动热力图（最近365天）" });
-
-    const chartContainer = section.createDiv({ cls: "zc-chart-container" });
-
-    // 准备数据
+    const section = container.createDiv({
+      cls: "zc-analytics-section zc-analytics-heatmap homepage-rhythm-card",
+    });
+    const heading = section.createDiv({ cls: "zc-analytics-section-heading" });
+    heading.createDiv({ cls: "zc-analytics-section-title", text: "活动热力图" });
+    heading.createDiv({ cls: "zc-analytics-section-copy", text: "最近 365 天的持续投入节奏" });
     const data = Array.from(heatmap.entries()).map(([date, value]) => ({
       date,
       value,
     }));
+    const activeDays = data.filter((day) => day.value > 0).length;
+    const activityTotal = data.reduce((sum, day) => sum + day.value, 0);
 
-    // 创建热力图
-    new HeatmapChart(chartContainer, data, {
-      width: 800,
-      height: 150,
-      colorScale: ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
-      showMonthLabels: true,
-      showDayLabels: true,
-      showTooltip: true,
+    this.disposeHeatmap();
+    this.heatmapCleanup = mountActivityHeatmap(section, data, {
+      tooltipUnit: "次活动",
+      summary: [
+        { label: "活跃天数", value: activeDays, unit: "近一年" },
+        { label: "活动总量", value: activityTotal, unit: "次" },
+      ],
     });
+  }
+
+  private getAnalyticsPalette(): { accent: string } {
+    const styles = getComputedStyle(document.body);
+    const hue = styles.getPropertyValue("--accent-h").trim() || "220";
+    const saturation = styles.getPropertyValue("--accent-s").trim() || "70%";
+    const lightness = styles.getPropertyValue("--accent-l").trim() || "52%";
+    return {
+      accent: `hsl(${hue} ${saturation} ${lightness})`,
+    };
+  }
+
+  private disposeHeatmap(): void {
+    this.heatmapCleanup?.();
+    this.heatmapCleanup = null;
   }
 
   private async renderIcon(el: HTMLElement, id: string): Promise<void> {

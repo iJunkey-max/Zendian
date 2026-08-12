@@ -24,7 +24,11 @@ import type {
 import type { ProjectConsoleData, ProjectConsoleTask, ProjectConsoleDeliverable } from "../types";
 import type { TaskSyncService } from "../../services/TaskSyncService";
 import { normalizeProjectStatus, normalizeStatusBeforePause } from "../project-status";
-import { isDeliverablePath, registerDeliverablePaths } from "./DeliverablePathRegistry";
+import {
+  isDeliverablePath,
+  rebaseDeliverableProjectPath,
+  registerDeliverablePaths,
+} from "./DeliverablePathRegistry";
 import { formatDate } from "../../utils/date";
 
 export class ProjectDataService {
@@ -386,6 +390,18 @@ export class ProjectDataService {
    */
   clearProjectCache(projectPath: string): void {
     this.cache.invalidatePattern(`*:${projectPath}*`);
+  }
+
+  rebaseProjectPath(oldProjectPath: string, newProjectPath: string): void {
+    if (!oldProjectPath || !newProjectPath || oldProjectPath === newProjectPath) return;
+    const deliverableFolders = this.deliverableFolders.get(oldProjectPath);
+    if (deliverableFolders) {
+      this.deliverableFolders.set(newProjectPath, new Set(deliverableFolders));
+      this.deliverableFolders.delete(oldProjectPath);
+    }
+    rebaseDeliverableProjectPath(oldProjectPath, newProjectPath);
+    this.clearProjectCache(oldProjectPath);
+    this.clearProjectCache(newProjectPath);
   }
 
   /**

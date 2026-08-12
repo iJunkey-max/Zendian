@@ -17,6 +17,11 @@ import { ProjectSnapshotService } from "./ProjectSnapshotService";
 import type { DataChangeCallback, DataChangeEvent } from "./types";
 import type { TaskSyncService } from "../../services/TaskSyncService";
 
+function rebasePath(path: string, oldBase: string, newBase: string): string {
+  if (path === oldBase) return newBase;
+  return path.startsWith(`${oldBase}/`) ? `${newBase}${path.slice(oldBase.length)}` : path;
+}
+
 export class ServiceManager {
   public projectData: ProjectDataService;
   public timeline: TimelineService;
@@ -102,15 +107,18 @@ export class ServiceManager {
 
     const tracking = (async () => {
       const callback: DataChangeCallback = async (event) => {
+        const eventProjectPath = typeof event.data?.projectPath === "string"
+          ? event.data.projectPath
+          : projectPath;
         let sessionId: string | undefined;
         let transientSession = false;
         if (event.action === "update" && event.path) {
           sessionId = await this.snapshots.beginEditSession(
-            projectPath,
+            eventProjectPath,
             event.path,
             this.fileOpenTimes.get(event.path) || event.timestamp,
           );
-          this.editSessions.set(sessionId, { projectPath, filePath: event.path });
+          this.editSessions.set(sessionId, { projectPath: eventProjectPath, filePath: event.path });
           transientSession = !this.isFileOpen(event.path);
         }
         await this.snapshots.captureEvent(event, sessionId);
@@ -118,7 +126,7 @@ export class ServiceManager {
           await this.snapshots.completeEditSession(sessionId, event.timestamp);
           this.editSessions.delete(sessionId);
         }
-        this.clearProjectCache(projectPath);
+        this.clearProjectCache(eventProjectPath);
       };
       this.snapshotCallbacks.set(projectPath, callback);
       this.fileWatcher.watchProject(projectPath, callback);
@@ -296,6 +304,49 @@ export class ServiceManager {
     this.projectData.clearProjectCache(projectPath);
     this.timeline.clearCache(projectPath);
     console.log(`[ServiceManager] 已清除项目缓存: ${projectPath}`);
+  }
+
+  async rebaseProjectPath(oldProjectPath: string, newProjectPath: string): Promise<void> {
+    if (!oldProjectPath || !newProjectPath || oldProjectPath === newProjectPath) return;
+
+    this.fileWatcher.rebaseProjectPath(oldProjectPath, newProjectPath);
+    this.projectData.rebaseProjectPath(oldProjectPath, newProjectPath);
+    this.timeline.clearCache(oldProjectPath);
+    this.timeline.clearCache(newProjectPath);
+
+    const snapshotCallback = this.snapshotCallbacks.get(oldProjectPath);
+    const existingNewCallback = this.snapshotCallbacks.get(newProjectPath);
+    if (snapshotCallback) {
+      if (existingNewCallback && existingNewCallback !== snapshotCallback) {
+        this.fileWatcher.unwatchProject(newProjectPath, snapshotCallback);
+      } else {
+        this.snapshotCallbacks.set(newProjectPath, snapshotCallback);
+      }
+      this.snapshotCallbacks.delete(oldProjectPath);
+    }
+    const trackingPromise = this.snapshotTrackingPromises.get(oldProjectPath);
+    if (trackingPromise) {
+      if (!this.snapshotTrackingPromises.has(newProjectPath)) {
+        this.snapshotTrackingPromises.set(newProjectPath, trackingPromise);
+      }
+      this.snapshotTrackingPromises.delete(oldProjectPath);
+    }
+
+    for (const session of this.editSessions.values()) {
+      if (session.projectPath !== oldProjectPath) continue;
+      session.projectPath = newProjectPath;
+      session.filePath = rebasePath(session.filePath, oldProjectPath, newProjectPath);
+    }
+
+    const openTimes = Array.from(this.fileOpenTimes.entries());
+    for (const [filePath, openedAt] of openTimes) {
+      const rebased = rebasePath(filePath, oldProjectPath, newProjectPath);
+      if (rebased === filePath) continue;
+      this.fileOpenTimes.delete(filePath);
+      this.fileOpenTimes.set(rebased, openedAt);
+    }
+
+    await this.snapshots.rebaseProjectPath(oldProjectPath, newProjectPath);
   }
 
   /**

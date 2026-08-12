@@ -35,6 +35,7 @@ import type { TaskSyncService } from "../services/TaskSyncService";
 import type { TaskPriority as StorageTaskPriority } from "../services/TaskSyncService";
 import { renderTaskPriorityLabel } from "./components/TaskPriorityLabel";
 import { createTaskSchedulePicker } from "./components/TaskSchedulePicker";
+import { mountActivityHeatmap } from "./components/ActivityHeatmap";
 import { getProjectSubfolderName } from "./project-subfolders";
 import {
   findProjectHomeFile,
@@ -677,7 +678,7 @@ export class HomepageTaskCreatePopoutView extends ItemView {
 
 export class HomepageView extends ItemView {
   private clockTimer: number | null = null;
-  private resizeFrame: number | null = null;
+  private heatmapCleanup: (() => void) | null = null;
   private statsService!: HomepageStatsService;
   private dataService!: HomepageDataService;
   private bookmarksService!: HomepageBookmarksService;
@@ -726,6 +727,8 @@ export class HomepageView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    this.heatmapCleanup?.();
+    this.heatmapCleanup = null;
     // 初始化服务
     this.statsService = new HomepageStatsService(this.app);
     this.dataService = new HomepageDataService(this.app);
@@ -744,13 +747,6 @@ export class HomepageView extends ItemView {
       this.onProjectVaultChange(file.path);
       this.onProjectVaultChange(oldPath);
     }));
-    this.registerDomEvent(window, "resize", () => {
-      if (this.resizeFrame !== null) window.cancelAnimationFrame(this.resizeFrame);
-      this.resizeFrame = window.requestAnimationFrame(() => {
-        this.resizeFrame = null;
-        this.loadHeatmap();
-      });
-    });
     this.registerDomEvent(document, "click", (event) => {
       const searchBox = this.searchBoxEl;
       if (searchBox && !searchBox.contains(event.target as Node)) {
@@ -810,16 +806,14 @@ export class HomepageView extends ItemView {
 
   async onClose(): Promise<void> {
     this.stopClock();
+    this.heatmapCleanup?.();
+    this.heatmapCleanup = null;
     this.animationObserver?.disconnect();
     this.animationObserver = null;
     if (this.searchDebounceTimer !== null) window.clearTimeout(this.searchDebounceTimer);
     this.searchDebounceTimer = null;
     this.searchBoxEl = null;
     this.searchPanelEl = null;
-    if (this.resizeFrame !== null) {
-      window.cancelAnimationFrame(this.resizeFrame);
-      this.resizeFrame = null;
-    }
     if (this.projectRefreshTimer !== null) {
       window.clearTimeout(this.projectRefreshTimer);
       this.projectRefreshTimer = null;
@@ -1096,42 +1090,6 @@ export class HomepageView extends ItemView {
     const titleLeft = titleRow.createDiv({ cls: "homepage-card-title" });
     titleLeft.appendChild(svgIcon("flame"));
     titleLeft.createSpan({ text: "创作节律" });
-
-    // 热力图主体
-    const heatmapWrap = card.createDiv({ cls: "homepage-heatmap-wrap" });
-
-    // 月份标签行
-    heatmapWrap.createDiv({ cls: "homepage-heatmap-months", attr: { "data-months": "" } });
-
-    const heatmapBody = heatmapWrap.createDiv({ cls: "homepage-heatmap-body" });
-
-    // 星期标签
-    const dayLabels = heatmapBody.createDiv({ cls: "homepage-heatmap-days" });
-    for (const d of ["一", "二", "三", "四", "五", "六", "日"]) {
-      dayLabels.createDiv({ cls: "homepage-heatmap-day-label", text: d });
-    }
-
-    // 可见周数在数据加载时按容器宽度动态计算。
-    heatmapBody.createDiv({ cls: "homepage-heatmap-grid" });
-
-    const rhythmSummary = card.createDiv({ cls: "homepage-rhythm-summary" });
-    const activeDays = rhythmSummary.createDiv({ cls: "homepage-rhythm-stat" });
-    activeDays.createDiv({ cls: "homepage-rhythm-stat-label", text: "今年活跃天数" });
-    activeDays.createDiv({ cls: "homepage-rhythm-stat-value", attr: { "data-active-days": "" }, text: "—" });
-    activeDays.createDiv({ cls: "homepage-rhythm-stat-unit", text: "天" });
-    const monthlyTrend = rhythmSummary.createDiv({ cls: "homepage-rhythm-stat homepage-rhythm-stat-trend" });
-    monthlyTrend.createDiv({ cls: "homepage-rhythm-stat-label", text: "本月趋势" });
-    monthlyTrend.createDiv({ cls: "homepage-rhythm-stat-value", attr: { "data-monthly-trend": "" }, text: "—" });
-    monthlyTrend.createDiv({ cls: "homepage-rhythm-stat-unit", text: "较上月" });
-
-    // 图例（放在 wrap 内，紧跟 heatmap-body）
-    const legend = heatmapWrap.createDiv({ cls: "homepage-heatmap-legend" });
-    legend.createSpan({ cls: "homepage-heatmap-legend-label", text: "少" });
-    for (let i = 0; i <= 4; i++) {
-      legend.createDiv({ cls: "homepage-heatmap-cell homepage-heatmap-legend-cell", attr: { "data-level": String(i) } });
-    }
-    legend.createSpan({ cls: "homepage-heatmap-legend-label", text: "多" });
-    legend.createDiv({ cls: "homepage-heatmap-legend-total", attr: { "data-heatmap-total": "" }, text: "" });
   }
 
   // ── 本月洞察 (col-span-5) ─────────────────────────────────
@@ -1278,62 +1236,37 @@ export class HomepageView extends ItemView {
   private loadHeatmap(): void {
     const data = this.statsService.getHeatmapData(364);
     const card = this.containerEl.querySelector('[data-section="heatmap"]') as HTMLElement | null;
-    const bodyEl = card?.querySelector(".homepage-heatmap-body") as HTMLElement | null;
-    const dayLabelsEl = card?.querySelector(".homepage-heatmap-days") as HTMLElement | null;
-    const gridEl = card?.querySelector(".homepage-heatmap-grid") as HTMLElement | null;
-    const monthsEl = card?.querySelector("[data-months]") as HTMLElement | null;
-    if (!card || !bodyEl || !gridEl || !monthsEl) return;
+    if (!card) return;
 
-    const cardStyles = window.getComputedStyle(card);
-    const cellSize = Number.parseFloat(cardStyles.getPropertyValue("--rhythm-cell-size")) || 14;
-    const cellGap = Number.parseFloat(cardStyles.getPropertyValue("--rhythm-cell-gap")) || 3;
-    const labelsWidth = dayLabelsEl?.offsetWidth || 16;
-    const availableWidth = Math.max(0, bodyEl.clientWidth - labelsWidth - 8);
-    const visibleWeeks = Math.max(8, Math.min(52, Math.floor((availableWidth + cellGap) / (cellSize + cellGap))));
-    const visibleData = data.slice(-visibleWeeks * 7);
-    card.style.setProperty("--rhythm-weeks", String(visibleWeeks));
-
-    const maxCount = Math.max(1, ...data.map((d) => d.count));
     const now = new Date();
     const currentYear = String(now.getFullYear());
-    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const yearActiveDays = data.filter((day) => day.count > 0 && day.date.startsWith(currentYear)).length;
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const currentMonthKey = `${currentMonthStart.getFullYear()}-${String(currentMonthStart.getMonth() + 1).padStart(2, "0")}`;
+    const previousMonthKey = `${previousMonthStart.getFullYear()}-${String(previousMonthStart.getMonth() + 1).padStart(2, "0")}`;
+    const currentMonthTotal = data
+      .filter((day) => day.date.startsWith(currentMonthKey))
+      .reduce((sum, day) => sum + day.count, 0);
+    const previousMonthTotal = data
+      .filter((day) => day.date.startsWith(previousMonthKey))
+      .reduce((sum, day) => sum + day.count, 0);
+    const trend = previousMonthTotal === 0
+      ? (currentMonthTotal > 0 ? 100 : 0)
+      : Math.round(((currentMonthTotal - previousMonthTotal) / previousMonthTotal) * 100);
 
-    gridEl.empty();
-    visibleData.forEach((day) => {
-      let level = 0;
-      if (day.count > 0) {
-        const ratio = day.count / maxCount;
-        if (ratio > 0.75) level = 4;
-        else if (ratio > 0.5) level = 3;
-        else if (ratio > 0.25) level = 2;
-        else level = 1;
-      }
-
-      const cell = gridEl.createDiv({
-        cls: "homepage-heatmap-cell",
-        attr: { "data-level": String(level), title: `${day.date}: ${day.count} 次修改` },
-      });
-      if (day.date > todayKey) cell.addClass("is-future");
-    });
-
-    monthsEl.empty();
-    let previousMonth = -1;
-    visibleData.forEach((day, index) => {
-      const month = Number(day.date.split("-")[1]);
-      if (month === previousMonth) return;
-      previousMonth = month;
-      const label = monthsEl.createSpan({ cls: "homepage-heatmap-month-label", text: `${month}月` });
-      label.style.gridColumn = String(Math.floor(index / 7) + 1);
-    });
-
-    // 总天数
-    const totalEl = this.containerEl.querySelector("[data-heatmap-total]");
-    if (totalEl) totalEl.textContent = "";
-    const activeDaysEl = this.containerEl.querySelector("[data-active-days]");
-    if (activeDaysEl) activeDaysEl.textContent = String(yearActiveDays);
-    const monthlyTrendEl = this.containerEl.querySelector("[data-monthly-trend]");
-    if (monthlyTrendEl) monthlyTrendEl.textContent = "计算中";
+    this.heatmapCleanup?.();
+    this.heatmapCleanup = mountActivityHeatmap(
+      card,
+      data.map((day) => ({ date: day.date, value: day.count })),
+      {
+        tooltipUnit: "次修改",
+        summary: [
+          { label: "今年活跃天数", value: yearActiveDays, unit: "天" },
+          { label: "本月趋势", value: `${trend > 0 ? "+" : ""}${trend}%`, unit: "较上月" },
+        ],
+      },
+    );
   }
 
   // ── 月度统计 ──────────────────────────────────────────────
@@ -1494,7 +1427,10 @@ export class HomepageView extends ItemView {
   }
 
   private renderProjectItem(parent: HTMLElement, project: HomepageProject): void {
-    const tagColor = getProjectTypeColor(project.type);
+    const tagColor = getProjectTypeColor(
+      project.type,
+      this.dependencies.settingsManager.getSettings().homepage.projectCategories,
+    );
 
     const item = parent.createDiv({ cls: "homepage-project-item", attr: { "data-project-id": project.id } });
     const main = item.createDiv({ cls: "homepage-project-main" });
@@ -1543,7 +1479,10 @@ export class HomepageView extends ItemView {
   // ── 项目详情面板 ──────────────────────────────────────────
 
   private async openProjectDetailPanel(project: HomepageProject): Promise<void> {
-    const tagColor = getProjectTypeColor(project.type);
+    const tagColor = getProjectTypeColor(
+      project.type,
+      this.dependencies.settingsManager.getSettings().homepage.projectCategories,
+    );
 
     // 异步加载统计数据
     const statsPromise = this.timelineService.getProjectStats(project.folderPath);
@@ -1721,7 +1660,10 @@ export class HomepageView extends ItemView {
     }
 
     for (const [type, items] of grouped) {
-      const tagColor = getProjectTypeColor(type);
+      const tagColor = getProjectTypeColor(
+        type,
+        this.dependencies.settingsManager.getSettings().homepage.projectCategories,
+      );
       const group = body.createDiv({ cls: "hp-all-project-group" });
       const groupHead = group.createDiv({ cls: "hp-all-group-head hp-all-project-group-head" });
       const label = groupHead.createDiv({ cls: "hp-all-project-group-label" });
@@ -1855,7 +1797,10 @@ export class HomepageView extends ItemView {
       }
 
       for (const [type, items] of grouped) {
-        const tagColor = getProjectTypeColor(type);
+        const tagColor = getProjectTypeColor(
+          type,
+          this.dependencies.settingsManager.getSettings().homepage.projectCategories,
+        );
         const group = body.createDiv({ cls: "hp-all-project-group" });
         const groupHead = group.createDiv({ cls: "hp-all-group-head hp-all-project-group-head" });
         const label = groupHead.createDiv({ cls: "hp-all-project-group-label" });

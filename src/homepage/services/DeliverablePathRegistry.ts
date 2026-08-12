@@ -22,6 +22,16 @@ export function registerDeliverablePaths(
   }
 }
 
+export function rebaseDeliverableProjectPath(oldProjectPath: string, newProjectPath: string): void {
+  const oldProject = normalizePath(oldProjectPath);
+  const newProject = normalizePath(newProjectPath);
+  if (!oldProject || !newProject || oldProject === newProject) return;
+  const folders = foldersByProject.get(oldProject);
+  if (!folders) return;
+  foldersByProject.set(newProject, new Set(folders));
+  foldersByProject.delete(oldProject);
+}
+
 export function isDeliverablePath(projectPath: string, filePath: string): boolean {
   const project = normalizePath(projectPath);
   const path = normalizePath(filePath);

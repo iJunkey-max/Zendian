@@ -60,6 +60,11 @@ const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_AUTO_VERSIONS_PER_FILE = 30;
 const TEXT_EXTENSIONS = new Set(["md", "canvas", "json", "home", "txt", "css", "js", "ts", "yaml", "yml"]);
 
+function rebasePath(path: string, oldBase: string, newBase: string): string {
+  if (path === oldBase) return newBase;
+  return path.startsWith(`${oldBase}/`) ? `${newBase}${path.slice(oldBase.length)}` : path;
+}
+
 export class ProjectSnapshotService {
   private index: SnapshotIndex = { version: 1, projects: {} };
   private loadPromise: Promise<void> | null = null;
@@ -279,6 +284,51 @@ export class ProjectSnapshotService {
   async getTrackedProjectPaths(): Promise<string[]> {
     await this.ensureLoaded();
     return Object.keys(this.index.projects);
+  }
+
+  async rebaseProjectPath(oldProjectPath: string, newProjectPath: string): Promise<void> {
+    await this.ensureLoaded();
+    const oldPath = normalizePath(oldProjectPath);
+    const newPath = normalizePath(newProjectPath);
+    if (!oldPath || !newPath || oldPath === newPath) return;
+
+    const source = this.index.projects[oldPath];
+    if (source) {
+      const target = this.index.projects[newPath] ?? { path: newPath, versions: [], checkpoints: [] };
+      target.path = newPath;
+      target.versions = [...target.versions, ...source.versions].map((version) => ({
+        ...version,
+        projectPath: newPath,
+        filePath: rebasePath(version.filePath, oldPath, newPath),
+      }));
+      target.checkpoints = [...target.checkpoints, ...source.checkpoints].map((checkpoint) => ({
+        ...checkpoint,
+        projectPath: newPath,
+        versions: Object.fromEntries(
+          Object.entries(checkpoint.versions).map(([filePath, versionId]) => [
+            rebasePath(filePath, oldPath, newPath),
+            versionId,
+          ]),
+        ),
+      }));
+      this.index.projects[newPath] = target;
+      delete this.index.projects[oldPath];
+    }
+
+    const sessions = Array.from(this.activeEditSessions.values());
+    this.activeEditSessions.clear();
+    for (const session of sessions) {
+      const rebased = session.projectPath === oldPath
+        ? {
+            ...session,
+            projectPath: newPath,
+            filePath: rebasePath(session.filePath, oldPath, newPath),
+          }
+        : session;
+      this.activeEditSessions.set(`${rebased.projectPath}::${rebased.filePath}`, rebased);
+    }
+
+    if (source) await this.saveIndex();
   }
 
   async getComparison(versionId: string): Promise<SnapshotComparison | null> {

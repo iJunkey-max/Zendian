@@ -86,6 +86,27 @@ export class FileWatcher extends Events {
     return Array.from(this.watchedProjects);
   }
 
+  rebaseProjectPath(oldProjectPath: string, newProjectPath: string): void {
+    if (!oldProjectPath || !newProjectPath || oldProjectPath === newProjectPath) return;
+    const wasWatched = this.watchedProjects.delete(oldProjectPath);
+    const callbacks = this.projectCallbacks.get(oldProjectPath);
+    this.projectCallbacks.delete(oldProjectPath);
+
+    for (const [key, timer] of this.debounceTimers) {
+      if (!key.startsWith(`${oldProjectPath}::`)) continue;
+      window.clearTimeout(timer);
+      this.debounceTimers.delete(key);
+    }
+
+    if (!wasWatched && !callbacks?.size) return;
+    this.watchedProjects.add(newProjectPath);
+    if (callbacks?.size) {
+      const nextCallbacks = this.projectCallbacks.get(newProjectPath) ?? new Set<DataChangeCallback>();
+      for (const callback of callbacks) nextCallbacks.add(callback);
+      this.projectCallbacks.set(newProjectPath, nextCallbacks);
+    }
+  }
+
   onChange(callback: DataChangeCallback): EventRef {
     return this.on("change", (...data: unknown[]) => callback(data[0] as DataChangeEvent));
   }
