@@ -7,6 +7,7 @@ import {
   WidgetType,
 } from "@codemirror/view";
 import {
+  StateEffect,
   StateField,
   type EditorState,
   type Extension,
@@ -94,6 +95,8 @@ function createSpacers(state: EditorState): DecorationSet {
   );
 }
 
+const typewriterSpacerEffect = StateEffect.define<boolean>();
+
 /**
  * Block widgets affect CodeMirror's vertical layout. They must be supplied
  * through a direct `EditorView.decorations` facet, not through a ViewPlugin's
@@ -101,9 +104,21 @@ function createSpacers(state: EditorState): DecorationSet {
  * during Markdown file opening.
  */
 const typewriterSpacerField = StateField.define<DecorationSet>({
-  create: (state) => createSpacers(state),
-  update: (spacers, transaction) =>
-    transaction.docChanged ? createSpacers(transaction.state) : spacers.map(transaction.changes),
+  // Do not add block widgets while the feature is inactive. Obsidian creates
+  // Markdown editors before settings/runtime eligibility is reconciled, and
+  // an eagerly installed block decoration can make CM6 reject the view.
+  create: () => Decoration.none,
+  update: (spacers, transaction) => {
+    let enabled: boolean | null = null;
+    for (const effect of transaction.effects) {
+      if (effect.is(typewriterSpacerEffect)) enabled = effect.value;
+    }
+    if (enabled === true) return createSpacers(transaction.state);
+    if (enabled === false) return Decoration.none;
+    return spacers.size > 0
+      ? (transaction.docChanged ? createSpacers(transaction.state) : spacers.map(transaction.changes))
+      : spacers;
+  },
   provide: (field) => EditorView.decorations.from(field),
 });
 
@@ -276,10 +291,12 @@ class TypewriterViewController implements TypewriterRuntimeClient {
     this.enabled = shouldEnable;
     if (shouldEnable) {
       this.view.dom.setAttribute(ACTIVE_ATTRIBUTE, "true");
+      this.view.dispatch({ effects: typewriterSpacerEffect.of(true) });
       this.suspension = "none";
       this.scheduleMeasure({ cause: "activation", animate: false });
     } else {
       this.view.dom.removeAttribute(ACTIVE_ATTRIBUTE);
+      this.view.dispatch({ effects: typewriterSpacerEffect.of(false) });
       this.pendingIntent = null;
       this.suspension = "none";
       this.clearMotion();

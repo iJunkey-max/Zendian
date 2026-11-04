@@ -20,6 +20,13 @@
 - 简介编辑按钮独立绑定事件，点击简介区域其他位置不再进入编辑状态。
 - 摘要列表行移除 `zc-clickable` 样式，不再暗示整行可点击。
 
+### Markdown 编辑器启动修复
+
+- 修复启用 ZENdian 后 Markdown 文件无法打开的问题。根因是打字机扩展同时加载了插件打包的 `@codemirror/state` 与 Obsidian 内置的 `@codemirror/view`，CodeMirror 将扩展对象判定为来自不同运行时实例并拒绝创建编辑器。
+- 构建配置将 `@codemirror/state` 与 `@codemirror/view` 一并标记为 external，确保 ZENdian 复用 Obsidian 提供的 CodeMirror 运行时。
+- 打字机滚动的块级 spacer 改为按运行时资格动态注入；普通 Markdown 编辑器初始化时不再预先挂载块级装饰，避免干扰 Markdown 视图创建。
+- 在 Obsidian 测试库中重新加载插件并打开 Markdown 文件，未再出现 `Unrecognized extension value in extension set` 或“打开失败”。
+
 ### 工程质量
 
 - 通过 TypeScript、设置契约、安全契约、CSS 契约、打字机契约以及项目行为与视图生命周期检查，并完成生产构建。

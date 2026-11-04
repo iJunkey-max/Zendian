@@ -10,7 +10,10 @@ const context = await esbuild.context({
   absWorkingDir: projectRoot,
   entryPoints: [path.join(projectRoot, "src/main.ts")],
   bundle: true,
-  external: ["obsidian", "@codemirror/view"],
+  // Obsidian provides the CodeMirror runtime used by MarkdownView. Keeping
+  // both packages external prevents extension values from being created by a
+  // second bundled @codemirror/state instance and rejected at editor startup.
+  external: ["obsidian", "@codemirror/view", "@codemirror/state"],
   format: "cjs",
   target: "es2020",
   logLevel: "info",
