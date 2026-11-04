@@ -1,6 +1,6 @@
 {
   "name": "zendian",
-  "version": "3.2.05",
+  "version": "4.0.00",
   "description": "A personal knowledge and project workspace for Obsidian.",
   "main": "dist/main.js",
   "scripts": {
@@ -13,7 +13,8 @@
     "check:safety": "node scripts/check-safety-contract.mjs",
     "check:css": "node scripts/check-css-contract.mjs",
     "check:typewriter": "node scripts/check-typewriter-contract.mjs",
-    "check": "npm run typecheck && npm run check:settings && npm run check:safety && npm run check:css && npm run check:typewriter"
+    "check": "npm run typecheck && npm run check:settings && npm run check:safety && npm run check:css && npm run check:typewriter && npm run check:projects",
+    "check:projects": "node scripts/check-project-behavior.mjs && node scripts/check-project-view-lifecycle.mjs && node scripts/check-project-report.mjs"
   },
   "keywords": [
     "obsidian",

@@ -8,22 +8,94 @@
  * - 数据可视化准备
  */
 
-import { App } from "obsidian";
+import { App, TFile } from "obsidian";
 import { ProjectDataService } from "./ProjectDataService";
 import { TimelineService } from "./TimelineService";
+import { getWeekDueRange } from "../../services/TaskSyncService";
+import type { TaskSyncService } from "../../services/TaskSyncService";
+import type { ProjectSnapshotService } from "./ProjectSnapshotService";
 import type {
   TaskStatistics,
   DeliverableStatistics,
   ActivityStats,
 } from "./types";
 
+/** Main-homepage project detail statistics. Kept here so the homepage and
+ * project console do not silently calculate different file/task scopes. */
+export interface ProjectOverviewStatistics {
+  totalFiles: number;
+  totalNotes: number;
+  totalTasks: number;
+  completedTasks: number;
+  totalWords: number;
+  activeDays: number;
+  lastActiveDate: string;
+}
+
 export class StatisticsService {
   private projectDataService: ProjectDataService;
   private timelineService: TimelineService;
 
-  constructor(app: App) {
-    this.projectDataService = new ProjectDataService(app);
-    this.timelineService = new TimelineService(app);
+  constructor(private app: App, taskSyncService?: TaskSyncService, snapshotService?: ProjectSnapshotService) {
+    // Statistics must consume the same task and snapshot sources as the
+    // project console. Creating a second bare TimelineService here silently
+    // dropped persistent file history and legacy task fallbacks from reports.
+    this.projectDataService = new ProjectDataService(app, undefined, taskSyncService);
+    this.timelineService = new TimelineService(app, taskSyncService, snapshotService);
+  }
+
+  /**
+   * Return the compact statistics used by the main-homepage project detail
+   * overlay. File enumeration is delegated to ProjectDataService so ZIP
+   * deliverables and the .home marker follow the same rules as the project
+   * console and reports.
+   */
+  async getProjectOverviewStatistics(projectPath: string): Promise<ProjectOverviewStatistics> {
+    const files = this.projectDataService.getProjectFiles(projectPath);
+    const tasks = await this.projectDataService.getTasks(projectPath);
+    let totalWords = 0;
+    const activeDates = new Set<string>();
+    for (const file of files) {
+      const current = this.projectDataServiceFile(file.path);
+      if (!current) continue;
+      const content = await this.app.vault.read(current);
+      totalWords += this.countWords(content);
+      const modified = new Date(file.modified);
+      if (Number.isFinite(modified.getTime())) activeDates.add(this.formatDate(modified));
+    }
+    const lastModified = files[0]?.modified;
+    return {
+      totalFiles: files.length,
+      totalNotes: files.filter(file => file.extension === "md").length,
+      totalTasks: tasks.length,
+      completedTasks: tasks.filter(task => task.completed).length,
+      totalWords,
+      activeDays: activeDates.size,
+      lastActiveDate: lastModified && Number.isFinite(lastModified) ? this.formatDate(lastModified) : "-",
+    };
+  }
+
+  /**
+   * Statistics owns small coordinating services of its own, so both must be
+   * upgraded together when the singleton manager receives the canonical task
+   * service after first construction.
+   */
+  setTaskSyncService(taskSyncService?: TaskSyncService): void {
+    this.projectDataService.setTaskSyncService(taskSyncService);
+    this.timelineService.setTaskSyncService(taskSyncService);
+  }
+
+  /** Invalidate both coordinating services when a project file or homepage
+   * changes. The statistics service owns their caches, so invalidating only
+   * ServiceManager.projectData would leave the main-homepage overlay stale. */
+  clearProjectCache(projectPath: string): void {
+    this.projectDataService.clearProjectCache(projectPath);
+    this.timelineService.clearCache(projectPath);
+  }
+
+  clearAllCache(): void {
+    this.projectDataService.clearAllCache();
+    this.timelineService.clearAllCache();
   }
 
   // ============================================================
@@ -37,7 +109,11 @@ export class StatisticsService {
     const tasks = await this.projectDataService.getTasks(projectPath);
     const now = new Date();
     const today = this.formatDate(now);
-    const weekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // Keep the statistics card on the same product definition as the
+    // homepage task tabs: today through the coming Sunday, inclusive. A
+    // rolling seven-day window diverges on Sunday and made the two pages
+    // report different "this week" counts for the same project.
+    const weekEnd = getWeekDueRange(now).endDate;
 
     const completed = tasks.filter(t => t.completed);
     const pending = tasks.filter(t => !t.completed);
@@ -46,7 +122,7 @@ export class StatisticsService {
     const dueToday = pending.filter(t => t.due === today);
     const dueThisWeek = pending.filter(t => {
       if (!t.due) return false;
-      return t.due >= today && t.due <= this.formatDate(weekLater);
+      return t.due >= today && t.due <= weekEnd;
     });
 
     const byPriority: Record<string, number> = {
@@ -261,7 +337,12 @@ export class StatisticsService {
   }> {
     const now = new Date();
     const weekStart = this.getWeekStart(now);
-    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // 报表按自然周统计：周一 00:00:00 至周日 23:59:59.999，避免漏掉周一上午
+    // 或把下周一凌晨的事件错误计入本周。
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
 
     const events = await this.timelineService.getEventsByDateRange(projectPath, weekStart, weekEnd);
 
@@ -323,6 +404,8 @@ export class StatisticsService {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    monthStart.setHours(0, 0, 0, 0);
+    monthEnd.setHours(23, 59, 59, 999);
 
     const events = await this.timelineService.getEventsByDateRange(projectPath, monthStart, monthEnd);
 
@@ -373,6 +456,17 @@ export class StatisticsService {
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+  }
+
+  private projectDataServiceFile(path: string): TFile | null {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    return file instanceof TFile ? file : null;
+  }
+
+  private countWords(text: string): number {
+    const chinese = text.match(/[一-龥]/g) || [];
+    const english = text.match(/[a-zA-Z]+/g) || [];
+    return chinese.length + english.length;
   }
 
   private getWeekKey(date: Date): string {

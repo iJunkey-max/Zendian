@@ -18,6 +18,10 @@ import type { TaskSyncService } from "../../services/TaskSyncService";
 import { getProjectStatusOption, normalizeProjectStatus } from "../project-status";
 import type { ProjectSnapshotService, SnapshotVersion } from "./ProjectSnapshotService";
 import { isDeliverablePath } from "./DeliverablePathRegistry";
+import { getPluginDataPath } from "../../utils/plugin-paths";
+import { loadProjectHome } from "./ProjectHomeStore";
+import type { DiscoveredChange } from "./ProjectFileInventory";
+import type { TaskEventKind } from "./project-events";
 
 export class TimelineService {
   private cache: CacheManager;
@@ -28,6 +32,16 @@ export class TimelineService {
     private snapshotService?: ProjectSnapshotService,
   ) {
     this.cache = new CacheManager(50, 10 * 60 * 1000); // 10分钟缓存
+  }
+
+  /**
+   * Keep the timeline on the same task source when the shared manager is
+   * upgraded after an early maintenance/import entry point created it.
+   */
+  setTaskSyncService(taskSyncService?: TaskSyncService): void {
+    if (this.taskSyncService === taskSyncService) return;
+    this.taskSyncService = taskSyncService;
+    this.clearAllCache();
   }
 
   // ============================================================
@@ -42,7 +56,7 @@ export class TimelineService {
 
     // 尝试从缓存获取
     const cached = this.cache.get<TimelineData>(cacheKey);
-    if (cached) return cached;
+    if (cached && !await this.app.vault.adapter.exists(getPluginDataPath(this.app, "project-file-inventory.json"))) return cached;
 
     // 收集所有事件
     const events: TimelineEvent[] = [];
@@ -57,13 +71,59 @@ export class TimelineService {
     const taskEvents = await this.extractTaskEvents(projectPath);
     events.push(...taskEvents);
 
-    // 3. 交付物事件
-    const deliverableEvents = await this.extractDeliverableEvents(projectPath);
+    // 3. 交付、里程碑与恢复业务事件
+    const deliverableEvents = await this.extractBusinessEvents(projectPath);
     events.push(...deliverableEvents);
 
     // 4. 项目状态变更事件
     const statusEvents = await this.extractStatusEvents(projectPath);
     events.push(...statusEvents);
+
+    const record = await loadProjectHome(this.app, projectPath);
+    const inventoryPath = getPluginDataPath(this.app, "project-file-inventory.json");
+    if (record?.data.projectId && await this.app.vault.adapter.exists(inventoryPath)) {
+      try {
+        const inventory = JSON.parse(await this.app.vault.adapter.read(inventoryPath));
+        for (const change of (inventory.changes || []) as DiscoveredChange[]) {
+          if (change.projectId !== record.data.projectId) continue;
+          if (change.resolution?.type === "confirmed-rename") {
+            if (change.kind !== "added") continue;
+            events.push({
+              type: "file-renamed",
+              date: new Date(change.resolution.confirmedAt).toLocaleDateString("en-CA"),
+              timestamp: change.resolution.confirmedAt,
+              title: `确认文件改名：${change.resolution.fromPath} → ${change.path}`,
+              description: "用户确认内容指纹一致，文件历史和项目内任务关联已迁移；实际改名时间未知。",
+              filePath: `${projectPath}/${change.path}`,
+              approximateTime: true,
+              metadata: { source: "reconciliation", fromPath: change.resolution.fromPath },
+            });
+            continue;
+          }
+          // Snapshot history is authoritative for supported text files. The
+          // inventory is still needed for large attachments, but emitting both
+          // streams for the same fingerprint would show one offline edit twice
+          // (once as a saved version and once as a scan discovery).
+          const fullPath = projectPath ? `${projectPath}/${change.path}` : change.path;
+          const matchingSnapshot = snapshotEvents.some(event =>
+            event.filePath === fullPath && event.metadata?.hash === change.hash,
+          );
+          const current = this.app.vault.getAbstractFileByPath(fullPath);
+          const largeAttachment = current instanceof TFile && current.stat.size > 1024 * 1024;
+          if (change.hash && matchingSnapshot && !largeAttachment) continue;
+          const labels = { added: "发现新增文件", changed: "发现文件变化", missing: "原位置未找到文件" };
+          events.push({
+            type: change.kind === "added" ? "file-created" : change.kind === "missing" ? "file-deleted" : "file-modified",
+            date: new Date(change.discoveredAt).toLocaleDateString("en-CA"),
+            timestamp: change.discoveredAt,
+            title: `${labels[change.kind]}：${change.path}`,
+            description: `扫描发现时间；不代表实际操作时间。${change.possiblePreviousPath ? `可能来自 ${change.possiblePreviousPath}，尚未确认移动。` : ""}`,
+            approximateTime: true,
+            metadata: { source: "reconciliation" },
+          });
+        }
+      } catch (error) { console.error("[Timeline] 文件核对记录无法读取", error); }
+    }
 
     // 按时间排序（最新的在前）
     events.sort((a, b) => b.timestamp - a.timestamp);
@@ -139,7 +199,7 @@ export class TimelineService {
     if (hasSnapshotHistory) return [];
 
     const events: TimelineEvent[] = [];
-    const files = this.getAllFiles(folder).filter((file) => !isDeliverablePath(projectPath, file.path));
+    const files = this.getAllFiles(folder).filter((file) => !isDeliverablePath(this.app, projectPath, file.path));
 
     for (const file of files) {
       // 跳过 .home 文件
@@ -183,10 +243,28 @@ export class TimelineService {
     if (!this.snapshotService) return [];
     const versions = this.groupEditSessions(await this.snapshotService.getVersions(projectPath));
     const events = versions
-      .filter((version) => !["baseline", "safety"].includes(version.action))
+      .filter((version) => !["baseline", "safety"].includes(version.action) && !version.filePath.endsWith(".home"))
       .map((version) => this.snapshotVersionToEvent(version));
     const checkpoints = await this.snapshotService.getCheckpoints(projectPath);
-    events.push(...checkpoints.map((checkpoint) => ({
+    const businessEvents = await this.snapshotService.getBusinessEvents(projectPath);
+    const labels: Record<string, string> = { "checkpoint-created": "创建检查点", "checkpoint-removed": "移除检查点", "checkpoint-restored": "恢复检查点" };
+    for (const event of businessEvents) {
+      const timestamp = Date.parse(event.timestamp);
+      if (event.kind === "project-moved") {
+        events.push({ type: "project-moved", date: this.formatDate(timestamp), timestamp,
+          title: `项目目录移动：${event.from} → ${event.to}`,
+          description: event.description || "由项目位置核对发现；实际移动时间未知。",
+          approximateTime: true,
+          metadata: { source: "reconciliation", eventId: event.id, from: event.from, to: event.to } });
+        continue;
+      }
+      if (!labels[event.kind]) continue;
+      events.push({ type: "checkpoint", date: this.formatDate(timestamp), timestamp,
+        title: `${labels[event.kind]}：${event.name}`, description: event.description,
+        checkpointId: event.kind !== "checkpoint-removed" && checkpoints.some(checkpoint => checkpoint.id === event.checkpointId) ? event.checkpointId : undefined,
+        metadata: { source: "business", eventId: event.id } });
+    }
+    events.push(...checkpoints.filter(checkpoint => !businessEvents.some(event => event.checkpointId === checkpoint.id) && !checkpoint.name.startsWith("恢复前备份 · ")).map((checkpoint) => ({
       type: "checkpoint" as const,
       date: this.formatDate(checkpoint.createdAt),
       timestamp: checkpoint.createdAt,
@@ -214,17 +292,23 @@ export class TimelineService {
     const sessionTime = isEditSession && sessionCount > 1
       ? `编辑会话 · ${sessionCount} 个版本 · ${this.formatSessionClock(version.editSessionStartedAt || version.timestamp)}–${this.formatSessionClock(version.editSessionEndedAt || version.timestamp)}`
       : version.filePath;
+    const description = version.approximateTime
+      ? `启动核对发现；实际保存/删除时间未知。${sessionTime}`
+      : sessionTime;
     return {
       type: eventConfig.type,
       date: this.formatDate(version.timestamp),
       timestamp: version.timestamp,
       title: `${isEditSession ? "编辑文件" : eventConfig.verb}：${fileName}`,
-      description: sessionTime,
+      description,
       filePath: version.filePath,
       snapshotId: version.id,
+      approximateTime: version.approximateTime,
       metadata: {
         size: version.size,
         action: version.action,
+        hash: version.hash,
+        source: version.approximateTime ? "startup-reconciliation" : "vault-event",
         editSessionId: version.editSessionId,
         editSessionChangeCount: sessionCount,
         editSessionStartedAt: version.editSessionStartedAt,
@@ -302,10 +386,22 @@ export class TimelineService {
     if (!this.taskSyncService) return events;
 
     try {
+      const record = await loadProjectHome(this.app, projectPath);
+      const canonicalTasks = (record?.data.businessEvents || []).filter(event => event.kind.startsWith("task-") && event.taskId);
+      const history = [...new Map([
+        ...(record?.data.activity || []).map(event => ({ ...event, id: `task:${event.id}` })),
+        ...canonicalTasks.map(event => ({ id: event.id, kind: event.kind as TaskEventKind, taskId: event.taskId!, text: event.name, timestamp: event.timestamp })),
+      ].map(event => [event.id, event])).values()];
+      const labels = { "task-created": "创建任务", "task-updated": "更新任务", "task-completed": "完成任务", "task-reopened": "取消完成", "task-deleted": "删除任务", "task-restored": "恢复任务" };
+      for (const event of history) {
+        const timestamp = Date.parse(event.timestamp);
+        if (!Number.isFinite(timestamp)) continue;
+        events.push({ type: event.kind, date: this.formatDate(timestamp), timestamp, title: `${labels[event.kind]}：${event.text}`, metadata: { source: "project-command", eventId: event.id, taskId: event.taskId } });
+      }
       const tasks = await this.taskSyncService.getTasks(projectPath);
       for (const task of tasks) {
         // 任务创建事件
-        if (task.created) {
+        if (task.created && !history.some(event => event.taskId === task.id && event.kind === "task-created")) {
           const createdDate = new Date(task.created);
           events.push({
             type: "task-created",
@@ -322,7 +418,7 @@ export class TimelineService {
         }
 
         // 任务完成事件
-        if (task.completed) {
+        if (task.completed && !history.some(event => event.taskId === task.id && event.kind === "task-completed")) {
           const completedTime = task.completedAt
             ? new Date(task.completedAt).getTime()
             : new Date(task.created || Date.now()).getTime();
@@ -347,9 +443,9 @@ export class TimelineService {
   }
 
   /**
-   * 提取交付物事件
+   * 提取交付、里程碑及恢复事件
    */
-  private async extractDeliverableEvents(projectPath: string): Promise<TimelineEvent[]> {
+  private async extractBusinessEvents(projectPath: string): Promise<TimelineEvent[]> {
     const events: TimelineEvent[] = [];
     const file = findProjectHomeFile(this.app, projectPath);
     if (!file) return events;
@@ -358,7 +454,33 @@ export class TimelineService {
       const content = await this.app.vault.read(file);
       const data = JSON.parse(content) as ProjectConsoleData;
 
+      for (const event of data.businessEvents || []) {
+        const timestamp = Date.parse(event.timestamp);
+        if (event.kind.startsWith("checkpoint-")) continue;
+        if (event.kind === "status-changed" || event.kind.startsWith("task-")) continue;
+        if (event.kind.startsWith("milestone-")) {
+          const label: Record<string, string> = { "milestone-added": "添加里程碑", "milestone-updated": "更新里程碑", "milestone-completed": "完成里程碑", "milestone-reopened": "重新打开里程碑", "milestone-removed": "移除里程碑" };
+          events.push({ type: "milestone", date: this.formatDate(timestamp), timestamp, title: `${label[event.kind]}：${event.name}`,
+            description: `${event.approximateTime ? "旧里程碑基线，时间不是已确认的操作时间。" : ""}${event.plannedDate ? `计划日期：${event.plannedDate}` : ""}`,
+            approximateTime: event.approximateTime, metadata: { source: "business", milestoneId: event.milestoneId, eventId: event.id } });
+          continue;
+        }
+        if (event.kind === "project-restored") {
+          events.push({ type: "project-restored", date: this.formatDate(timestamp), timestamp,
+            title: "恢复项目主页", description: "工作内容恢复到历史版本，已有操作历史保留", metadata: { source: "business" } });
+          continue;
+        }
+        const labels = { "deliverable-added": "添加交付物", "deliverable-updated": "更新交付物", "deliverable-removed": "移除交付物记录" };
+        events.push({ type: event.kind as "deliverable-added" | "deliverable-updated" | "deliverable-removed", date: this.formatDate(timestamp), timestamp,
+          title: labels[event.kind as keyof typeof labels] + "：" + event.name,
+          description: event.approximateTime ? "从旧交付物清单建立的基线，时间不代表已确认的操作时间" : event.kind === "deliverable-removed" ? "从项目交付清单移除；不据此判断实体文件是否已删除" : "状态：" + this.getStatusText(event.status || "pending"),
+          approximateTime: event.approximateTime,
+          filePath: event.kind === "deliverable-removed" ? undefined : projectPath + "/" + event.path,
+          metadata: { source: "business", path: event.path, name: event.name },
+        });
+      }
       for (const deliverable of data.deliverables) {
+        if (data.businessEvents?.some(event => event.path === deliverable.path && event.kind !== "deliverable-removed")) continue;
         const isRelease = deliverable.format === "zip";
         const timestamp = deliverable.createdAt ? new Date(deliverable.createdAt).getTime() : file.stat.ctime;
         // 交付物添加事件
@@ -380,7 +502,7 @@ export class TimelineService {
         });
       }
     } catch (error) {
-      console.error("[TimelineService] 提取交付物事件失败:", error);
+      console.error("[TimelineService] 提取业务事件失败:", error);
     }
 
     return events;
@@ -392,7 +514,12 @@ export class TimelineService {
 
     try {
       const data = JSON.parse(await this.app.vault.read(file)) as ProjectConsoleData;
-      return (data.statusHistory || []).flatMap((entry) => {
+      const canonicalStages = (data.businessEvents || []).filter(event => event.kind === "status-changed");
+      const history = [...new Map([
+        ...(data.statusHistory || []),
+        ...canonicalStages.map(event => ({ from: event.from, to: event.to, changedAt: event.timestamp })),
+      ].map(entry => [JSON.stringify([entry.changedAt, normalizeProjectStatus(entry.from), normalizeProjectStatus(entry.to)]), entry])).values()];
+      return history.flatMap((entry) => {
         const timestamp = new Date(entry.changedAt).getTime();
         if (!Number.isFinite(timestamp)) return [];
         const from = getProjectStatusOption(normalizeProjectStatus(entry.from));
@@ -424,8 +551,8 @@ export class TimelineService {
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
     const oneMonth = 30 * 24 * 60 * 60 * 1000;
 
-    const eventsThisWeek = events.filter(e => now - e.timestamp < oneWeek).length;
-    const eventsThisMonth = events.filter(e => now - e.timestamp < oneMonth).length;
+    const eventsThisWeek = events.filter(e => e.timestamp <= now && now - e.timestamp < oneWeek).length;
+    const eventsThisMonth = events.filter(e => e.timestamp <= now && now - e.timestamp < oneMonth).length;
 
     // 找到最活跃的日期
     const dateCount = new Map<string, number>();

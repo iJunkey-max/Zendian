@@ -22,6 +22,7 @@ const CSS_MERGE_ORDER = [
   "css/overlays/homepage.css",
   "css/overlays/console-enhanced.css", // 项目控制台增强样式
   "css/ui/style-settings-ui.css",
+  "css/ui/unified-ui.css",              // 非项目主页界面的最终统一层
 ];
 
 function countUnescapedQuotes(text, quote) {

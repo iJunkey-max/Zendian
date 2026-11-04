@@ -7,7 +7,7 @@
  * 3. 注册设置面板
  */
 
-import { Plugin, TFile } from "obsidian";
+import { Notice, Plugin, TFile } from "obsidian";
 import { EventBus, Events } from "./core/event-bus";
 import { SettingsManager } from "./core/settings-manager";
 import { ModuleManager } from "./core/module-manager";
@@ -59,7 +59,12 @@ import {
   VIEW_TYPE_PROJECT_CONSOLE,
   VIEW_TYPE_PROJECT_TASK_CREATE,
 } from "./homepage/ProjectConsoleView";
-import { destroyServiceManager } from "./homepage/services";
+import { destroyServiceManager, getServiceManager } from "./homepage/services";
+import { ProjectReconciler } from "./homepage/services/ProjectReconciler";
+import { ProjectMaintenanceModal } from "./homepage/ProjectMaintenanceModal";
+import { RegisterProjectModal } from "./homepage/RegisterProjectModal";
+import { ProjectImportModal } from "./homepage/ProjectImportModal";
+import { TaskFileLinkService } from "./homepage/services/TaskFileLinkService";
 
 // UI
 import { ZENdianSettingTab } from "./ui/settings-tab";
@@ -76,6 +81,7 @@ export default class ZENdianPlugin extends Plugin {
   public taskSyncService!: TaskSyncService;
   private focusClock?: FocusClockController;
   private unloading = false;
+  private lastProjectReconcileNoticeAt = 0;
 
   async onload() {
     this.unloading = false;
@@ -97,6 +103,59 @@ export default class ZENdianPlugin extends Plugin {
     this.projectMetadataService = new ProjectMetadataService(this.app);
     this.taskSyncService = new TaskSyncService(this.app, this.activityLogService);
     await this.activityLogService.load();
+    // Start the shared project services during plugin startup, not only when
+    // a project console happens to be opened.  Offline edits made while
+    // Obsidian was closed must be reconciled into snapshots even if the first
+    // page the user visits is the main homepage or settings.
+    await getServiceManager(this.app, this.taskSyncService).initialize();
+
+    const reconciler = new ProjectReconciler(this.app, (oldPath, newPath) => {
+      return getServiceManager(this.app, this.taskSyncService).rebaseProjectPath(oldPath, newPath);
+    }, () => !this.unloading, (projectPath) => {
+      getServiceManager(this.app, this.taskSyncService).untrackProjectSnapshots(projectPath);
+    });
+    const reconcile = (deepScan = false) => {
+      if (this.unloading) return;
+      void reconciler.reconcile(deepScan).catch(error => {
+        console.error("[ZENdian] 项目位置核对失败", error);
+        const now = Date.now();
+        // Background scans run on a timer and on every vault mutation. Keep a
+        // conflict or external-write warning visible without spamming notices.
+        if (now - this.lastProjectReconcileNoticeAt < 15000 || this.unloading) return;
+        this.lastProjectReconcileNoticeAt = now;
+        new Notice(`项目位置核对已暂停：${String(error)}。原数据未覆盖，请处理同步冲突后手动重新扫描。`, 12000);
+      });
+    };
+    this.addCommand({
+      id: "check-project-identities",
+      name: "项目检查与关联",
+      callback: () => new ProjectMaintenanceModal(this.app, () => reconciler.reconcile(true)).open(),
+    });
+    this.addCommand({
+      id: "register-project-folder",
+      name: "将现有文件夹设为项目",
+      callback: () => new RegisterProjectModal(this.app, () => reconciler.reconcile(true)).open(),
+    });
+    this.addCommand({ id: "import-project-package", name: "导入项目迁移包", callback: () => new ProjectImportModal(this.app, () => reconciler.reconcile(true)).open() });
+    this.app.workspace.onLayoutReady(() => {
+      if (this.unloading) return;
+      reconcile();
+      this.registerInterval(window.setInterval(() => reconcile(), 30000));
+      this.registerEvent(this.app.vault.on("rename", () => reconcile()));
+      const taskLinks = new TaskFileLinkService(this.app, () => !this.unloading);
+      this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
+        if (!this.unloading) void taskLinks.rename(oldPath, file.path).catch(error => console.error("[ZENdian] 任务文件关联更新失败", error));
+      }));
+      this.registerEvent(this.app.vault.on("create", () => reconcile()));
+      this.registerEvent(this.app.vault.on("delete", () => reconcile()));
+      // A .home edit can introduce a duplicate identity, invalidate the
+      // project schema, or turn a ready project into a conflict without any
+      // create/rename/delete event. Reconcile that marker change as well so a
+      // stale watcher is stopped immediately.
+      this.registerEvent(this.app.vault.on("modify", (file) => {
+        if (file instanceof TFile && file.extension === "home") reconcile();
+      }));
+    });
 
     const focusClockStatus = this.addStatusBarItem();
     this.focusClock = new FocusClockController(
@@ -147,13 +206,15 @@ export default class ZENdianPlugin extends Plugin {
         events: this.events,
         activityLogService: this.activityLogService,
         taskSyncService: this.taskSyncService,
+        statisticsService: getServiceManager(this.app, this.taskSyncService).statistics,
+        reconcileProjects: () => reconciler.reconcile(true),
       })
     );
 
     // 注册项目控制台 View（.home 文件）
     this.registerView(
       VIEW_TYPE_PROJECT_CONSOLE,
-      (leaf) => new ProjectConsoleView(leaf, this.taskSyncService, this.settingsManager, this.events)
+      (leaf) => new ProjectConsoleView(leaf, this.taskSyncService, this.settingsManager, this.events, this.activityLogService)
     );
     this.registerExtensions(["home"], VIEW_TYPE_PROJECT_CONSOLE);
 
@@ -254,7 +315,7 @@ export default class ZENdianPlugin extends Plugin {
     void Promise.all([
       this.settingsManager?.flush(),
       this.activityLogService?.flush(),
-      destroyServiceManager(),
+      destroyServiceManager(this.app),
     ]).catch((error) => console.error("[ZENdian] 卸载前保存失败", error));
     this.moduleManager?.unloadAll();
     this.events?.clear();

@@ -13,11 +13,11 @@
 
   /* 布局 */
   --hp-max-width: 1240px;
-  --hp-gap: 1.5rem;
-  --hp-radius: 1.25rem;
-  --hp-radius-sm: 0.75rem;
-  --hp-radius-xs: 0.5rem;
-  --hp-padding: 1.5rem;
+  --hp-gap: var(--zd-space-6, 24px);
+  --hp-radius: var(--zd-ui-radius-card, 12px);
+  --hp-radius-sm: var(--zd-ui-radius-control, 8px);
+  --hp-radius-xs: var(--zd-radius-sm, 4px);
+  --hp-padding: var(--zd-space-6, 24px);
 
   /* 热力图等级 — 全部跟随主题色 */
   --hp-heat-0: #ebedf0;
@@ -59,12 +59,12 @@
 
 .zendian-popout-form {
   box-sizing: border-box;
-  --zp-page-bg: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary));
-  --zp-surface: color-mix(in srgb, var(--background-primary) 96%, var(--background-secondary));
-  --zp-surface-soft: color-mix(in srgb, var(--background-secondary) 82%, transparent);
-  --zp-border: color-mix(in srgb, var(--background-modifier-border) 78%, transparent);
+  --zp-page-bg: var(--zd-ui-surface, var(--background-primary));
+  --zp-surface: var(--zd-ui-surface-raised, var(--background-primary));
+  --zp-surface-soft: var(--zd-ui-surface-soft, var(--background-secondary));
+  --zp-border: var(--zd-ui-border, var(--background-modifier-border));
   --zp-muted: var(--text-muted);
-  --zp-shadow: 0 1px 2px rgba(0, 0, 0, 0.035), 0 12px 34px rgba(0, 0, 0, 0.045);
+  --zp-shadow: var(--zd-ui-shadow-card, 0 1px 3px rgba(0, 0, 0, 0.12));
   display: flex;
   flex-direction: column;
   width: min(100%, 680px);
@@ -114,7 +114,7 @@
   margin-bottom: 10px;
   padding: 13px 14px;
   border: 1px solid var(--zp-border);
-  border-radius: 10px;
+  border-radius: var(--zd-ui-radius-control, 8px);
   background: var(--zp-surface);
 }
 
@@ -346,11 +346,11 @@
 /* ── 亮色主题 ────────────────────────────────────────────── */
 
 .theme-light .zendian-homepage {
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --text-main: #181b25;
-  --text-muted: #5f6675;
-  --text-lighter: #737b8c;
+  --bg: var(--zd-ui-surface, #f5f6f8);
+  --surface: var(--zd-ui-surface-raised, #ffffff);
+  --text-main: var(--zd-text-primary, var(--text-normal));
+  --text-muted: var(--zd-text-secondary, var(--text-normal));
+  --text-lighter: var(--zd-text-tertiary, var(--text-normal));
   --text-faint: var(--text-lighter);
 
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 6px 24px -2px rgba(0, 0, 0, 0.03);
@@ -387,11 +387,11 @@
 /* ── 暗色主题 ────────────────────────────────────────────── */
 
 .theme-dark .zendian-homepage {
-  --bg: var(--background-primary);
-  --surface: var(--background-primary-alt);
-  --text-main: var(--text-normal);
-  --text-muted: color-mix(in srgb, var(--text-normal) 76%, var(--background-primary));
-  --text-lighter: color-mix(in srgb, var(--text-normal) 64%, var(--background-primary));
+  --bg: var(--zd-ui-surface, var(--background-primary));
+  --surface: var(--zd-ui-surface-raised, var(--background-primary-alt));
+  --text-main: var(--zd-text-primary, var(--text-normal));
+  --text-muted: var(--zd-text-secondary, var(--text-normal));
+  --text-lighter: var(--zd-text-tertiary, var(--text-normal));
   --text-faint: var(--text-lighter);
 
   --shadow-card: var(--card-shadow-dark, 0 0 0 1px var(--background-modifier-border));
@@ -672,7 +672,7 @@
 
 .zendian-homepage .homepage-weather-card {
   background: var(--surface);
-  border-radius: 0.875rem;
+  border-radius: var(--hp-radius);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--hp-border);
   padding: 0.875rem 1rem;
@@ -748,6 +748,49 @@
   padding-bottom: 1.5rem;
 }
 
+/* Base responsive decisions on the actual leaf width, including open sidebars. */
+.zendian-homepage .homepage-container {
+  container-type: inline-size;
+  container-name: zendian-home;
+}
+
+@container zendian-home (max-width: 760px) {
+  .zendian-homepage .homepage-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zendian-homepage .homepage-grid .homepage-card {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+}
+
+@container zendian-home (max-width: 460px) {
+  .zendian-homepage .homepage-review-body {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .zendian-homepage .homepage-review-checklist {
+    flex: none;
+    width: 100%;
+  }
+
+  .zendian-homepage .homepage-review-item {
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .zendian-homepage .homepage-todo-tabs {
+    flex-wrap: wrap;
+  }
+
+  .zendian-homepage .homepage-todo-tab {
+    white-space: nowrap;
+  }
+}
+
 .zendian-homepage .homepage-left {
   grid-column: span 8;
   display: flex;
@@ -775,7 +818,7 @@
 
 .zendian-homepage .homepage-card {
   background: var(--surface);
-  border-radius: 0.875rem;
+  border-radius: var(--hp-radius);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--hp-border);
   padding: 1.25rem 1.5rem;
@@ -3908,11 +3951,11 @@
 /* Hero 区域 */
 
 .zendian-homepage .homepage-hero {
-  border-radius: 1.25rem;
+  border-radius: var(--hp-radius);
   padding: 2rem;
-  background: white;
+  background: var(--surface);
   box-shadow: var(--shadow-card);
-  border: 1px solid rgba(0, 0, 0, 0.01);
+  border: 1px solid var(--hp-border);
   position: relative;
   overflow: hidden;
 }
@@ -5122,6 +5165,9 @@
 }
 
 .zc-root .zc-del {
+  border: 0;
+  background: transparent;
+  font: inherit;
   cursor: pointer;
   color: var(--text-faint);
   opacity: 0;
@@ -5130,6 +5176,12 @@
   align-items: center;
   padding: 4px;
   border-radius: 4px;
+}
+
+.zc-root .zc-del:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
 }
 
 .zc-root .zc-row:hover .zc-del {
@@ -6348,7 +6400,7 @@
 
   body.is-mobile .zendian-homepage .homepage-card {
     padding: 1rem;
-    border-radius: 0.875rem;
+    border-radius: var(--hp-radius);
   }
 
   body.is-mobile .zendian-homepage .homepage-card-title-row {

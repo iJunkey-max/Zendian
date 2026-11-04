@@ -9,7 +9,7 @@
  * 数据存储：<Vault.configDir>/plugins/zendian/activity-log.json
  */
 
-import { App } from "obsidian";
+import { App, Notice } from "obsidian";
 import type { EventBus } from "../core/event-bus";
 import { Events } from "../core/event-bus";
 import { getPluginDataPath, getPluginDataRoot } from "../utils/plugin-paths";
@@ -48,6 +48,8 @@ export interface ActiveFocusSession {
   plannedSeconds: number;
   targetLabel: string;
   targetPath?: string;
+  projectId?: string;
+  projectName?: string;
   segments: FocusSegment[];
   activeSegmentStartedAt?: number;
   breakMinutes: number;
@@ -62,6 +64,8 @@ export interface FocusSessionRecord {
   status: "completed" | "ended" | "abandoned";
   targetLabel: string;
   targetPath?: string;
+  projectId?: string;
+  projectName?: string;
 }
 
 /** 月度统计 */
@@ -90,6 +94,13 @@ interface ActivityLogData {
   focusSessions?: FocusSessionRecord[];
 }
 
+function validFocusSegments(segments: FocusSegment[]): boolean {
+  return Array.isArray(segments) && segments.every((segment, index) => segment &&
+    Number.isFinite(segment.start) && segment.start >= 0 && Number.isFinite(segment.end) &&
+    Number.isFinite(new Date(segment.end).getTime()) && segment.end >= segment.start &&
+    segment.end - segment.start <= 86400000 && (!index || segment.start >= segments[index - 1].end));
+}
+
 export class ActivityLogService {
   private data: ActivityLogData = {
     dailyActivities: {},
@@ -101,6 +112,8 @@ export class ActivityLogService {
   private saveDebounceTimer: number | null = null;
   private statsNotifyTimer: number | null = null;
   private saveQueue: Promise<void> = Promise.resolve();
+  private persistedText: string | null = null;
+  private storageError: Error | null = null;
   private readonly SAVE_DEBOUNCE = 2000;  // 2 秒防抖保存
 
   constructor(private app: App, private events?: EventBus) {
@@ -114,7 +127,13 @@ export class ActivityLogService {
       const adapter = this.app.vault.adapter;
       if (await adapter.exists(this.dataPath)) {
         const content = await adapter.read(this.dataPath);
-        this.data = JSON.parse(content);
+        const parsed = JSON.parse(content);
+        const object = (value: unknown) => !!value && typeof value === "object" && !Array.isArray(value);
+        if (!object(parsed) || (parsed.dailyActivities !== undefined && (!object(parsed.dailyActivities) || !Object.values(parsed.dailyActivities).every(object))) || (parsed.focusSessions !== undefined && (!Array.isArray(parsed.focusSessions) || !parsed.focusSessions.every(object)))) throw new Error("活动日志结构无效");
+        const active = parsed.activeFocusSession;
+        if (active && (!object(active) || !["running", "paused"].includes(active.status) || typeof active.id !== "string" || !Number.isFinite(active.startedAt) || !Number.isFinite(active.plannedSeconds) || active.plannedSeconds <= 0 || active.plannedSeconds > 86400 || !validFocusSegments(active.segments) || (active.activeSegmentStartedAt !== undefined && (!Number.isFinite(active.activeSegmentStartedAt) || active.activeSegmentStartedAt < 0)))) throw new Error("未结束专注会话格式无效");
+        this.data = parsed;
+        this.persistedText = content;
         this.data.dailyActivities ??= {};
         this.data.focusSessions ??= [];
         for (const activity of Object.values(this.data.dailyActivities)) {
@@ -127,7 +146,9 @@ export class ActivityLogService {
         }
       }
     } catch (e) {
-      console.warn("[ActivityLog] 无法加载历史数据，使用空数据:", e);
+      this.storageError = new Error(`活动日志无法读取：${String(e)}`);
+      console.warn("[ActivityLog] 无法加载历史数据，停止日志写入:", e);
+      new Notice("活动与专注日志无法读取，原文件保留，已停止写入；请检查备份后重新加载。本次新记录仅保留在内存中。", 12000);
       try {
         const adapter = this.app.vault.adapter;
         if (await adapter.exists(this.dataPath)) {
@@ -212,19 +233,34 @@ export class ActivityLogService {
     this.scheduleSave();
   }
 
-  recordFocusSession(record: FocusSessionRecord, segments: FocusSegment[]): void {
+  recordFocusSession(record: FocusSessionRecord, segments: FocusSegment[]): boolean {
+    if (!record.id || !["completed", "ended", "abandoned"].includes(record.status) ||
+      !Number.isFinite(record.startedAt) || record.startedAt < 0 || !Number.isFinite(record.endedAt) || record.endedAt < record.startedAt ||
+      !Number.isFinite(record.plannedSeconds) || record.plannedSeconds <= 0 || record.plannedSeconds > 86400 ||
+      !Number.isFinite(record.focusedSeconds) || record.focusedSeconds < 0 || record.focusedSeconds > record.plannedSeconds + 1 ||
+      !validFocusSegments(segments) || segments.some(segment => segment.start < record.startedAt || segment.end > record.endedAt) ||
+      record.focusedSeconds !== Math.round(segments.reduce((sum, segment) => sum + (segment.end - segment.start) / 1000, 0))) return false;
     this.data.focusSessions ??= [];
-    this.data.focusSessions.push(record);
+    if (this.data.focusSessions.some(existing => existing.id === record.id)) return true;
+    this.data.focusSessions.push({ ...record });
     if (this.data.focusSessions.length > 1000) {
       this.data.focusSessions.splice(0, this.data.focusSessions.length - 1000);
     }
 
     if (record.status !== "abandoned") {
-      for (const segment of segments) this.addFocusSegment(segment);
+      const rounding = { milliseconds: 0, seconds: 0 };
+      for (const segment of segments) this.addFocusSegment(segment, rounding);
     }
     delete this.data.activeFocusSession;
     this.scheduleSave();
     this.scheduleStatsNotification();
+    return true;
+  }
+
+  /** Summary of retained records only; legacy records without identity are not guessed by path. */
+  getProjectFocusSummary(projectId: string): { sessions: number; seconds: number } {
+    const records = (this.data.focusSessions || []).filter(record => record.projectId === projectId && ["completed", "ended"].includes(record.status) && Number.isFinite(record.focusedSeconds) && record.focusedSeconds >= 0);
+    return { sessions: records.length, seconds: records.reduce((sum, record) => sum + Math.max(0, Number(record.focusedSeconds) || 0), 0) };
   }
 
   /** 获取指定日期的活动 */
@@ -416,7 +452,8 @@ export class ActivityLogService {
     );
   }
 
-  private addFocusSegment(segment: FocusSegment): void {
+  private addFocusSegment(segment: FocusSegment, rounding = { milliseconds: 0, seconds: 0 }): void {
+    if (!validFocusSegments([segment])) return;
     let cursor = segment.start;
     const end = Math.max(segment.start, segment.end);
     while (cursor < end) {
@@ -425,7 +462,10 @@ export class ActivityLogService {
       const nextDay = new Date(dayStart);
       nextDay.setDate(nextDay.getDate() + 1);
       const sliceEnd = Math.min(end, nextDay.getTime());
-      const seconds = Math.max(0, Math.round((sliceEnd - cursor) / 1000));
+      rounding.milliseconds += sliceEnd - cursor;
+      const roundedTotal = Math.round(rounding.milliseconds / 1000);
+      const seconds = roundedTotal - rounding.seconds;
+      rounding.seconds = roundedTotal;
       const date = this.formatDate(new Date(cursor));
       const activity = this.ensureDailyActivity(date);
       activity.focusSeconds = (activity.focusSeconds ?? Math.round(activity.focusMinutes * 60)) + seconds;
@@ -490,19 +530,28 @@ export class ActivityLogService {
 
   /** 保存到磁盘 */
   private async save(): Promise<void> {
+    if (this.storageError) return;
     this.data.lastSyncTime = Date.now();
     const content = JSON.stringify(this.data, null, 2);
     const write = this.saveQueue
       .catch(() => undefined)
       .then(async () => {
+        if (this.storageError) return;
         const adapter = this.app.vault.adapter;
+        const latest = await adapter.exists(this.dataPath) ? await adapter.read(this.dataPath) : null;
+        if (latest !== this.persistedText) throw new Error("活动日志被外部修改，未覆盖");
         if (!(await adapter.exists(this.dataRoot))) await adapter.mkdir(this.dataRoot);
         await adapter.write(this.dataPath, content);
+        this.persistedText = content;
       });
     this.saveQueue = write.catch(() => undefined);
     try {
       await write;
     } catch (e) {
+      if (!this.storageError) {
+        this.storageError = new Error(String(e));
+        new Notice("活动与专注日志保存失败或检测到外部修改，已停止后续写入；请检查存储与同步后重新加载。本次新记录仅保留在内存中。", 12000);
+      }
       console.error("[ActivityLog] 保存失败:", e);
     }
   }

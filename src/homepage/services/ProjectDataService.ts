@@ -11,7 +11,7 @@
 import { App, TFile, TFolder } from "obsidian";
 import { CacheManager } from "./CacheManager";
 import { findProjectHomeFile, PROJECT_HOME_FILENAME } from "./ProjectHomeFileResolver";
-import { loadProjectHome, mutateProjectHome, saveProjectHome } from "./ProjectHomeStore";
+import { loadProjectHome, mutateProjectHome } from "./ProjectHomeStore";
 import type {
   ProjectMetadata,
   ProjectStatistics,
@@ -53,6 +53,18 @@ export class ProjectDataService {
     this.cache = new CacheManager(this.config.maxCacheSize, this.config.cacheTTL);
   }
 
+  /**
+   * Attach the canonical task source after a shared service manager has
+   * already been created by an entry point that did not have TaskSyncService
+   * available yet.  Cached fallback data must be discarded immediately so a
+   * later page cannot keep showing the legacy .home task list.
+   */
+  setTaskSyncService(taskSyncService?: TaskSyncService): void {
+    if (this.taskSyncService === taskSyncService) return;
+    this.taskSyncService = taskSyncService;
+    this.clearAllCache();
+  }
+
   // ============================================================
   // 项目元数据
   // ============================================================
@@ -77,7 +89,7 @@ export class ProjectDataService {
 
       // 数据验证和规范化
       const normalized = this.normalizeConsoleData(data);
-      registerDeliverablePaths(projectPath, normalized.deliverables);
+      registerDeliverablePaths(this.app, projectPath, normalized.deliverables);
       this.rememberDeliverableFolders(projectPath, normalized.deliverables);
 
       // 缓存结果
@@ -89,26 +101,6 @@ export class ProjectDataService {
     } catch (error) {
       console.error(`[ProjectDataService] 读取项目数据失败: ${projectPath}`, error);
       return null;
-    }
-  }
-
-  /**
-   * 保存项目控制台数据
-   */
-  async saveProjectConsoleData(projectPath: string, data: ProjectConsoleData): Promise<boolean> {
-    try {
-      const saved = await saveProjectHome(this.app, projectPath, data);
-      if (!saved) return false;
-
-      // 使缓存失效
-      this.cache.invalidate(`console:${projectPath}`);
-      this.cache.invalidatePattern(`stats:${projectPath}*`);
-      this.cache.invalidatePattern(`health:${projectPath}*`);
-
-      return true;
-    } catch (error) {
-      console.error(`[ProjectDataService] 保存项目数据失败: ${projectPath}`, error);
-      return false;
     }
   }
 
@@ -170,7 +162,7 @@ export class ProjectDataService {
       ? await this.taskSyncService.getTasks(projectPath)
       : null;
     const taskSource = timelineTasks ?? consoleData?.tasks ?? [];
-    const files = this.getAllFiles(folder).filter((file) => !this.isDeliverableFile(projectPath, file.path));
+    const files = this.getAllFiles(folder).filter((file) => file.extension !== "home" && !this.isDeliverableFile(projectPath, file.path));
 
     const now = Date.now();
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -399,7 +391,7 @@ export class ProjectDataService {
       this.deliverableFolders.set(newProjectPath, new Set(deliverableFolders));
       this.deliverableFolders.delete(oldProjectPath);
     }
-    rebaseDeliverableProjectPath(oldProjectPath, newProjectPath);
+    rebaseDeliverableProjectPath(this.app, oldProjectPath, newProjectPath);
     this.clearProjectCache(oldProjectPath);
     this.clearProjectCache(newProjectPath);
   }
@@ -499,7 +491,7 @@ export class ProjectDataService {
   }
 
   private isDeliverableFile(projectPath: string, filePath: string): boolean {
-    if (isDeliverablePath(projectPath, filePath)) return true;
+    if (isDeliverablePath(this.app, projectPath, filePath)) return true;
     const relativePath = filePath.startsWith(`${projectPath}/`) ? filePath.slice(projectPath.length + 1) : filePath;
     const firstSegment = relativePath.split("/")[0];
     return this.deliverableFolders.get(projectPath)?.has(firstSegment) ?? false;

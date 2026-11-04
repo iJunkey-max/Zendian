@@ -1,4 +1,8 @@
-import { App, TFile } from "obsidian";
+import { isProjectData } from "./project-validation";
+import { recordProjectChanges } from "./project-events";
+import { registerDeliverablePaths } from "./DeliverablePathRegistry";
+import { App, type TFile } from "obsidian";
+import { getPluginDataPath } from "../../utils/plugin-paths";
 import type {
   ProjectConsoleData,
   ProjectConsoleMilestone,
@@ -9,9 +13,7 @@ import {
   findProjectHomeFile,
   findProjectOverviewFile,
   findProjectTimelineFile,
-  PROJECT_HOME_FILENAME,
 } from "./ProjectHomeFileResolver";
-import { formatDate } from "../../utils/date";
 
 export interface ProjectHomeRecord {
   file: TFile;
@@ -21,9 +23,30 @@ export interface ProjectHomeRecord {
 const LEGACY_TASK_REGEX = /^- \[([ xX])\] (.+)$/;
 const migrationLocks = new Map<string, Promise<ProjectHomeRecord | null>>();
 const projectWriteQueues = new Map<string, Promise<void>>();
+const appScopeIds = new WeakMap<object, number>();
+let nextAppScopeId = 1;
 
-function enqueueProjectWrite<T>(projectPath: string, operation: () => Promise<T>): Promise<T> {
-  const key = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
+function appScopeKey(app: App, projectPath: string): string {
+  let scopeId = appScopeIds.get(app as unknown as object);
+  if (!scopeId) {
+    scopeId = nextAppScopeId++;
+    appScopeIds.set(app as unknown as object, scopeId);
+  }
+  const normalized = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
+  return `${scopeId}::${normalized}`;
+}
+
+function prepareWrite(data: ProjectConsoleData): ProjectConsoleData {
+  const normalized = normalizeData(data).data;
+  normalized.projectId ||= globalThis.crypto.randomUUID();
+  normalized.schemaVersion = 2;
+  // The first explicit write materializes legacy tasks; later reads must not resurrect removed tasks.
+  if (normalized.timeline) normalized.timeline.migratedAt ||= new Date().toISOString();
+  return normalized;
+}
+
+function enqueueProjectWrite<T>(app: App, projectPath: string, operation: () => Promise<T>): Promise<T> {
+  const key = appScopeKey(app, projectPath);
   const previous = projectWriteQueues.get(key) ?? Promise.resolve();
   const current = previous.catch(() => undefined).then(operation);
   const settled = current.then(() => undefined, () => undefined);
@@ -123,8 +146,7 @@ function normalizeData(data: ProjectConsoleData): { data: ProjectConsoleData; ch
     data.overview = { markdown: "" };
     changed = true;
   }
-  if (!data.timeline) {
-    const legacyMilestones = Array.isArray((data as any).milestones)
+  const legacyMilestones = Array.isArray((data as any).milestones)
       ? (data as any).milestones.map((milestone: any, index: number) => ({
           id: milestone.id || `milestone-${index}`,
           name: milestone.name || milestone.title || "未命名里程碑",
@@ -133,10 +155,23 @@ function normalizeData(data: ProjectConsoleData): { data: ProjectConsoleData; ch
           completed: Boolean(milestone.completed ?? milestone.isCompleted),
         }))
       : [];
+  if (!data.timeline) {
     data.timeline = { milestones: legacyMilestones };
     changed = true;
   } else if (!Array.isArray(data.timeline.milestones)) {
-    data.timeline.milestones = [];
+    data.timeline.milestones = legacyMilestones;
+    changed = true;
+  } else if (data.timeline.milestones.length === 0 && legacyMilestones.length) {
+    data.timeline.milestones = legacyMilestones;
+    changed = true;
+  }
+  // The old `milestones` array and the canonical `timeline.milestones` array
+  // describe the same records. Keeping both after migration makes the unified
+  // event collector emit duplicate baseline/update events. Once the canonical
+  // timeline exists, remove the legacy mirror; the original file is still
+  // backed up on the first explicit write.
+  if (Object.prototype.hasOwnProperty.call(data, "milestones")) {
+    delete (data as any).milestones;
     changed = true;
   }
   return { data, changed };
@@ -146,125 +181,53 @@ function taskSignature(task: ProjectConsoleTask): string {
   return [task.text.trim(), task.created || "", task.due || "", task.dueTime || ""].join("|");
 }
 
-async function loadProjectHomeInternal(
-  app: App,
-  projectPath: string,
-  preferredName?: string,
-): Promise<ProjectHomeRecord | null> {
-  let file = findProjectHomeFile(app, projectPath, preferredName);
-  if (!file) {
-    const overview = findProjectOverviewFile(app, projectPath);
-    const timeline = findProjectTimelineFile(app, projectPath);
-    if (!overview && !timeline) return null;
-    const name = preferredName?.trim() || projectPath.split("/").pop()?.replace(/^\d+_/, "") || "未命名项目";
-    const initial: ProjectConsoleData = {
-      name,
-      icon: "lucide-folder",
-      description: "",
-      type: "未分类",
-      status: "initiated",
-      statusHistory: [],
-      createdAt: formatDate(new Date()),
-      tasks: [],
-      deliverables: [],
-      overview: { markdown: "" },
-      timeline: { milestones: [] },
-    };
-    file = await app.vault.create(
-      `${projectPath.replace(/\/+$/, "")}/${PROJECT_HOME_FILENAME}`,
-      JSON.stringify(initial, null, 2),
-    );
-  }
-
-  try {
-    const parsed = JSON.parse(await app.vault.read(file)) as ProjectConsoleData;
-    const normalized = normalizeData(parsed);
-    const data = normalized.data;
-    let changed = normalized.changed;
-    const overviewFile = findProjectOverviewFile(app, projectPath);
-    const timelineFile = findProjectTimelineFile(app, projectPath);
-
-    if (overviewFile) {
-      const overviewMarkdown = await app.vault.read(overviewFile);
-      data.overview = {
-        markdown: overviewMarkdown,
-        migratedAt: new Date().toISOString(),
-      };
-      if (!data.description) {
-        data.description = overviewMarkdown
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .find((line) => line && !line.startsWith("#") && !line.startsWith("> 创建于"))
-          ?.slice(0, 240) || "";
-      }
-      changed = true;
-    }
-
-    if (timelineFile) {
-      const markdown = await app.vault.read(timelineFile);
-      const legacy = parseLegacyTimeline(markdown);
-      const existing = new Set(data.tasks.map(taskSignature));
-      for (const task of legacy.tasks) {
-        if (!existing.has(taskSignature(task))) data.tasks.push(task);
-      }
-      const milestoneMap = new Map(
-        [...(data.timeline?.milestones || []), ...legacy.milestones]
-          .map((milestone) => [`${milestone.name}|${milestone.date}`, milestone] as const),
-      );
-      data.timeline = {
-        milestones: Array.from(milestoneMap.values()),
-        legacyMarkdown: markdown,
-        migratedAt: new Date().toISOString(),
-      };
-      changed = true;
-    }
-
-    if (changed) await app.vault.modify(file, JSON.stringify(data, null, 2));
-
-    // 先把原文和结构化数据安全写入 .home，再把旧文档移入可恢复的 Vault 回收站。
-    if (overviewFile) await app.vault.trash(overviewFile, false);
-    if (timelineFile) await app.vault.trash(timelineFile, false);
-
-    const canonicalPath = `${projectPath.replace(/\/+$/, "")}/${PROJECT_HOME_FILENAME}`;
-    const canonical = app.vault.getAbstractFileByPath(canonicalPath);
-    if (file.path !== canonicalPath && !canonical) {
-      await app.vault.rename(file, canonicalPath);
-      const renamed = app.vault.getAbstractFileByPath(canonicalPath);
-      if (renamed instanceof TFile) file = renamed;
-    }
-    return { file, data };
-  } catch (error) {
-    console.error(`[ProjectHomeStore] 读取或迁移项目主页失败: ${projectPath}`, error);
-    return null;
-  }
-}
-
 export async function loadProjectHome(
   app: App,
   projectPath: string,
   preferredName?: string,
 ): Promise<ProjectHomeRecord | null> {
-  const key = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
+  const normalized = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
+  const key = appScopeKey(app, normalized);
   const running = migrationLocks.get(key);
   if (running) return running;
-  const task = loadProjectHomeInternal(app, key, preferredName).finally(() => migrationLocks.delete(key));
+  const task = readProjectHome(app, normalized, preferredName).finally(() => migrationLocks.delete(key));
   migrationLocks.set(key, task);
   return task;
 }
 
-export async function saveProjectHome(app: App, projectPath: string, data: ProjectConsoleData): Promise<boolean> {
-  return enqueueProjectWrite(projectPath, async () => {
-    const file = findProjectHomeFile(app, projectPath, data.name);
-    if (!file) return false;
-    try {
-      const normalized = normalizeData(data).data;
-      await app.vault.modify(file, JSON.stringify(normalized, null, 2));
-      return true;
-    } catch (error) {
-      console.error(`[ProjectHomeStore] 保存项目主页失败: ${projectPath}`, error);
-      return false;
+/** Reading a project is deliberately free of filesystem mutations. */
+async function readProjectHome(app: App, path: string, name?: string): Promise<ProjectHomeRecord | null> {
+  const file = findProjectHomeFile(app, path, name);
+  if (!file) return null;
+  try {
+    const parsed = JSON.parse(await app.vault.read(file)) as ProjectConsoleData;
+    if (!isProjectData(parsed)) return null;
+    const data = normalizeData(parsed).data;
+    registerDeliverablePaths(app, path, data.deliverables);
+    if (!data.overview?.migratedAt && !data.overview?.markdown) {
+      const overview = findProjectOverviewFile(app, path);
+      if (overview) data.overview = { markdown: await app.vault.read(overview) };
     }
-  });
+    // Legacy content remains available without moving or deleting the source notes.
+    if (!data.timeline?.migratedAt) {
+      const timeline = findProjectTimelineFile(app, path);
+      if (timeline) {
+        const legacy = parseLegacyTimeline(await app.vault.read(timeline));
+        const signatures = new Set(data.tasks.map(taskSignature));
+        for (const task of legacy.tasks) {
+          if (!signatures.has(taskSignature(task))) {
+            data.tasks.push(task);
+            signatures.add(taskSignature(task));
+          }
+        }
+        data.timeline = { ...data.timeline, milestones: data.timeline?.milestones?.length ? data.timeline.milestones : legacy.milestones };
+      }
+    }
+    return { file, data };
+  } catch (error) {
+    console.error(`[ProjectHomeStore] 无法读取项目，已保留原文件: ${path}`, error);
+    return null;
+  }
 }
 
 /**
@@ -276,14 +239,40 @@ export async function mutateProjectHome(
   projectPath: string,
   mutator: (data: ProjectConsoleData) => boolean | void | Promise<boolean | void>,
 ): Promise<boolean> {
-  return enqueueProjectWrite(projectPath, async () => {
+  return enqueueProjectWrite(app, projectPath, async () => {
     const record = await loadProjectHome(app, projectPath);
     if (!record) return false;
     try {
-      const shouldSave = await mutator(record.data);
+      const before = await app.vault.read(record.file);
+      // Re-read instead of trusting a possibly shared read promise or a UI cache.
+      const latest = JSON.parse(before) as ProjectConsoleData;
+      if (!isProjectData(latest)) return false;
+      const current = normalizeData(latest).data;
+      if (!current.timeline?.migratedAt) {
+        current.tasks = record.data.tasks;
+        current.timeline = record.data.timeline;
+      }
+      if (!current.overview?.markdown && record.data.overview?.markdown) current.overview = record.data.overview;
+      const previous = structuredClone(current);
+      const shouldSave = await mutator(current);
       if (shouldSave === false) return false;
-      const normalized = normalizeData(record.data).data;
-      await app.vault.modify(record.file, JSON.stringify(normalized, null, 2));
+      recordProjectChanges(previous, current);
+      if (latest.schemaVersion !== 2 || !latest.projectId) {
+        const backupPath = getPluginDataPath(app, `project-backup-${globalThis.crypto.randomUUID()}.json`);
+        await app.vault.adapter.write(backupPath, before);
+      }
+      const normalized = prepareWrite(current);
+      if (!isProjectData(normalized)) throw new Error("修改后的项目数据格式无效，原主页未覆盖");
+      await app.vault.process(record.file, content => {
+        if (content !== before) throw new Error("项目已被外部修改，请刷新后重试；原文件未覆盖");
+        return JSON.stringify(normalized, null, 2);
+      });
+      try {
+        (app.workspace as any)?.trigger?.("zendian:project-changed", projectPath);
+      } catch (error) {
+        // A view notification failure must not report a committed write as failed.
+        console.error("[ProjectHomeStore] 已保存，但界面通知失败", error);
+      }
       return true;
     } catch (error) {
       console.error(`[ProjectHomeStore] 更新项目主页失败: ${projectPath}`, error);

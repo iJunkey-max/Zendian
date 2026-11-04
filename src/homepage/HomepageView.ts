@@ -1,3 +1,7 @@
+import { ProjectCreationService } from "./services/ProjectCreationService";
+import { ProjectImportModal } from "./ProjectImportModal";
+import { RegisterProjectModal } from "./RegisterProjectModal";
+import { ProjectMaintenanceModal } from "./ProjectMaintenanceModal";
 /**
  * HomepageView — ZENdian 主页视图
  *
@@ -5,7 +9,7 @@
  * 集成各数据服务，渲染完整主页。
  */
 
-import { ItemView, type WorkspaceLeaf, type App, TFile, TFolder, getIcon, Modal, Setting, Notice, MarkdownRenderer } from "obsidian";
+import { ItemView, type WorkspaceLeaf, type App, TFile, TFolder, getIcon, Modal, Setting, Notice, MarkdownRenderer, Menu } from "obsidian";
 import { HomepageStatsService } from "./HomepageStatsService";
 import { HomepageDataService } from "./HomepageDataService";
 import { HomepageBookmarksService } from "./HomepageBookmarksService";
@@ -13,7 +17,7 @@ import { HomepageWeatherService } from "./HomepageWeatherService";
 import { HomepageProjectScanService } from "./HomepageProjectScanService";
 import { ActivityLogService } from "../services/ActivityLogService";
 import { QuickNoteModal, renderQuickNoteForm } from "./QuickNoteModal";
-import { createDefaultConsoleData } from "./ProjectConsoleView";
+import { ProjectRegistry } from "./services/ProjectRegistry";
 import { IconPickerModal } from "../ui/icon-picker-modal";
 import type { HomepageProject, HomepageQuickNote } from "./types";
 import type { ProjectCategory } from "../types/settings.types";
@@ -29,7 +33,8 @@ import type { EventBus } from "../core/event-bus";
 import type { SettingsManager } from "../core/settings-manager";
 import { renderProjectFilterBar, DEFAULT_FILTER, type ProjectFilter } from "./components/ProjectFilterBar";
 import { applyFilterAndSort } from "./utils/ProjectFilterUtils";
-import { ProjectTimelineService, type ProjectStats } from "./services/ProjectTimelineService";
+import type { ProjectOverviewStatistics } from "./services/StatisticsService";
+import type { StatisticsService } from "./services/StatisticsService";
 import type { Task } from "../services/TaskSyncService";
 import type { TaskSyncService } from "../services/TaskSyncService";
 import type { TaskPriority as StorageTaskPriority } from "../services/TaskSyncService";
@@ -39,10 +44,10 @@ import { mountActivityHeatmap } from "./components/ActivityHeatmap";
 import { getProjectSubfolderName } from "./project-subfolders";
 import {
   findProjectHomeFile,
-  PROJECT_HOME_FILENAME,
 } from "./services/ProjectHomeFileResolver";
 import { formatDate } from "../utils/date";
 import { openPopoutForm, type PopoutFormOptions } from "../ui/popout-form";
+import { confirmAction } from "../ui/confirm-modal";
 import { resolveIconSvg } from "../utils/icon-renderer";
 
 export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
@@ -54,6 +59,10 @@ export interface HomepageDependencies {
   events: EventBus;
   activityLogService: ActivityLogService;
   taskSyncService: TaskSyncService;
+  /** 主主页详情统计与项目控制台共用同一服务实例。 */
+  statisticsService: StatisticsService;
+  /** 首页项目入口与命令面板共用同一份身份/文件核对服务。 */
+  reconcileProjects?: () => Promise<void>;
 }
 
 /** SVG 图标工具 — 16x16 Lucide 风格 */
@@ -140,6 +149,7 @@ class ProjectCreateModal extends Modal {
   }
 
   onOpen(): void {
+    this.modalEl.addClass("zendian-shared-modal");
     const { contentEl } = this;
     const settings = this.settingsManager.getSettings();
     const categories = settings.homepage.projectCategories;
@@ -155,17 +165,16 @@ class ProjectCreateModal extends Modal {
     // 项目编号 + 名称
     const nameSetting = new Setting(contentEl)
       .setName("项目名称")
-      .setDesc("文件夹按“编号_项目名称”命名");
+      .setDesc("编号可留空；分类与存放位置分别设置");
     nameSetting.settingEl.addClass("homepage-project-name-setting");
     nameSetting.controlEl.addClass("homepage-project-name-control");
     nameSetting.addText((text) => {
       this.numberInput = text.inputEl;
       text.inputEl.addClass("homepage-project-number-input");
       text.inputEl.inputMode = "numeric";
-      text.setPlaceholder("编号").onChange((value) => (this.numberValue = value));
+      text.setPlaceholder("编号（可选）").onChange((value) => (this.numberValue = value));
     });
     nameSetting.addText((text) => {
-      this.nameInput = text.inputEl;
       text.inputEl.addClass("homepage-project-name-input");
       text.setPlaceholder("输入项目名称").onChange((value) => (this.nameValue = value));
     });
@@ -184,7 +193,11 @@ class ProjectCreateModal extends Modal {
     for (const opt of typeOptions) {
       select.createEl("option", { value: opt.folder, text: opt.label });
     }
+    select.createEl("option", { value: "", text: "未分类" });
     this.typeSelect = select;
+    new Setting(contentEl).setName("存放目录")
+      .setDesc("留空使用分类默认目录；输入 / 放在知识库根目录，也可输入任意相对目录，如 工作/2026")
+      .addText(text => text.setPlaceholder("分类默认目录").onChange(value => { this.parentPathValue = value; }));
 
     // 项目图标
     const iconSetting = new Setting(contentEl).setName("项目图标");
@@ -220,8 +233,7 @@ class ProjectCreateModal extends Modal {
 
     // 自动聚焦
     setTimeout(() => {
-      const input = contentEl.querySelector("input[type=text]") as HTMLInputElement;
-      if (input) input.focus();
+      this.numberInput?.focus();
     }, 50);
   }
 
@@ -233,8 +245,9 @@ class ProjectCreateModal extends Modal {
   private numberValue = "";
   private descValue = "";
   private numberInput!: HTMLInputElement;
-  private nameInput!: HTMLInputElement;
   private typeSelect!: HTMLSelectElement;
+  private parentPathValue = "";
+  private creating = false;
 
   private refreshIconDisplay(): void {
     const iconName = this.selectedIcon.startsWith("lucide-") ? this.selectedIcon.slice(7) : this.selectedIcon;
@@ -246,71 +259,27 @@ class ProjectCreateModal extends Modal {
     }
   }
 
-  private async createProject(customIcons: Record<string, string>): Promise<void> {
-    const number = this.numberValue.trim();
-    const name = this.nameValue.trim();
-    if (!/^\d+$/.test(number)) {
-      new Notice("项目编号只能包含数字");
-      this.numberInput.focus();
-      return;
-    }
-    if (!name || /[\\/:*?"<>|]/.test(name) || name === "." || name === "..") {
-      new Notice("请输入有效的项目名称，不能包含 \\ / : * ? \" < > |");
-      this.nameInput.focus();
-      return;
-    }
-
-    const typeFolder = this.typeSelect.value;
-    const category = this.settingsManager.getSettings().homepage.projectCategories
-      .find((item) => getProjectCategoryFolder(item) === typeFolder);
-    if (!category) {
-      new Notice("请先在设置中添加项目分类");
-      return;
-    }
-    const folderName = `${number}_${name}`;
-    const projectPath = `${typeFolder}/${folderName}`;
-
-    if (this.app.vault.getAbstractFileByPath(projectPath)) {
-      new Notice(`项目文件夹 ${folderName} 已存在`);
-      return;
-    }
-
-    const categoryFolder = this.app.vault.getAbstractFileByPath(typeFolder);
-    if (
-      categoryFolder instanceof TFolder
-      && categoryFolder.children.some((child) => child instanceof TFolder && child.name.startsWith(`${number}_`))
-    ) {
-      new Notice(`项目编号 ${number} 在“${category.name}”分类中已存在`);
-      this.numberInput.focus();
-      return;
-    }
-
-    // 创建项目根目录
-    await this.app.vault.createFolder(projectPath);
-
-    const projectSubfolders = this.settingsManager.getSettings().homepage.projectSubfolders[category.number] ?? [];
-    const updatedIcons = { ...customIcons };
-    for (const template of projectSubfolders) {
-      const subfolderPath = `${projectPath}/${getProjectSubfolderName(template)}`;
-      await this.app.vault.createFolder(subfolderPath);
-      if (template.icon) updatedIcons[subfolderPath] = template.icon;
-    }
-
-    // 项目概览、时间轴与待办统一保存在项目主页文件。
-    const consoleData = createDefaultConsoleData(name, this.selectedIcon, category.name, this.descValue.trim());
-    await this.app.vault.create(
-      `${projectPath}/${PROJECT_HOME_FILENAME}`,
-      JSON.stringify(consoleData, null, 2)
-    );
-
-    if (this.selectedIcon !== "lucide-folder") updatedIcons[projectPath] = this.selectedIcon;
-    if (Object.keys(updatedIcons).length !== Object.keys(customIcons).length || this.selectedIcon !== "lucide-folder") {
-      await this.settingsManager.update("iconSystem", { customIcons: updatedIcons });
-    }
-
-    this.close();
-    this.scanService.markDirty();
-    this.onCreated();
+  private async createProject(_customIcons: Record<string, string>): Promise<void> {
+    if (this.creating) return;
+    this.creating = true;
+    try {
+      const typeFolder = this.typeSelect.value;
+      const settings = this.settingsManager.getSettings();
+      const category = settings.homepage.projectCategories.find(item => getProjectCategoryFolder(item) === typeFolder);
+      const result = await new ProjectCreationService(this.app).create({
+        name: this.nameValue, number: this.numberValue,
+        parentPath: this.parentPathValue.trim() || typeFolder,
+        category: category?.name || "未分类", description: this.descValue,
+        icon: this.selectedIcon,
+        subfolders: (category ? settings.homepage.projectSubfolders[category.number] ?? [] : []).map(template => ({name: getProjectSubfolderName(template), icon: template.icon})),
+      });
+      try {
+        if (Object.keys(result.icons).length) await this.settingsManager.update("iconSystem", { customIcons: { ...this.settingsManager.getSettings().iconSystem.customIcons, ...result.icons } });
+      } catch (error) { console.error("[ProjectCreation] 项目已创建，图标设置未保存", error); }
+      new Notice("项目已创建：" + result.path);
+      this.close(); this.scanService.markDirty(); this.onCreated();
+    } catch (error) { new Notice(String(error)); }
+    finally { this.creating = false; }
   }
 
 }
@@ -322,8 +291,10 @@ export class ProjectCreatePopoutView extends ItemView {
   private numberValue = "";
   private descValue = "";
   private numberInput!: HTMLInputElement;
-  private nameInput!: HTMLInputElement;
   private typeSelect!: HTMLSelectElement;
+  private typeFolder: string | null = null;
+  private parentPathValue = "";
+  private creating = false;
   private scanService: HomepageProjectScanService;
 
   constructor(leaf: WorkspaceLeaf, private settingsManager: SettingsManager) {
@@ -343,8 +314,32 @@ export class ProjectCreatePopoutView extends ItemView {
     return "folder-plus";
   }
 
+  getState(): Record<string, unknown> {
+    return {
+      version: 1,
+      selectedIcon: this.selectedIcon,
+      name: this.nameValue,
+      number: this.numberValue,
+      description: this.descValue,
+      typeFolder: this.typeFolder ?? "",
+      parentPath: this.parentPathValue,
+    };
+  }
+
+  async setState(state: Record<string, unknown>, result: any): Promise<void> {
+    this.selectedIcon = typeof state.selectedIcon === "string" && state.selectedIcon.trim() ? state.selectedIcon : "lucide-folder";
+    this.nameValue = typeof state.name === "string" ? state.name : "";
+    this.numberValue = typeof state.number === "string" ? state.number : "";
+    this.descValue = typeof state.description === "string" ? state.description : "";
+    this.typeFolder = typeof state.typeFolder === "string" ? state.typeFolder : null;
+    this.parentPathValue = typeof state.parentPath === "string" ? state.parentPath : "";
+    await super.setState(state, result);
+    await this.onOpen();
+  }
+
   async onOpen(): Promise<void> {
     const contentEl = createPopoutContent(this.leaf, "zendian-popout-form");
+    const persistDraft = () => this.app.workspace.requestSaveLayout();
     const settings = this.settingsManager.getSettings();
     const categories = settings.homepage.projectCategories;
     const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
@@ -357,32 +352,40 @@ export class ProjectCreatePopoutView extends ItemView {
 
     const nameSetting = new Setting(contentEl)
       .setName("项目名称")
-      .setDesc("文件夹将按“编号_项目名称”命名");
+      .setDesc("编号可留空；分类与存放位置分别设置");
     nameSetting.settingEl.addClass("homepage-project-name-setting");
     nameSetting.controlEl.addClass("homepage-project-name-control");
     nameSetting.addText((text) => {
       this.numberInput = text.inputEl;
       text.inputEl.addClass("homepage-project-number-input");
       text.inputEl.inputMode = "numeric";
-      text.setPlaceholder("编号").onChange((value) => (this.numberValue = value));
+      text.setPlaceholder("编号（可选）").setValue(this.numberValue).onChange((value) => { this.numberValue = value; persistDraft(); });
     });
     nameSetting.addText((text) => {
-      this.nameInput = text.inputEl;
       text.inputEl.addClass("homepage-project-name-input");
-      text.setPlaceholder("输入项目名称").onChange((value) => (this.nameValue = value));
+      text.setPlaceholder("输入项目名称").setValue(this.nameValue).onChange((value) => { this.nameValue = value; persistDraft(); });
     });
 
     const descriptionSetting = new Setting(contentEl).setName("项目简介");
     descriptionSetting.settingEl.addClass("homepage-project-description-setting");
     descriptionSetting.addTextArea((text) => {
-      text.setPlaceholder("输入项目简介，支持 Markdown 和换行").onChange((v) => (this.descValue = v));
+      text.setPlaceholder("输入项目简介，支持 Markdown 和换行").setValue(this.descValue).onChange((v) => { this.descValue = v; persistDraft(); });
       text.inputEl.addClass("homepage-project-description-input");
     });
 
     const typeSetting = new Setting(contentEl).setName("项目类型");
     const select = typeSetting.controlEl.createEl("select");
     for (const opt of typeOptions) select.createEl("option", { value: opt.folder, text: opt.label });
+    select.createEl("option", { value: "", text: "未分类" });
     this.typeSelect = select;
+    if (this.typeFolder === null) this.typeFolder = select.value;
+    else if (this.typeFolder === "") select.value = "";
+    else if (typeOptions.some(option => option.folder === this.typeFolder)) select.value = this.typeFolder;
+    else { select.value = ""; this.typeFolder = ""; }
+    select.addEventListener("change", () => { this.typeFolder = select.value; persistDraft(); });
+    new Setting(contentEl).setName("存放目录")
+      .setDesc("留空使用分类默认目录；输入 / 放在知识库根目录，也可输入任意相对目录，如 工作/2026")
+      .addText(text => text.setPlaceholder("分类默认目录").setValue(this.parentPathValue).onChange(value => { this.parentPathValue = value; persistDraft(); }));
 
     const iconSetting = new Setting(contentEl).setName("项目图标");
     this.iconDisplay = iconSetting.controlEl.createDiv({ cls: "homepage-project-modal-icon-current" });
@@ -393,6 +396,7 @@ export class ProjectCreatePopoutView extends ItemView {
       new IconPickerModal(this.app, installedLibs, (iconId) => {
         if (!iconId) return;
         this.selectedIcon = iconId;
+        persistDraft();
         const name = iconId.startsWith("lucide-") ? iconId.slice(7) : iconId;
         const svg = getIcon(name);
         if (svg) this.iconDisplay.innerHTML = svg.outerHTML;
@@ -421,66 +425,28 @@ export class ProjectCreatePopoutView extends ItemView {
     this.iconDisplay.innerHTML = svg ? svg.outerHTML : SVG_ICON.folder;
   }
 
-  private async createProject(customIcons: Record<string, string>): Promise<void> {
-    const number = this.numberValue.trim();
-    const name = this.nameValue.trim();
-    if (!/^\d+$/.test(number)) {
-      new Notice("项目编号只能包含数字");
-      this.numberInput.focus();
-      return;
-    }
-    if (!name || /[\\/:*?"<>|]/.test(name) || name === "." || name === "..") {
-      new Notice("请输入有效的项目名称，不能包含 \\ / : * ? \" < > |");
-      this.nameInput.focus();
-      return;
-    }
-
-    const typeFolder = this.typeSelect.value;
-    const category = this.settingsManager.getSettings().homepage.projectCategories
-      .find((item) => getProjectCategoryFolder(item) === typeFolder);
-    if (!category) {
-      new Notice("请先在设置中添加项目分类");
-      return;
-    }
-
-    const folderName = `${number}_${name}`;
-    const projectPath = `${typeFolder}/${folderName}`;
-    if (this.app.vault.getAbstractFileByPath(projectPath)) {
-      new Notice(`项目文件夹 ${folderName} 已存在`);
-      return;
-    }
-
-    const categoryFolder = this.app.vault.getAbstractFileByPath(typeFolder);
-    if (
-      categoryFolder instanceof TFolder
-      && categoryFolder.children.some((child) => child instanceof TFolder && child.name.startsWith(`${number}_`))
-    ) {
-      new Notice(`项目编号 ${number} 在“${category.name}”分类中已存在`);
-      this.numberInput.focus();
-      return;
-    }
-
-    await this.app.vault.createFolder(projectPath);
-
-    const projectSubfolders = this.settingsManager.getSettings().homepage.projectSubfolders[category.number] ?? [];
-    const updatedIcons = { ...customIcons };
-    for (const template of projectSubfolders) {
-      const subfolderPath = `${projectPath}/${getProjectSubfolderName(template)}`;
-      await this.app.vault.createFolder(subfolderPath);
-      if (template.icon) updatedIcons[subfolderPath] = template.icon;
-    }
-
-    const consoleData = createDefaultConsoleData(name, this.selectedIcon, category.name, this.descValue.trim());
-    await this.app.vault.create(`${projectPath}/${PROJECT_HOME_FILENAME}`, JSON.stringify(consoleData, null, 2));
-
-    if (this.selectedIcon !== "lucide-folder") updatedIcons[projectPath] = this.selectedIcon;
-    if (Object.keys(updatedIcons).length !== Object.keys(customIcons).length || this.selectedIcon !== "lucide-folder") {
-      await this.settingsManager.update("iconSystem", { customIcons: updatedIcons });
-    }
-
-    this.scanService.markDirty();
-    new Notice("项目已创建");
-    this.closeLeaf();
+  private async createProject(_customIcons: Record<string, string>): Promise<void> {
+    if (this.creating) return;
+    this.creating = true;
+    try {
+      const typeFolder = this.typeSelect.value;
+      this.typeFolder = typeFolder;
+      const settings = this.settingsManager.getSettings();
+      const category = settings.homepage.projectCategories.find(item => getProjectCategoryFolder(item) === typeFolder);
+      const result = await new ProjectCreationService(this.app).create({
+        name: this.nameValue, number: this.numberValue,
+        parentPath: this.parentPathValue.trim() || typeFolder,
+        category: category?.name || "未分类", description: this.descValue,
+        icon: this.selectedIcon,
+        subfolders: (category ? settings.homepage.projectSubfolders[category.number] ?? [] : []).map(template => ({name: getProjectSubfolderName(template), icon: template.icon})),
+      });
+      try {
+        if (Object.keys(result.icons).length) await this.settingsManager.update("iconSystem", { customIcons: { ...this.settingsManager.getSettings().iconSystem.customIcons, ...result.icons } });
+      } catch (error) { console.error("[ProjectCreation] 项目已创建，图标设置未保存", error); }
+      new Notice("项目已创建：" + result.path);
+      this.scanService.markDirty(); this.closeLeaf();
+    } catch (error) { new Notice(String(error)); }
+    finally { this.creating = false; }
   }
 
   private closeLeaf(): void {
@@ -499,13 +465,14 @@ class HomepageTaskCreateModal extends Modal {
   constructor(
     app: App,
     private projects: HomepageProject[],
-    private onSubmit: (projectPath: string, text: string, due: string, dueTime: string, priority: StorageTaskPriority) => Promise<void>,
+    private onSubmit: (projectPath: string, text: string, due: string, dueTime: string, priority: StorageTaskPriority) => Promise<boolean>,
   ) {
     super(app);
     this.projectPath = projects[0]?.folderPath || "";
   }
 
   onOpen(): void {
+    this.modalEl.addClass("zendian-shared-modal");
     this.contentEl.empty();
     this.contentEl.createEl("h2", { text: "添加待办" });
 
@@ -545,8 +512,7 @@ class HomepageTaskCreateModal extends Modal {
           new Notice("填写时间前请先选择截止日期");
           return;
         }
-        await this.onSubmit(this.projectPath, this.text, this.due, this.dueTime, this.priority);
-        this.close();
+        if (await this.onSubmit(this.projectPath, this.text, this.due, this.dueTime, this.priority)) this.close();
       });
     });
   }
@@ -560,6 +526,8 @@ class HomepageTaskCreateModal extends Modal {
 
 export class HomepageTaskCreatePopoutView extends ItemView {
   private projectPath = "";
+  private projectId: string | null = null;
+  private saving = false;
   private text = "";
   private due = "";
   private dueTime = "";
@@ -588,13 +556,53 @@ export class HomepageTaskCreatePopoutView extends ItemView {
     return "square-check-big";
   }
 
+  getState(): Record<string, unknown> {
+    return {
+      version: 1,
+      projectPath: this.projectPath,
+      projectId: this.projectId,
+      text: this.text,
+      due: this.due,
+      dueTime: this.dueTime,
+      priority: this.priority,
+    };
+  }
+
+  async setState(state: Record<string, unknown>, result: any): Promise<void> {
+    if (this.saving) return;
+    this.projectPath = typeof state.projectPath === "string" ? state.projectPath : "";
+    this.projectId = typeof state.projectId === "string" && state.projectId ? state.projectId : null;
+    this.text = typeof state.text === "string" ? state.text : "";
+    this.due = typeof state.due === "string" ? state.due : "";
+    this.dueTime = typeof state.dueTime === "string" ? state.dueTime : "";
+    this.priority = ["urgent", "high", "medium", "low"].includes(String(state.priority)) ? state.priority as StorageTaskPriority : "medium";
+    await super.setState(state, result);
+    await this.onOpen();
+  }
+
   async onOpen(): Promise<void> {
     const contentEl = createPopoutContent(this.leaf, "zendian-popout-form");
+    const persistDraft = () => this.app.workspace.requestSaveLayout();
     contentEl.createEl("h2", { text: "添加待办" });
 
     const homepage = this.settingsManager.getSettings().homepage;
     const projects = await this.scanService.getProjects(homepage.projectCategories, homepage.projectArchiveFolder);
-    this.projectPath = projects[0]?.folderPath || "";
+    const savedProjectPath = this.projectPath;
+    const savedProjectId = this.projectId;
+    const savedDraftBinding = Boolean(savedProjectPath || savedProjectId);
+    const selected = projects.find(project => project.folderPath === savedProjectPath);
+    if (!savedDraftBinding) {
+      this.projectPath = projects[0]?.folderPath || "";
+      this.projectId = projects[0] && projects[0].id !== projects[0].folderPath ? projects[0].id : null;
+    } else if (!selected || (savedProjectId && selected.id !== savedProjectId)) {
+      // A restored draft must never silently move to another project. Keep the
+      // old identity as the expected ID so a stale submit fails closed, while
+      // clearing the selectable path forces an explicit user choice.
+      this.projectPath = "";
+      this.projectId = savedProjectId;
+    } else {
+      this.projectId = savedProjectId && selected.id === savedProjectId ? savedProjectId : selected.id !== selected.folderPath ? selected.id : null;
+    }
 
     if (!projects.length) {
       contentEl.createDiv({ cls: "homepage-empty-text", text: "暂无可添加任务的项目" });
@@ -602,14 +610,20 @@ export class HomepageTaskCreatePopoutView extends ItemView {
     }
 
     new Setting(contentEl).setName("项目").addDropdown((dropdown) => {
+      dropdown.addOption("", "请选择项目");
       for (const project of projects) dropdown.addOption(project.folderPath, project.name);
-      dropdown.setValue(this.projectPath).onChange((value) => { this.projectPath = value; });
+      dropdown.setValue(this.projectPath).onChange((value) => {
+        this.projectPath = value;
+        const project = projects.find(item => item.folderPath === value);
+        this.projectId = project && project.id !== project.folderPath ? project.id : null;
+        persistDraft();
+      });
     });
 
     const taskContentSetting = new Setting(contentEl).setName("任务内容");
     taskContentSetting.settingEl.addClass("homepage-task-content-setting");
     taskContentSetting.addTextArea((input) => {
-      input.setPlaceholder("输入任务内容，支持 Markdown 和换行").onChange((value) => { this.text = value; });
+      input.setPlaceholder("输入任务内容，支持 Markdown 和换行").setValue(this.text).onChange((value) => { this.text = value; persistDraft(); });
       input.inputEl.addClass("homepage-task-content-input");
     });
 
@@ -619,6 +633,7 @@ export class HomepageTaskCreatePopoutView extends ItemView {
     this.destroySchedulePicker = createTaskSchedulePicker(scheduleSetting.controlEl, { date: this.due, time: this.dueTime }, (value) => {
       this.due = value.date;
       this.dueTime = value.time;
+      persistDraft();
     });
 
     new Setting(contentEl).setName("优先级").addDropdown((dropdown) => {
@@ -628,7 +643,7 @@ export class HomepageTaskCreatePopoutView extends ItemView {
         .addOption("medium", "普通（P2）")
         .addOption("low", "低优（P3）")
         .setValue(this.priority)
-        .onChange((value) => { this.priority = value as StorageTaskPriority; });
+        .onChange((value) => { this.priority = value as StorageTaskPriority; persistDraft(); });
     });
 
     const actions = contentEl.createDiv("zendian-popout-form-actions");
@@ -636,6 +651,7 @@ export class HomepageTaskCreatePopoutView extends ItemView {
     cancel.addEventListener("click", () => this.closeLeaf());
     const submit = actions.createEl("button", { cls: "mod-cta", text: "添加", attr: { type: "button" } });
     submit.addEventListener("click", async () => {
+      if (this.saving) return;
       if (!this.projectPath || !this.text) {
         new Notice("请选择项目并填写任务内容");
         return;
@@ -644,18 +660,32 @@ export class HomepageTaskCreatePopoutView extends ItemView {
         new Notice("填写时间前请先选择截止日期");
         return;
       }
-      const success = await this.taskSyncService.addTask(this.projectPath, this.text, {
-        created: formatDate(new Date()),
-        due: this.due || undefined,
-        dueTime: this.dueTime || undefined,
-        priority: this.priority,
-      });
-      if (!success) {
-        new Notice("添加失败，请检查项目主页文件");
-        return;
+      this.saving = true;
+      submit.disabled = true;
+      try {
+        const success = await this.taskSyncService.addTask(this.projectPath, this.text, {
+          created: formatDate(new Date()),
+          due: this.due || undefined,
+          dueTime: this.dueTime || undefined,
+          priority: this.priority,
+          expectedProjectId: this.projectId,
+        });
+        if (!success) {
+          new Notice("添加失败，请检查项目主页文件；输入仍保留");
+          return;
+        }
+        new Notice("待办已添加");
+        this.text = "";
+        this.due = "";
+        this.dueTime = "";
+        persistDraft();
+        this.closeLeaf();
+      } catch (error) {
+        new Notice(`待办未保存：${String(error)}`);
+      } finally {
+        this.saving = false;
+        submit.disabled = false;
       }
-      new Notice("待办已添加");
-      this.closeLeaf();
     });
 
     setTimeout(() => {
@@ -682,7 +712,6 @@ export class HomepageView extends ItemView {
   private statsService!: HomepageStatsService;
   private dataService!: HomepageDataService;
   private bookmarksService!: HomepageBookmarksService;
-  private timelineService!: ProjectTimelineService;
   private weatherService!: HomepageWeatherService;
   private projectScanService!: HomepageProjectScanService;
   private activityLogService!: ActivityLogService;
@@ -699,6 +728,8 @@ export class HomepageView extends ItemView {
   private searchPanelEl: HTMLElement | null = null;
   private searchDebounceTimer: number | null = null;
   private animationObserver: IntersectionObserver | null = null;
+  /** Invalidates in-flight loaders whenever the dashboard is rebuilt or closed. */
+  private renderGeneration = 0;
 
   constructor(leaf: WorkspaceLeaf, private dependencies: HomepageDependencies) {
     super(leaf);
@@ -727,6 +758,7 @@ export class HomepageView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    const openGeneration = ++this.renderGeneration;
     this.heatmapCleanup?.();
     this.heatmapCleanup = null;
     // 初始化服务
@@ -735,12 +767,13 @@ export class HomepageView extends ItemView {
     this.bookmarksService = new HomepageBookmarksService(this.app);
     this.weatherService = new HomepageWeatherService();
     this.projectScanService = new HomepageProjectScanService(this.app);
-    this.timelineService = new ProjectTimelineService(this.app);
 
     await this.dataService.load();
+    if (openGeneration !== this.renderGeneration) return;
 
     // 监听 vault 文件变化，增量更新项目扫描
     this.registerEvent(this.app.vault.on("create", (file) => this.onProjectVaultChange(file.path)));
+    this.registerEvent((this.app.workspace as any).on("zendian:project-changed", (path: string) => this.onProjectVaultChange(path)));
     this.registerEvent(this.app.vault.on("modify", (file) => this.onProjectVaultChange(file.path)));
     this.registerEvent(this.app.vault.on("delete", (file) => this.onProjectVaultChange(file.path)));
     this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
@@ -765,6 +798,7 @@ export class HomepageView extends ItemView {
   }
 
   private renderDashboard(): void {
+    const generation = ++this.renderGeneration;
     this.stopClock();
     this.animationObserver?.disconnect();
     this.animationObserver = null;
@@ -800,11 +834,12 @@ export class HomepageView extends ItemView {
     if (settings.monthlyStatsEnabled) this.renderMonthlyStats(grid);
 
     this.startClock();
-    void this.loadDataAsync();
+    void this.loadDataAsync(generation);
     this.initAnimations();
   }
 
   async onClose(): Promise<void> {
+    ++this.renderGeneration;
     this.stopClock();
     this.heatmapCleanup?.();
     this.heatmapCleanup = null;
@@ -948,7 +983,7 @@ export class HomepageView extends ItemView {
     const items = [
       { key: "notes", icon: "fileText" as const, label: "记录笔记", value: "0 条" },
       { key: "tasks", icon: "checkSquare" as const, label: "完成待办", value: "0 项" },
-      { key: "reading", icon: "bookOpen" as const, label: "阅读文章", value: "0 篇" },
+      { key: "reading", icon: "bookOpen" as const, label: "编辑文件", value: "0 篇" },
       { key: "remaining", icon: "clock" as const, label: "剩余待办", value: "0 项" },
     ];
     for (const item of items) {
@@ -975,7 +1010,21 @@ export class HomepageView extends ItemView {
     titleLeft.appendChild(svgIcon("folder"));
     titleLeft.createSpan({ text: "进行中的项目" });
     const titleRight = titleRow.createDiv({ cls: "homepage-card-title-actions" });
-    createCardIconButton(titleRight, "plus", "新建项目", () => this.openProjectCreateModal());
+    const projectActions = createCardIconButton(titleRight, "plus", "项目操作：新建、登记和检查", () => {
+      const menu = new Menu();
+      const refresh = async () => {
+        await this.dependencies.reconcileProjects?.();
+        this.projectScanService.markDirty();
+        await this.loadProjects();
+        await this.loadTodos();
+      };
+      menu.addItem(item => item.setTitle("新建项目").setIcon("plus").onClick(() => this.openProjectCreateModal()));
+      menu.addItem(item => item.setTitle("将现有文件夹设为项目").setIcon("folder").onClick(() => new RegisterProjectModal(this.app, refresh).open()));
+      menu.addItem(item => item.setTitle("项目检查与关联").setIcon("search").onClick(() => new ProjectMaintenanceModal(this.app, refresh).open()));
+      menu.addItem(item => item.setTitle("导入项目迁移包").setIcon("download").onClick(() => new ProjectImportModal(this.app, refresh).open()));
+      const rect = projectActions.getBoundingClientRect();
+      menu.showAtPosition({ x: rect.left, y: rect.bottom });
+    });
     createCardIconButton(titleRight, "list", "查看全部项目", () => this.showAllProjects());
 
     // 项目列表
@@ -1059,11 +1108,12 @@ export class HomepageView extends ItemView {
     card.createDiv({ cls: "homepage-recent-list homepage-bookmark-list" });
   }
 
-  private async loadBookmarks(): Promise<void> {
+  private async loadBookmarks(generation = this.renderGeneration): Promise<void> {
     const list = this.containerEl.querySelector('[data-section="bookmarks"] .homepage-bookmark-list');
     if (!(list instanceof HTMLElement)) return;
 
     const bookmarks = await this.bookmarksService.getBookmarks(6);
+    if (generation !== this.renderGeneration || !list.isConnected) return;
     list.empty();
     if (!bookmarks.length) {
       list.createDiv({ cls: "homepage-empty-text", text: "暂无书签" });
@@ -1179,20 +1229,20 @@ export class HomepageView extends ItemView {
   // 异步数据加载
   // ══════════════════════════════════════════════════════════
 
-  private async loadDataAsync(): Promise<void> {
+  private async loadDataAsync(generation = this.renderGeneration): Promise<void> {
     try {
       const settings = this.dependencies.settingsManager.getSettings().homepage;
       const loaders: Array<Promise<unknown> | void> = [
-        this.loadTodos(),
-        this.loadStickyNotes(),
-        this.loadDailyReviewStats(),
-        this.loadRecentNotes(),
+        this.loadTodos(generation),
+        this.loadStickyNotes(generation),
+        this.loadDailyReviewStats(generation),
+        this.loadRecentNotes(generation),
       ];
-      if (settings.weatherEnabled) loaders.push(this.loadWeather());
-      if (settings.heatmapEnabled) loaders.push(this.loadHeatmap());
-      if (settings.monthlyStatsEnabled) loaders.push(this.loadMonthlyStats());
-      if (settings.projectBoardEnabled) loaders.push(this.loadProjects());
-      if (settings.bookmarksEnabled) loaders.push(this.loadBookmarks());
+      if (settings.weatherEnabled) loaders.push(this.loadWeather(generation));
+      if (settings.heatmapEnabled) loaders.push(this.loadHeatmap(generation));
+      if (settings.monthlyStatsEnabled) loaders.push(this.loadMonthlyStats(generation));
+      if (settings.projectBoardEnabled) loaders.push(this.loadProjects(generation));
+      if (settings.bookmarksEnabled) loaders.push(this.loadBookmarks(generation));
       await Promise.all(loaders);
     } catch (e) {
       console.error("[ZENdian Homepage] Data loading error:", e);
@@ -1201,7 +1251,7 @@ export class HomepageView extends ItemView {
 
   // ── 天气 ──────────────────────────────────────────────────
 
-  private async loadWeather(): Promise<void> {
+  private async loadWeather(generation = this.renderGeneration): Promise<void> {
     try {
       const settings = this.dependencies.settingsManager.getSettings();
       const location = settings?.homepage?.weatherLocation;
@@ -1210,7 +1260,7 @@ export class HomepageView extends ItemView {
       if (!enabled || !location) return;
 
       const weather = await this.weatherService.getWeather(location);
-      if (!weather) return;
+      if (!weather || generation !== this.renderGeneration) return;
 
       const iconWrap = this.containerEl.querySelector(".homepage-weather-icon-wrap") as HTMLElement | null;
       const tempEl = this.containerEl.querySelector(".homepage-weather-temp");
@@ -1233,7 +1283,8 @@ export class HomepageView extends ItemView {
 
   // ── 热力图 ────────────────────────────────────────────────
 
-  private loadHeatmap(): void {
+  private loadHeatmap(generation = this.renderGeneration): void {
+    if (generation !== this.renderGeneration) return;
     const data = this.statsService.getHeatmapData(364);
     const card = this.containerEl.querySelector('[data-section="heatmap"]') as HTMLElement | null;
     if (!card) return;
@@ -1271,7 +1322,7 @@ export class HomepageView extends ItemView {
 
   // ── 月度统计 ──────────────────────────────────────────────
 
-  private async loadMonthlyStats(): Promise<void> {
+  private async loadMonthlyStats(generation = this.renderGeneration): Promise<void> {
     const stats = this.statsService.getMonthlyStats();
     const activityStats = this.activityLogService.getMonthlyStats();
     const lastMonthStats = this.activityLogService.getLastMonthStats();
@@ -1280,6 +1331,7 @@ export class HomepageView extends ItemView {
     const taskCompletions = await this.getMonthlyTaskCompletionCounts();
 
     const projectPaths = await this.getProjectPaths(this.dependencies.settingsManager.getSettings().homepage.projectCategories);
+    if (generation !== this.renderGeneration) return;
     const updates: Record<string, string> = {
       taskCompleted: String(taskCompletions.current),
       focusTime: this.formatFocusMinutes(activityStats.focusMinutes),
@@ -1343,7 +1395,8 @@ export class HomepageView extends ItemView {
 
   // ── 最近笔记 ──────────────────────────────────────────────
 
-  private async loadRecentNotes(): Promise<void> {
+  private async loadRecentNotes(generation = this.renderGeneration): Promise<void> {
+    if (generation !== this.renderGeneration) return;
     const count = this.dependencies.settingsManager.getSettings().homepage.recentNoteCount;
     const notes = this.statsService.getRecentNotes(count);
     const list = this.containerEl.querySelector('[data-section="recent-notes"] .homepage-recent-list');
@@ -1370,7 +1423,7 @@ export class HomepageView extends ItemView {
 
   // ── 项目 ──────────────────────────────────────────────────
 
-  private async loadProjects(): Promise<void> {
+  private async loadProjects(generation = this.renderGeneration): Promise<void> {
     const section = this.containerEl.querySelector('[data-section="projects"]');
     if (!section) return;
 
@@ -1378,8 +1431,10 @@ export class HomepageView extends ItemView {
     const categories = settings.homepage.projectCategories;
     const archiveFolder = settings.homepage.projectArchiveFolder || "99_归档";
 
-    // 加载所有项目
-    this.allProjects = await this.projectScanService.getProjects(categories, archiveFolder);
+    // 加载所有项目；过期渲染不能覆盖当前筛选/项目快照。
+    const projects = await this.projectScanService.getProjects(categories, archiveFolder);
+    if (generation !== this.renderGeneration || !section.isConnected) return;
+    this.allProjects = projects;
 
     // 渲染筛选器（首次加载时）
     let filterContainer = section.querySelector('.homepage-project-filter-bar') as HTMLElement;
@@ -1485,7 +1540,7 @@ export class HomepageView extends ItemView {
     );
 
     // 异步加载统计数据
-    const statsPromise = this.timelineService.getProjectStats(project.folderPath);
+    const statsPromise = this.dependencies.statisticsService.getProjectOverviewStatistics(project.folderPath);
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay" });
     const panel = overlay.createDiv({ cls: "hp-detail-panel hp-detail-panel-enhanced" });
@@ -1522,6 +1577,7 @@ export class HomepageView extends ItemView {
     statsContainer.createDiv({ cls: "hp-detail-stats-loading", text: "加载统计数据..." });
 
     statsPromise.then((stats) => {
+      if (!overlay.isConnected) return;
       statsContainer.empty();
       this.renderProjectStats(statsContainer, stats);
     });
@@ -1542,8 +1598,7 @@ export class HomepageView extends ItemView {
         }
         row.addEventListener("click", () => {
           overlay.remove();
-          const home = findProjectHomeFile(this.app, project.folderPath);
-          if (home) void this.app.workspace.getLeaf(false).openFile(home);
+          void this.openProjectInNewTab(project.folderPath, project.id !== project.folderPath ? project.id : null);
         });
       }
     }
@@ -1564,14 +1619,13 @@ export class HomepageView extends ItemView {
     // 底部操作
     const actions = panel.createDiv({ cls: "hp-detail-actions" });
     const openBtn = actions.createEl("a", { cls: "hp-detail-open-btn", text: "打开项目" });
-    openBtn.addEventListener("click", () => { overlay.remove(); this.openProjectInNewTab(project.folderPath); });
+    openBtn.addEventListener("click", () => { overlay.remove(); void this.openProjectInNewTab(project.folderPath, project.id !== project.folderPath ? project.id : null); });
 
-    // 如果没有 .home 文件，显示「创建控制台」按钮
-    if (!this.hasHomeFile(project.folderPath)) {
-      const createBtn = actions.createEl("a", { cls: "hp-detail-open-btn hp-detail-create-home", text: "创建控制台" });
-      createBtn.addEventListener("click", async () => {
-        await this.createHomeFile(project);
+    if (!findProjectHomeFile(this.app, project.folderPath)) {
+      const check = actions.createEl("button", { cls: "hp-detail-open-btn", text: "检查项目位置与身份", attr: { type: "button" } });
+      check.addEventListener("click", () => {
         overlay.remove();
+        new ProjectMaintenanceModal(this.app, async () => { this.projectScanService.markDirty(); await this.loadProjects(); }).open();
       });
     }
 
@@ -1581,7 +1635,7 @@ export class HomepageView extends ItemView {
   /**
    * 渲染项目统计卡片
    */
-  private renderProjectStats(container: HTMLElement, stats: ProjectStats): void {
+  private renderProjectStats(container: HTMLElement, stats: ProjectOverviewStatistics): void {
     const grid = container.createDiv({ cls: "hp-detail-stats-grid" });
 
     const items = [
@@ -1869,6 +1923,11 @@ export class HomepageView extends ItemView {
   private async openProjectCreateWindow(): Promise<boolean> {
     if (!this.shouldOpenPanelsInNewWindow()) return false;
     try {
+      const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_PROJECT_CREATE)[0];
+      if (existing) {
+        await this.app.workspace.revealLeaf(existing);
+        return true;
+      }
       const leaf = this.app.workspace.openPopoutLeaf({ size: { width: 760, height: 620 } });
       await leaf.setViewState({ type: VIEW_TYPE_PROJECT_CREATE, active: true });
       void this.app.workspace.revealLeaf(leaf);
@@ -1881,15 +1940,15 @@ export class HomepageView extends ItemView {
 
   // ── 工具方法 ──────────────────────────────────────────────
 
-  private async openProjectInNewTab(folderPath: string): Promise<void> {
-    const homeFile = findProjectHomeFile(this.app, folderPath);
-    if (homeFile) {
-      const leaf = this.app.workspace.getLeaf("tab");
-      await leaf.openFile(homeFile);
-      return;
-    }
-
-    new Notice("该项目还没有项目主页");
+  private async openProjectInNewTab(folderPath: string, projectId?: string | null): Promise<void> {
+    try {
+      const discovered = await new ProjectRegistry(this.app).discover();
+      const matches = discovered.projects.filter(project => projectId === null ? project.folderPath === folderPath && !project.projectId : projectId ? project.projectId === projectId : project.folderPath === folderPath);
+      if (matches.length !== 1 || !["ready", "legacy"].includes(matches[0].state)) throw new Error("项目缺失或存在身份冲突，请使用项目检查与关联");
+      const file = this.app.vault.getAbstractFileByPath(matches[0].homePath);
+      if (!(file instanceof TFile)) throw new Error("项目主页已变化，请刷新后重试");
+      await this.app.workspace.getLeaf("tab").openFile(file);
+    } catch (error) { new Notice(String(error)); this.projectScanService.markDirty(); }
   }
 
   private renderProjectStatusTag(container: HTMLElement, projectStatus: ProjectStatus): HTMLElement {
@@ -1947,20 +2006,6 @@ export class HomepageView extends ItemView {
     }
   }
 
-  /** 检查项目是否有 .home 文件 */
-  private hasHomeFile(folderPath: string): boolean {
-    return Boolean(findProjectHomeFile(this.app, folderPath));
-  }
-
-  /** 为项目创建 .home 文件 */
-  private async createHomeFile(project: HomepageProject): Promise<void> {
-    const data = createDefaultConsoleData(project.name, "lucide-folder", project.type, project.description);
-    const filePath = `${project.folderPath}/${PROJECT_HOME_FILENAME}`;
-    await this.app.vault.create(filePath, JSON.stringify(data, null, 2));
-    this.projectScanService.markDirty();
-    this.loadProjects();
-  }
-
   private formatRelativeTime(mtime: number): string {
     const now = Date.now();
     const diffMs = now - mtime;
@@ -1978,19 +2023,7 @@ export class HomepageView extends ItemView {
   }
 
   private onProjectVaultChange(path: string): void {
-    const categories = this.dependencies.settingsManager.getSettings().homepage.projectCategories;
-    let changedProjectPath: string | null = null;
-    const relevant = categories.some((category) => {
-      const root = getProjectCategoryFolder(category);
-      if (path === root) return true;
-      if (!path.startsWith(`${root}/`)) return false;
-      const projectFolder = path.slice(root.length + 1).split("/")[0];
-      if (projectFolder) changedProjectPath = `${root}/${projectFolder}`;
-      return true;
-    });
-    if (!relevant) return;
-
-    if (changedProjectPath) this.projectScanService.invalidate(changedProjectPath);
+    if (path === this.app.vault.configDir || path.startsWith(this.app.vault.configDir + "/")) return;
     this.projectScanService.markDirty();
     if (this.projectRefreshTimer !== null) window.clearTimeout(this.projectRefreshTimer);
     this.projectRefreshTimer = window.setTimeout(() => {
@@ -2018,12 +2051,12 @@ export class HomepageView extends ItemView {
 
   // ── 待办 ──────────────────────────────────────────────────
 
-  private async getCurrentTodoTasks(): Promise<Task[]> {
+  private async getCurrentTodoTasks(generation = this.renderGeneration): Promise<Task[]> {
     const settings = this.dependencies.settingsManager.getSettings();
     const projectPaths = await this.getProjectPaths(settings.homepage.projectCategories);
     let tasks = await this.dependencies.taskSyncService.getAllTasks(projectPaths);
 
-    this.updateTodoTabCountsNew(tasks);
+    if (generation === this.renderGeneration) this.updateTodoTabCountsNew(tasks);
 
     if (this.currentTodoTab === "done") {
       tasks = tasks.filter((task) => task.completed);
@@ -2038,12 +2071,13 @@ export class HomepageView extends ItemView {
     return this.dependencies.taskSyncService.sortByDue(tasks);
   }
 
-  private async loadTodos(): Promise<void> {
+  private async loadTodos(generation = this.renderGeneration): Promise<void> {
     const list = this.containerEl.querySelector('[data-section="todo"] .homepage-todo-list');
     if (!list) return;
 
     try {
-      const allTasks = await this.getCurrentTodoTasks();
+      const allTasks = await this.getCurrentTodoTasks(generation);
+      if (generation !== this.renderGeneration || !list.isConnected) return;
 
       list.empty();
       if (allTasks.length === 0) {
@@ -2057,6 +2091,7 @@ export class HomepageView extends ItemView {
       }
     } catch (e) {
       console.error("[Homepage] 加载待办失败:", e);
+      if (generation !== this.renderGeneration || !list.isConnected) return;
       list.empty();
       list.createDiv({ cls: "homepage-empty-text", text: "加载失败" });
     }
@@ -2158,25 +2193,35 @@ export class HomepageView extends ItemView {
     }
 
     if (await this.openTaskCreateWindow()) return;
-    new HomepageTaskCreateModal(this.app, this.allProjects, async (projectPath, text, due, dueTime, priority) => {
+    const projects = [...this.allProjects];
+    const projectSnapshot = new Map(projects.map(project => [project.folderPath, project]));
+    new HomepageTaskCreateModal(this.app, projects, async (projectPath, text, due, dueTime, priority) => {
+      const project = projectSnapshot.get(projectPath);
       const success = await this.dependencies.taskSyncService.addTask(projectPath, text, {
         created: formatDate(new Date()),
         due: due || undefined,
         dueTime: dueTime || undefined,
         priority,
+        expectedProjectId: project && project.id !== project.folderPath ? project.id : null,
       });
       if (!success) {
         new Notice("添加失败，请检查项目主页文件");
-        return;
+        return false;
       }
       new Notice("待办已添加");
       await Promise.all([this.loadTodos(), this.loadDailyReviewStats(), this.loadProjects()]);
+      return true;
     }).open();
   }
 
   private async openTaskCreateWindow(): Promise<boolean> {
     if (!this.shouldOpenPanelsInNewWindow()) return false;
     try {
+      const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_HOMEPAGE_TASK_CREATE)[0];
+      if (existing) {
+        await this.app.workspace.revealLeaf(existing);
+        return true;
+      }
       const leaf = this.app.workspace.openPopoutLeaf({ size: { width: 720, height: 560 } });
       await leaf.setViewState({ type: VIEW_TYPE_HOMEPAGE_TASK_CREATE, active: true });
       void this.app.workspace.revealLeaf(leaf);
@@ -2218,12 +2263,11 @@ export class HomepageView extends ItemView {
       cls: `homepage-todo-text${task.completed ? " homepage-todo-text--done" : ""}`,
     });
     textSpan.addClass("markdown-preview-view", "markdown-rendered", "zc-inline-markdown");
-    void MarkdownRenderer.renderMarkdown(task.text, textSpan, task.projectPath, null as any);
+    void MarkdownRenderer.render(this.app, task.text, textSpan, task.projectPath, this);
     textSpan.style.cursor = "pointer";
     textSpan.addEventListener("click", (e) => {
       e.stopPropagation();
-      const home = findProjectHomeFile(this.app, task.projectPath);
-      if (home) void this.app.workspace.getLeaf(false).openFile(home);
+      void this.openProjectInNewTab(task.projectPath, task.projectId ?? null);
     });
     left.createDiv({ cls: "homepage-todo-meta", text: task.projectPath });
 
@@ -2255,6 +2299,14 @@ export class HomepageView extends ItemView {
    * 切换任务完成状态（原地勾选）
    */
   private async toggleTask(task: Task, checkboxEl: HTMLElement, onChanged?: () => void): Promise<void> {
+    // A single row must have at most one in-flight mutation. The service also
+    // checks the expected raw line/project identity, but allowing a second
+    // optimistic click here causes confusing double rollback when the first
+    // request wins and the stale second request is rejected.
+    if (checkboxEl.dataset.zendianUpdating === "true") return;
+    checkboxEl.dataset.zendianUpdating = "true";
+    checkboxEl.setAttribute("aria-busy", "true");
+    checkboxEl.setAttribute("aria-disabled", "true");
     // 1. 乐观更新 UI（立即反馈）
     const wasCompleted = task.completed;
     checkboxEl.classList.toggle("homepage-todo-checkbox--done");
@@ -2283,7 +2335,7 @@ export class HomepageView extends ItemView {
 
     // 2. 更新项目主页中的结构化任务
     try {
-      const success = await this.dependencies.taskSyncService.toggleTask(task.projectPath, task.line, task.raw);
+      const success = await this.dependencies.taskSyncService.toggleTask(task.projectPath, task.line, task.raw, wasCompleted, task.projectId);
 
       if (!success) {
         throw new Error("任务切换失败");
@@ -2292,8 +2344,15 @@ export class HomepageView extends ItemView {
       // 3. 记录活动日志
       // 3. 延迟重新加载列表（更新计数和排序）
       setTimeout(() => {
-        this.loadTodos();
-        onChanged?.();
+        void (async () => {
+          try {
+            await this.loadTodos();
+            onChanged?.();
+          } catch (error) {
+            console.error("[Homepage] 任务状态已保存，但首页刷新失败", error);
+            new Notice("任务状态已保存，但首页刷新失败，请重新打开主页；无需重复点击");
+          }
+        })();
       }, 300);
 
     } catch (e) {
@@ -2322,6 +2381,12 @@ export class HomepageView extends ItemView {
 
       // 显示错误提示
       new Notice("任务状态更新失败");
+    } finally {
+      if (checkboxEl.isConnected) {
+        delete checkboxEl.dataset.zendianUpdating;
+        checkboxEl.removeAttribute("aria-busy");
+        checkboxEl.removeAttribute("aria-disabled");
+      }
     }
   }
 
@@ -2329,23 +2394,8 @@ export class HomepageView extends ItemView {
    * 获取项目路径列表
    */
   private async getProjectPaths(categories: ProjectCategory[]): Promise<string[]> {
-    const paths: string[] = [];
-
-    for (const category of categories) {
-      const typeFolder = getProjectCategoryFolder(category);
-      const folder = this.app.vault.getAbstractFileByPath(typeFolder);
-      if (folder instanceof TFolder) {
-        for (const child of folder.children) {
-          if (child instanceof TFolder) {
-            // 跳过归档文件夹
-            if (child.name.startsWith("99")) continue;
-            paths.push(child.path);
-          }
-        }
-      }
-    }
-
-    return paths;
+    const projects = await this.projectScanService.getProjects(categories, this.dependencies.settingsManager.getSettings().homepage.projectArchiveFolder);
+    return projects.map(project => project.folderPath);
   }
 
   /**
@@ -2413,7 +2463,7 @@ export class HomepageView extends ItemView {
     if (file instanceof TFile) note.content = await this.app.vault.cachedRead(file);
   }
 
-  private async loadStickyNotes(): Promise<void> {
+  private async loadStickyNotes(generation = this.renderGeneration): Promise<void> {
     const notes = this.getStickyNotes();
     const container = this.containerEl.querySelector('[data-section="sticky-notes"] .homepage-sticky-grid');
     if (!container) return;
@@ -2435,6 +2485,7 @@ export class HomepageView extends ItemView {
 
     this.currentStickyIndex = Math.min(Math.max(this.currentStickyIndex, 0), notes.length - 1);
     await this.hydrateStickyNote(notes[this.currentStickyIndex]);
+    if (generation !== this.renderGeneration || !container.isConnected) return;
     this.renderStickyNote(container as HTMLElement, notes[this.currentStickyIndex]);
     if (counter) counter.textContent = `${this.currentStickyIndex + 1} / ${notes.length}`;
     const navigationDisabled = notes.length <= 1;
@@ -2463,7 +2514,7 @@ export class HomepageView extends ItemView {
       cls: `homepage-sticky-text zc-inline-markdown markdown-preview-view markdown-rendered${note.content ? "" : " is-placeholder"}`,
     });
     if (note.content) {
-      void MarkdownRenderer.renderMarkdown(note.content, noteText, note.path || "", null as any);
+      void MarkdownRenderer.render(this.app, note.content, noteText, note.path || "", this);
     } else {
       noteText.textContent = "双击添加速记内容…";
     }
@@ -2493,7 +2544,11 @@ export class HomepageView extends ItemView {
       event.stopPropagation();
       const folder = this.getInspirationNotesFolder();
       if (folder) {
-        if (!window.confirm(`将笔记“${note.label || note.path}”移入 Obsidian 回收站？`)) return;
+        if (!await confirmAction(this.app, {
+          title: "删除灵感速记",
+          message: `将笔记“${note.label || note.path}”移入 Obsidian 回收站？`,
+          confirmText: "移入回收站",
+        })) return;
         const file = this.app.vault.getAbstractFileByPath(note.path);
         if (file instanceof TFile) await this.app.vault.trash(file, false);
       } else {
@@ -2531,7 +2586,7 @@ export class HomepageView extends ItemView {
         cls: `homepage-sticky-text zc-inline-markdown markdown-preview-view markdown-rendered${note.content ? "" : " is-placeholder"}`,
       });
       if (note.content) {
-        void MarkdownRenderer.renderMarkdown(note.content, replacement, note.path || "", null as any);
+        void MarkdownRenderer.render(this.app, note.content, replacement, note.path || "", this);
       } else {
         replacement.textContent = "双击添加速记内容…";
       }
@@ -2663,7 +2718,7 @@ export class HomepageView extends ItemView {
 
   // ── 每日回顾统计 ──────────────────────────────────────────
 
-  private async loadDailyReviewStats(): Promise<void> {
+  private async loadDailyReviewStats(generation = this.renderGeneration): Promise<void> {
     // 获取今日真实活动数据
     const todayActivity = this.activityLogService.getTodayActivity();
     const monthlyStats = this.activityLogService.getMonthlyStats();
@@ -2671,23 +2726,28 @@ export class HomepageView extends ItemView {
     // 待办统计
     let taskTotal = 0;
     let taskDone = 0;
+    let todayCompleted = todayActivity.taskCompleted;
     try {
       const settings = this.dependencies.settingsManager.getSettings();
       const projectPaths = await this.getProjectPaths(settings.homepage.projectCategories);
       const tasks = await this.dependencies.taskSyncService.getAllTasks(projectPaths);
+      if (generation !== this.renderGeneration) return;
       taskTotal = tasks.length;
       taskDone = tasks.filter((task) => task.completed).length;
+      const today = new Date().toDateString();
+      todayCompleted = tasks.filter(task => task.completed && task.completedAt && new Date(task.completedAt).toDateString() === today).length;
     } catch {
       // 如果获取失败，使用活动日志中的任务完成数
       taskDone = todayActivity.taskCompleted;
     }
 
     const remaining = Math.max(0, taskTotal - taskDone);
+    if (generation !== this.renderGeneration) return;
 
     // 更新检查列表数值
     const updates: Record<string, string> = {
       notes: `记录了 ${todayActivity.created} 条笔记`,
-      tasks: `完成了 ${taskDone} 项待办`,
+      tasks: `完成了 ${todayCompleted} 项待办`,
       reading: `编辑了 ${todayActivity.edited} 个文件`,
       remaining: remaining > 0 ? `剩余 ${remaining} 项待办` : `太棒了，待办全部完成！`,
     };
@@ -2700,7 +2760,7 @@ export class HomepageView extends ItemView {
     // 根据数据更新状态图标
     const statusMap: Record<string, boolean> = {
       notes: todayActivity.created > 0,
-      tasks: taskDone > 0,
+      tasks: todayCompleted > 0,
       reading: todayActivity.edited > 0,
       remaining: remaining === 0,
     };
@@ -2725,7 +2785,7 @@ export class HomepageView extends ItemView {
     // 基于当日真实活动综合打分 (0-100)
     let energyScore = 0;
     energyScore += Math.min(todayActivity.created * 20, 40);        // 创建笔记：每条 20 分，上限 40
-    energyScore += Math.min(taskDone * 10, 30);                     // 完成待办：每项 10 分，上限 30
+    energyScore += Math.min(todayCompleted * 10, 30);                     // 完成待办：每项 10 分，上限 30
     energyScore += Math.min(todayActivity.edited * 2, 20);          // 编辑文件：每次 2 分，上限 20
     energyScore += Math.min(monthlyStats.consecutiveDays * 2, 10);  // 连续活跃：每天 2 分，上限 10
     energyScore = Math.min(energyScore, 100);

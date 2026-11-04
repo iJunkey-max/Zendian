@@ -1,9 +1,14 @@
 import esbuild from "esbuild";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const prod = process.argv[2] === "production";
 
 const context = await esbuild.context({
-  entryPoints: ["src/main.ts"],
+  absWorkingDir: projectRoot,
+  entryPoints: [path.join(projectRoot, "src/main.ts")],
   bundle: true,
   external: ["obsidian", "@codemirror/view"],
   format: "cjs",
@@ -16,7 +21,7 @@ const context = await esbuild.context({
     ".jpg": "dataurl",
     ".jpeg": "dataurl",
   },
-  outfile: "dist/main.js",
+  outfile: path.join(projectRoot, "dist/main.js"),
   minify: prod,
 });
 

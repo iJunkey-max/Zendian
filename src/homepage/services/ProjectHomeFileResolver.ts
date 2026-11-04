@@ -19,27 +19,15 @@ function findFile(app: App, candidates: string[], extension?: string): TFile | n
 /** Resolve a project's metadata file across the root layout and the legacy console-folder layout. */
 export function findProjectHomeFile(app: App, projectPath: string, preferredName?: string): TFile | null {
   const normalizedPath = normalizeProjectPath(projectPath);
-  const projectName = preferredName?.trim() || normalizedPath.split("/").pop()?.replace(/^\d+_/, "") || "";
-  const legacyPath = `${normalizedPath}/${LEGACY_PROJECT_CONSOLE_FOLDER}`;
-  const direct = findFile(app, [
-    `${normalizedPath}/${PROJECT_HOME_FILENAME}`,
-    projectName ? `${normalizedPath}/${projectName}.home` : "",
-    `${normalizedPath}/控制台.home`,
-    projectName ? `${legacyPath}/${projectName}.home` : "",
-    `${legacyPath}/控制台.home`,
-    `${normalizedPath}/.home`,
-  ].filter(Boolean), "home");
-  if (direct) return direct;
-
-  for (const folderPath of [normalizedPath, legacyPath]) {
-    const folder = app.vault.getAbstractFileByPath(folderPath);
+  void preferredName;
+  const matches: TFile[] = [];
+  for (const path of [normalizedPath, normalizedPath + "/" + LEGACY_PROJECT_CONSOLE_FOLDER]) {
+    const folder = app.vault.getAbstractFileByPath(path);
     if (!(folder instanceof TFolder)) continue;
-    const fallback = folder.children
-      .filter((child): child is TFile => child instanceof TFile && child.extension === "home")
-      .sort((a, b) => a.path.localeCompare(b.path))[0];
-    if (fallback) return fallback;
+    matches.push(...folder.children.filter((child): child is TFile => child instanceof TFile && child.extension === "home"));
   }
-  return null;
+  // Multiple metadata files are a conflict, never choose one by name or alphabetical order.
+  return matches.length === 1 ? matches[0] : null;
 }
 
 export function findProjectTimelineFile(app: App, projectPath: string): TFile | null {

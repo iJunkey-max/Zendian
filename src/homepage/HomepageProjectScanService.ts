@@ -14,14 +14,18 @@ import type {
   ProjectConsoleData,
 } from "./types";
 import type { ProjectCategory } from "../types/settings.types";
+import { ProjectRegistry } from "./services/ProjectRegistry";
 import { loadProjectHome } from "./services/ProjectHomeStore";
 import { getProjectCategoryFolder } from "./project-categories";
 import { calculateProjectProgress, normalizeProjectStatus } from "./project-status";
+import { isDeliverablePath } from "./services/DeliverablePathRegistry";
 
 export class HomepageProjectScanService {
   private cache = new Map<string, HomepageProject>();
   private lastScanTime = 0;
   private lastScanKey = "";
+  private scanPromise: Promise<HomepageProject[]> | null = null;
+  private dirtyGeneration = 0;
   private readonly CACHE_TTL = 30000; // 30秒缓存有效期
 
   constructor(private app: App) {}
@@ -29,6 +33,7 @@ export class HomepageProjectScanService {
   markDirty(): void {
     // 重置时间戳，触发下次扫描，但保留缓存数据
     this.lastScanTime = 0;
+    this.dirtyGeneration++;
   }
 
   invalidate(folderPath: string): void {
@@ -48,41 +53,60 @@ export class HomepageProjectScanService {
       return Array.from(this.cache.values()).sort((a, b) => b.updatedAt - a.updatedAt);
     }
 
+    // Homepage sections request the same project list in parallel. Share one
+    // scan instead of letting each caller race to rewrite the cache.
+    if (this.scanPromise) return this.scanPromise;
+
+    const run = async (): Promise<HomepageProject[]> => {
+      // If a vault event arrives while scanning, discard that result and run
+      // once more against the newest file tree before exposing it to callers.
+      while (true) {
+        const generation = this.dirtyGeneration;
+        const result = await this.scanOnce(categories, archiveFolder, scanKey, generation);
+        if (generation === this.dirtyGeneration) return result;
+      }
+    };
+    const current = run();
+    this.scanPromise = current.finally(() => {
+      if (this.scanPromise === current) this.scanPromise = null;
+    });
+    return this.scanPromise;
+  }
+
+  private async scanOnce(
+    categories: ProjectCategory[],
+    archiveFolder: string,
+    scanKey: string,
+    generation: number,
+  ): Promise<HomepageProject[]> {
+
     const projects: HomepageProject[] = [];
     const scannedPaths = new Set<string>();
+    const nextCache = new Map<string, HomepageProject>();
 
-    for (const category of categories) {
-      const typeFolderName = getProjectCategoryFolder(category);
-      const typeLabel: ProjectType = category.name;
-
-      const typeFolder = this.app.vault.getAbstractFileByPath(typeFolderName);
-      if (!(typeFolder instanceof TFolder)) continue;
-
-      for (const child of typeFolder.children) {
-        if (!(child instanceof TFolder)) continue;
-        // 跳过当前分类下的归档文件夹
-        if (child.name === archiveFolder || child.name.startsWith("99")) continue;
-        scannedPaths.add(child.path);
-
-        // Vault 事件会精确失效发生变化的项目；其余项目直接复用缓存。
-        const cached = this.cache.get(child.path);
-        if (cached) {
-          projects.push(cached);
-        } else {
-          // 重新扫描（项目发生变化或首次扫描）
-          const project = await this.scanProject(child, typeLabel);
-          if (project) {
-            projects.push(project);
-            this.cache.set(project.id, project);
-          }
-        }
-      }
+    const discovery = await new ProjectRegistry(this.app).discover();
+    for (const entry of discovery.projects) {
+      if (entry.state === "duplicate" || entry.state === "nested" || entry.state === "root") continue;
+      const folder = this.app.vault.getAbstractFileByPath(entry.folderPath);
+      if (!(folder instanceof TFolder)) continue;
+      if (folder.path.split("/").includes(archiveFolder)) continue;
+      const category = categories.find(category => folder.path.startsWith(getProjectCategoryFolder(category) + "/"));
+      const project = await this.scanProject(folder, category?.name || "未分类");
+      if (!project) continue;
+      scannedPaths.add(folder.path);
+      projects.push(project);
+      nextCache.set(folder.path, project);
     }
 
+    // Do not let an older scan overwrite a cache that a newer vault event has
+    // invalidated. The caller will immediately repeat with the new generation.
+    if (generation !== this.dirtyGeneration) return projects.sort((a, b) => b.updatedAt - a.updatedAt);
+
+    this.cache = nextCache;
     for (const cachedPath of this.cache.keys()) {
       if (!scannedPaths.has(cachedPath)) this.cache.delete(cachedPath);
     }
-    this.lastScanTime = now;
+    this.lastScanTime = Date.now();
     this.lastScanKey = scanKey;
     return projects.sort((a, b) => b.updatedAt - a.updatedAt);
   }
@@ -96,6 +120,7 @@ export class HomepageProjectScanService {
     const folderPath = folder.path;
     const fallbackName = folder.name.replace(/^\d+_/, "") || folder.name;
     const homeData = await this.readHomeFile(folderPath, fallbackName);
+    if (!homeData) return null;
     const name = homeData?.name || fallbackName;
     const tasks = homeData?.tasks || [];
     const taskTotal = tasks.length;
@@ -121,14 +146,14 @@ export class HomepageProjectScanService {
     // 获取最近编辑的文件
     const recentFiles = this.getRecentFiles(folder, 5);
 
-    const updatedAt = recentFiles.length > 0 ? recentFiles[0].mtime : 0;
+    const updatedAt = Math.max(recentFiles[0]?.mtime || 0, homeData?.updatedAt ? new Date(homeData.updatedAt).getTime() || 0 : 0);
 
     return {
-      id: folderPath,
+      id: homeData?.projectId || folderPath,
       name,
       icon: homeData?.icon || "lucide-folder",
       folderPath,
-      type,
+      type: homeData?.type || type,
       progress,
       taskTotal,
       taskDone,
@@ -160,7 +185,7 @@ export class HomepageProjectScanService {
     const collectFiles = (f: TFolder) => {
       for (const child of f.children) {
         if (child instanceof TFile) {
-          if (child.extension === "home") continue;
+          if (child.extension === "home" || isDeliverablePath(this.app, folder.path, child.path)) continue;
           files.push({
             name: child.basename,
             path: child.path,

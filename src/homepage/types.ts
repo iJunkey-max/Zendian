@@ -135,6 +135,10 @@ export interface HeatmapDay {
 
 /** .home 文件数据结构 */
 export interface ProjectConsoleData {
+  businessEvents?: import("./services/project-events").ProjectBusinessEvent[];
+  activity?: Array<{ id: string; kind: "task-created" | "task-updated" | "task-completed" | "task-reopened" | "task-deleted" | "task-restored"; taskId: string; text: string; timestamp: string }>;
+  schemaVersion?: number;
+  projectId?: string;
   name: string;
   icon: string;
   description: string;
@@ -152,6 +156,7 @@ export interface ProjectConsoleData {
     deadline?: string;
   };
   tasks: ProjectConsoleTask[];
+  milestones?: Array<{ id: string; title: string; deadline: string; completed: boolean; deliverables: string[]; createdAt: string }>;
   deliverables: ProjectConsoleDeliverable[];
   overview?: {
     markdown: string;
@@ -177,6 +182,7 @@ export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
 
 /** 控制台任务 */
 export interface ProjectConsoleTask {
+  linkedFile?: string;
   id?: string;
   text: string;
   completed: boolean;

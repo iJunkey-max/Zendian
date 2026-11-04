@@ -33,7 +33,7 @@ export class DonationModal extends Modal {
 
   onOpen(): void {
     const config = DONATION_CHANNELS[this.channel];
-    this.modalEl.addClass("zendian-donation-modal");
+    this.modalEl.addClass("zendian-donation-modal", "zendian-shared-modal");
     this.titleEl.setText(config.title);
 
     const view = this.contentEl.createDiv("zendian-donation-view");
@@ -61,7 +61,7 @@ export class DonationModal extends Modal {
   }
 
   onClose(): void {
-    this.modalEl.removeClass("zendian-donation-modal");
+    this.modalEl.removeClass("zendian-donation-modal", "zendian-shared-modal");
     this.contentEl.empty();
   }
 }

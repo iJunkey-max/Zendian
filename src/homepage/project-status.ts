@@ -68,18 +68,6 @@ export function calculateProjectProgress(
 ): ProjectProgressInfo {
   const status = normalizeProjectStatus(value);
   const taskRatio = taskTotal > 0 ? Math.min(1, Math.max(0, taskDone / taskTotal)) : 0;
-  if (status === "paused") {
-    return { status, percent: 0, nodeIndex: -1, taskRatio, isPaused: true };
-  }
-
-  const nodeIndex = Math.max(0, PROJECT_PROGRESS_STEPS.findIndex((option) => option.value === status));
-  if (status === "completed") {
-    return { status, percent: 100, nodeIndex, taskRatio: 1, isPaused: false };
-  }
-  if (status === "initiated") {
-    return { status, percent: 0, nodeIndex, taskRatio: 0, isPaused: false };
-  }
-
-  const percent = Math.min(99, Math.round(nodeIndex * 25 + taskRatio * 25));
-  return { status, percent, nodeIndex, taskRatio, isPaused: false };
+  const nodeIndex = status === "paused" ? -1 : Math.max(0, PROJECT_PROGRESS_STEPS.findIndex(option => option.value === status));
+  return { status, percent: Math.round(taskRatio * 100), nodeIndex, taskRatio, isPaused: status === "paused" };
 }

@@ -12,6 +12,7 @@ import { App, Notice } from "obsidian";
 import type { ProjectConsoleData } from "../types";
 import { getServiceManager } from "./index";
 import type { ServiceManager } from "./ServiceManager";
+import { isPortableProjectPath } from "../../utils/project-path";
 
 export type ExportFormat = "markdown" | "json" | "csv";
 
@@ -30,8 +31,12 @@ export interface ExportOptions {
 export class ExportService {
   private services: ServiceManager;
 
-  constructor(private app: App) {
-    this.services = getServiceManager(app);
+  constructor(private app: App, services?: ServiceManager) {
+    // Prefer the already-initialized manager from the current project view so
+    // report stats/timeline use the same task source, snapshot index and
+    // caches as the rest of the UI. The fallback keeps the service usable in
+    // standalone callers and tests.
+    this.services = services ?? getServiceManager(app);
   }
 
   // ============================================================
@@ -70,6 +75,7 @@ export class ExportService {
     outputPath: string,
     options: ExportOptions = { format: "markdown" }
   ): Promise<void> {
+    if (!isPortableProjectPath(outputPath) || !outputPath.startsWith(projectPath + "/")) throw new Error("报告输出路径必须位于项目内且名称有效");
     const content = await this.exportProjectReport(projectPath, options);
 
     // 确保输出目录存在
@@ -78,8 +84,13 @@ export class ExportService {
       await this.app.vault.adapter.mkdir(dir);
     }
 
-    await this.app.vault.adapter.write(outputPath, content);
-    new Notice(`报告已导出到: ${outputPath}`);
+    const dot = outputPath.lastIndexOf(".");
+    const stem = dot > outputPath.lastIndexOf("/") ? outputPath.slice(0, dot) : outputPath;
+    const extension = outputPath.slice(stem.length);
+    let target = outputPath, suffix = 1;
+    while (await this.app.vault.adapter.exists(target)) target = `${stem}_${suffix++}${extension}`;
+    await this.app.vault.create(target, content);
+    new Notice(`报告已导出到: ${target}`);
   }
 
   // ============================================================
@@ -92,6 +103,7 @@ export class ExportService {
     options: ExportOptions
   ): Promise<string> {
     const lines: string[] = [];
+
 
     // 标题
     lines.push(`# ${data.name} - 项目报告`);
@@ -259,6 +271,7 @@ export class ExportService {
     options: ExportOptions
   ): Promise<string> {
     const lines: string[] = [];
+    const cell = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
     // 任务列表
     if (options.includeTasks !== false && data.tasks.length > 0) {
@@ -268,10 +281,10 @@ export class ExportService {
       for (const task of data.tasks) {
         const status = task.completed ? "已完成" : "进行中";
         const priority = task.priority || "";
-        const text = `"${task.text.replace(/"/g, '""')}"`;
+        const text = task.text;
         const due = task.due || "";
         const tags = task.tags ? task.tags.join(";") : "";
-        lines.push(`${status},${priority},${text},${due},${tags}`);
+        lines.push([status, priority, text, due, tags].map(cell).join(","));
       }
 
       lines.push("");
@@ -292,9 +305,9 @@ export class ExportService {
         const status = item.format === "zip"
           ? `已发布（${item.fileCount ?? 0} 个文件）`
           : statusLabels[item.status || "pending"];
-        const name = `"${item.name.replace(/"/g, '""')}"`;
+        const name = item.name;
         const path = item.path || "";
-        lines.push(`${name},${status},${path}`);
+        lines.push([name, status || "待开始", path].map(cell).join(","));
       }
 
       lines.push("");
@@ -322,7 +335,9 @@ export class ExportService {
       "file-created": "📄",
       "file-modified": "✏️",
       "task-created": "➕",
+      "task-updated": "✏️",
       "task-completed": "✅",
+      "task-restored": "↩️",
       "deliverable-added": "📦",
       "milestone": "🏁",
     };

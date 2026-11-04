@@ -12,6 +12,7 @@ import { getProjectCategoryFolder } from "../homepage/project-categories";
 import { BUILTIN_LIBRARIES, type IconSystemModule } from "../modules/icon-system.module";
 import { IconPickerModal } from "./icon-picker-modal";
 import { DonationModal, type DonationChannel } from "./donation-modal";
+import { confirmAction } from "./confirm-modal";
 import { getProjectSubfolderName, validateProjectSubfolderTemplate } from "../homepage/project-subfolders";
 
 // ============================================================
@@ -211,7 +212,7 @@ const FEATURES: FeatureItem[] = [
   { icon: FEAT_ICONS.homepage, title: "智能主页", desc: "集中查看待办、便签、最近笔记、书摘、天气、热力图与月度数据" },
   { icon: FEAT_ICONS.cardLayout, title: "项目管理", desc: "按分类创建项目目录，配置子文件夹模板、项目状态与归档规则" },
   { icon: FEAT_ICONS.iconSystem, title: "项目控制台", desc: "通过 .home 控制台管理项目简介、任务、交付物、进度与最近文件" },
-  { icon: FEAT_ICONS.focusMode, title: "任务协同", desc: "以 Timeline 为事实源管理优先级、标签、日程、完成状态与项目进度" },
+  { icon: FEAT_ICONS.focusMode, title: "任务协同", desc: "以项目主页保存项目任务，管理优先级、标签、日程与完成状态" },
   { icon: FEAT_ICONS.autoHide, title: "时间轴", desc: "汇总文件、任务和项目事件，支持日期分组、事件筛选与检查点" },
   { icon: FEAT_ICONS.codeBlocks, title: "项目快照", desc: "为文本文件建立去重快照，提供差异预览、检查点和安全恢复" },
   { icon: FEAT_ICONS.compat, title: "数据洞察", desc: "通过活动热力图、任务趋势、完成率和项目健康度了解推进情况" },
@@ -843,7 +844,11 @@ export class ZENdianSettingTab extends PluginSettingTab {
     search.addEventListener("input", () => this.renderSearch(search.value));
     const resetAll = actions.createEl("button", { cls: "zendian-reset-all", text: "全部恢复默认" });
     resetAll.addEventListener("click", async () => {
-      if (!window.confirm("确定恢复 ZENdian 的全部设置吗？")) return;
+      if (!await confirmAction(this.app, {
+        title: "恢复全部设置",
+        message: "确定恢复 ZENdian 的全部设置吗？当前自定义配置会被替换。",
+        confirmText: "恢复默认",
+      })) return;
       await this.settingsManager.updateMultiple(structuredClone(DEFAULT_SETTINGS));
       new Notice("ZENdian 设置已恢复默认");
       this.renderActiveTab();
@@ -1113,7 +1118,11 @@ export class ZENdianSettingTab extends PluginSettingTab {
           attr: { "aria-label": `删除项目分类 ${category.name}` },
         });
         deleteButton.addEventListener("click", async () => {
-          if (!window.confirm(`删除项目分类“${category.name}”？已有文件夹和项目会保留。`)) return;
+          if (!await confirmAction(this.app, {
+            title: "删除项目分类",
+            message: `删除项目分类“${category.name}”？已有文件夹和项目会保留。`,
+            confirmText: "删除分类",
+          })) return;
           const current = this.settingsManager.getSettings();
           const projectCategories = current.homepage.projectCategories.filter((_, index) => index !== i);
           const projectSubfolders = { ...current.homepage.projectSubfolders };
@@ -1507,7 +1516,11 @@ export class ZENdianSettingTab extends PluginSettingTab {
           });
         }
         deleteButton.addEventListener("click", async () => {
-          if (!window.confirm(`删除子文件夹模板“${template.name}”？已有项目不会改变。`)) return;
+          if (!await confirmAction(this.app, {
+            title: "删除子文件夹模板",
+            message: `删除子文件夹模板“${template.name}”？已有项目不会改变。`,
+            confirmText: "删除模板",
+          })) return;
           const current = this.settingsManager.getSettings();
           const projectSubfolders = { ...current.homepage.projectSubfolders };
           const templates = projectSubfolders[activeCategoryNumber] ?? [];
@@ -1892,7 +1905,11 @@ export class ZENdianSettingTab extends PluginSettingTab {
           text: "×",
         }) as HTMLButtonElement;
         delBtn.addEventListener("click", async () => {
-          if (!window.confirm(`删除图标规则“${rule.regex || "未命名规则"}”？`)) return;
+          if (!await confirmAction(this.app, {
+            title: "删除图标规则",
+            message: `删除图标规则“${rule.regex || "未命名规则"}”？`,
+            confirmText: "删除规则",
+          })) return;
           const current = sm.getSettings();
           const newRules = current.iconSystem.defaultRules.filter((_, idx) => idx !== i);
           await sm.updateMultiple({ iconSystem: { ...current.iconSystem, defaultRules: newRules } });

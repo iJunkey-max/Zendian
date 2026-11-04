@@ -6,7 +6,7 @@ export interface StoreZipEntry {
 
 const encoder = new TextEncoder();
 
-function crc32(data: Uint8Array): number {
+export function crc32(data: Uint8Array): number {
   let crc = 0xffffffff;
   for (const byte of data) {
     crc ^= byte;
@@ -48,7 +48,7 @@ function concat(parts: Uint8Array[]): Uint8Array {
  * Creates a standards-compliant ZIP using the Store method (no compression).
  * Zip64 is intentionally unsupported; entries and the final archive must fit in 32-bit offsets.
  */
-export function createStoreZip(entries: StoreZipEntry[]): Uint8Array {
+export function createStoreZip(entries: StoreZipEntry[], options: { allowPaths?: boolean } = {}): Uint8Array {
   if (entries.length > 0xffff) throw new Error("交付文件数量超出 ZIP 格式限制");
 
   const seen = new Set<string>();
@@ -57,7 +57,7 @@ export function createStoreZip(entries: StoreZipEntry[]): Uint8Array {
   let localOffset = 0;
 
   for (const entry of entries) {
-    if (!entry.name || entry.name.includes("/") || entry.name.includes("\\")) {
+    if (!entry.name || entry.name.includes("\\") || entry.name.startsWith("/") || entry.name.split("/").some(part => !part || part === "." || part === "..") || (!options.allowPaths && entry.name.includes("/"))) {
       throw new Error(`ZIP 条目必须是扁平文件名：${entry.name}`);
     }
     if (seen.has(entry.name)) throw new Error(`ZIP 内存在同名文件：${entry.name}`);

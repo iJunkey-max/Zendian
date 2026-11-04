@@ -18,6 +18,7 @@ export class FileWatcher extends Events {
   private debounceTimers = new Map<string, number>();
   private vaultEventRefs: EventRef[] = [];
   private debounceDelay: number;
+  private destroyed = false;
 
   constructor(
     private app: App,
@@ -36,6 +37,7 @@ export class FileWatcher extends Events {
    * 开始监听项目
    */
   watchProject(projectPath: string, callback?: DataChangeCallback): void {
+    if (this.destroyed) return;
     this.watchedProjects.add(projectPath);
     if (callback) {
       const callbacks = this.projectCallbacks.get(projectPath) || new Set<DataChangeCallback>();
@@ -107,6 +109,17 @@ export class FileWatcher extends Events {
     }
   }
 
+  /** Clear pending events for an offline rename; the confirmed path is tracked normally afterwards. */
+  rebaseFilePath(oldFilePath: string, newFilePath: string): void {
+    if (!oldFilePath || !newFilePath || oldFilePath === newFilePath) return;
+    for (const key of Array.from(this.debounceTimers.keys())) {
+      if (!key.endsWith(`::${oldFilePath}`)) continue;
+      const timer = this.debounceTimers.get(key);
+      if (timer !== undefined) window.clearTimeout(timer);
+      this.debounceTimers.delete(key);
+    }
+  }
+
   onChange(callback: DataChangeCallback): EventRef {
     return this.on("change", (...data: unknown[]) => callback(data[0] as DataChangeEvent));
   }
@@ -155,7 +168,7 @@ export class FileWatcher extends Events {
     if (!projectPath) {
       return;
     }
-    if (isDeliverablePath(projectPath, file.path)) return;
+    if (isDeliverablePath(this.app, projectPath, file.path)) return;
 
     // 防抖处理
     this.debounce(`${projectPath}::${file.path}`, () => {
@@ -167,12 +180,12 @@ export class FileWatcher extends Events {
     const oldProjectPath = this.findProjectPath(oldPath);
     const newProjectPath = this.findProjectPath(file.path);
 
-    if (oldProjectPath && !isDeliverablePath(oldProjectPath, oldPath)) {
+    if (oldProjectPath && !isDeliverablePath(this.app, oldProjectPath, oldPath)) {
       this.debounce(`${oldProjectPath}::${oldPath}`, () => {
         this.emitChangeEvent(file, "delete", oldProjectPath, oldPath);
       });
     }
-    if (newProjectPath && !isDeliverablePath(newProjectPath, file.path)) {
+    if (newProjectPath && !isDeliverablePath(this.app, newProjectPath, file.path)) {
       this.debounce(`${newProjectPath}::${file.path}`, () => {
         this.emitChangeEvent(file, "create", newProjectPath);
       });
@@ -188,6 +201,7 @@ export class FileWatcher extends Events {
     projectPath: string,
     path = file.path,
   ): void {
+    if (this.destroyed) return;
     const event: DataChangeEvent = {
       type: this.getEventType(file),
       action,
@@ -208,6 +222,7 @@ export class FileWatcher extends Events {
 
   private async dispatchProjectCallbacks(projectPath: string, event: DataChangeEvent): Promise<void> {
     for (const callback of this.projectCallbacks.get(projectPath) || []) {
+      if (this.destroyed || !this.watchedProjects.has(projectPath)) return;
       try {
         await callback(event);
       } catch (error) {
@@ -249,6 +264,7 @@ export class FileWatcher extends Events {
    * 防抖处理
    */
   private debounce(key: string, callback: () => void): void {
+    if (this.destroyed) return;
     // 清除之前的定时器
     const existingTimer = this.debounceTimers.get(key);
     if (existingTimer) {
@@ -257,8 +273,8 @@ export class FileWatcher extends Events {
 
     // 设置新的定时器
     const timer = window.setTimeout(() => {
-      callback();
       this.debounceTimers.delete(key);
+      if (!this.destroyed) callback();
     }, this.debounceDelay);
 
     this.debounceTimers.set(key, timer);
@@ -272,6 +288,8 @@ export class FileWatcher extends Events {
    * 销毁监听器
    */
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
     this.unwatchAll();
     for (const ref of this.vaultEventRefs) this.app.vault.offref(ref);
     this.vaultEventRefs = [];

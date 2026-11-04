@@ -109,6 +109,28 @@
   --zd-primary-light: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.16);
 }
 
+/*
+   Shared UI aliases
+
+   Every ZENdian-owned surface (homepage, project console, settings, dialogs
+   and utility popouts) reads the same small set of semantic tokens.  Keeping
+   these aliases on the document body makes them follow Obsidian theme
+   changes, while still allowing an individual surface to opt into a local
+   accent or special content background when it genuinely needs one.
+*/
+body {
+  --zd-ui-surface: var(--zd-bg-primary, var(--background-primary));
+  --zd-ui-surface-raised: color-mix(in srgb, var(--zd-ui-surface) 94%, var(--zd-primary) 6%);
+  --zd-ui-surface-soft: color-mix(in srgb, var(--zd-ui-surface) 86%, var(--zd-primary) 14%);
+  --zd-ui-border: var(--zd-border-default, var(--background-modifier-border));
+  --zd-ui-border-strong: var(--zd-border-hover, var(--background-modifier-border-hover));
+  --zd-ui-radius-card: var(--zd-radius-lg, 12px);
+  --zd-ui-radius-control: var(--zd-radius-md, 8px);
+  --zd-ui-shadow-card: var(--zd-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.12));
+  --zd-ui-shadow-hover: var(--zd-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.18));
+  --zd-ui-focus-ring: 2px solid var(--zd-primary, var(--interactive-accent));
+}
+
 /* ═══════════════════════════════════════════════════════════
    2. 间距系统 (4px 基础单位)
    ═══════════════════════════════════════════════════════════ */

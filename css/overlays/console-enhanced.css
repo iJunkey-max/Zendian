@@ -751,6 +751,9 @@
 }
 
 .zc-root .zc-del {
+  border: 0;
+  background: transparent;
+  font: inherit;
   width: 28px;
   height: 28px;
   display: flex;
@@ -761,6 +764,12 @@
   opacity: 0;
   transition: var(--zc-transition);
   flex-shrink: 0;
+}
+
+.zc-root .zc-del:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
 }
 
 .zc-root .zc-row:hover .zc-del {
@@ -1199,6 +1208,12 @@
 .zc-root .zc-hero-desc-placeholder,
 .zc-root .zc-hero-desc-edit {
   color: var(--zc-dossier-subtle);
+  padding: 2px;
+  height: auto;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .zc-root .zc-hero-export {
@@ -4819,6 +4834,87 @@
   line-height: 1.4;
 }
 
+.zc-root .zc-hero-info > .zc-hero-desc.is-editing {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 8px;
+  cursor: default;
+}
+
+.zc-root .zc-hero-info > .zc-hero-desc.is-editing:hover {
+  background: transparent;
+  border-color: transparent;
+}
+
+.zc-root .zc-hero-info > .zc-hero-desc.is-editing .zc-hero-desc-input {
+  width: 100%;
+  max-width: 100%;
+  min-height: 104px;
+  box-sizing: border-box;
+}
+
+.zc-root .zc-hero-desc-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.zc-root .zc-hero-desc-actions button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--zc-divider);
+  border-radius: var(--zc-control-radius, 8px);
+  color: var(--zc-text-secondary);
+  background: var(--zc-bg-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.zc-root .zc-hero-desc-actions .zc-hero-desc-save {
+  color: var(--zc-text-inverse);
+  background: var(--zc-accent);
+  border-color: var(--zc-accent);
+}
+
+.zc-root .zc-hero-desc-actions .zc-hero-desc-cancel:hover:not(:disabled),
+.zc-root .zc-hero-desc-actions .zc-hero-desc-cancel:focus-visible {
+  color: var(--zc-text);
+  background: var(--zc-hover);
+  border-color: var(--zc-border-hover);
+}
+
+.zc-root .zc-hero-desc-actions .zc-hero-desc-save:hover:not(:disabled),
+.zc-root .zc-hero-desc-actions .zc-hero-desc-save:focus-visible {
+  filter: brightness(1.06);
+  box-shadow: 0 0 0 2px var(--zc-accent-alpha);
+}
+
+.zc-root .zc-hero-desc-actions button:focus-visible {
+  outline: 2px solid var(--zc-accent);
+  outline-offset: 2px;
+}
+
+.zc-root .zc-hero-desc-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+@media (max-width: 640px) {
+  .zc-root .zc-hero-info > .zc-hero-desc.is-editing {
+    margin-left: 54px;
+    padding-right: 54px;
+  }
+
+  .zc-root .zc-hero-desc-actions button {
+    min-height: 38px;
+  }
+}
+
 .zc-root .zc-section {
   display: flex;
   flex: 1 1 auto;
@@ -4994,6 +5090,13 @@
 .zc-root .zc-recent-activity .zc-summary-row {
   padding: 7px 5px;
   border-radius: 8px;
+  width: 100%;
+  height: auto;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  box-shadow: none;
+  white-space: normal;
 }
 
 /* Analytics: a single glance surface at desktop sizes. */
@@ -5428,5 +5531,299 @@
   .zc-root .zc-hero-title-edit,
   .zc-root .homepage-heatmap-cell {
     transition: none;
+  }
+}
+.zc-task-quick-create {
+  display: flex;
+  gap: var(--size-4-2, 8px);
+  margin-bottom: var(--size-4-4, 16px);
+}
+.zc-task-quick-create input {
+  flex: 1;
+  min-width: 0;
+}
+.zc-status-row { min-width: 0; }
+.zc-status-value-wrap { min-width: 0; }
+.zc-status-value { overflow-wrap: normal; word-break: normal; }
+@media (max-width: 480px) {
+  .zc-task-quick-create { flex-wrap: wrap; }
+  .zc-task-quick-create input { flex-basis: 100%; }
+}
+/* Project workspace adapts to its pane, including split views and popouts. */
+.zc-root { container-type: inline-size; }
+.zc-root .zc-status-row { min-width: 0; gap: 8px; }
+.zc-root .zc-status-label { flex-shrink: 0; white-space: nowrap; }
+.zc-root .zc-status-value-wrap { min-width: 0; }
+.zc-root .zc-status-hint { white-space: normal; overflow-wrap: anywhere; }
+@container (max-width: 800px) {
+  .zc-root .zc-workspace-layout { grid-template-columns: minmax(0, 1fr); }
+  .zc-root .zc-workspace-primary,
+  .zc-root .zc-workspace-aside { height: auto; min-height: 0; }
+  .zc-root .zc-workspace-aside { display: block; }
+}
+@media (max-width: 1200px) {
+  .zc-root .zc-workspace-layout { grid-template-columns: minmax(0, 1fr) !important; }
+  .zc-root .zc-workspace-primary,
+  .zc-root .zc-workspace-aside { height: auto !important; min-height: 0 !important; }
+  .zc-root .zc-workspace-aside { display: block !important; }
+}
+@container (max-width: 800px) {
+  .zc-root .zc-workspace-layout { grid-template-columns: minmax(0, 1fr) !important; }
+}
+.zc-root.is-compact .zc-workspace-layout { grid-template-columns: minmax(0, 1fr) !important; }
+.zc-root.is-compact .zc-workspace-primary,
+.zc-root.is-compact .zc-workspace-aside { height: auto !important; min-height: 0 !important; }
+.zc-root.is-compact .zc-workspace-aside { display: block !important; }
+.zc-root.is-compact .zc-status-panel { grid-template-columns: minmax(0, 1fr) !important; }
+.zc-root.is-compact .zc-row { grid-template-columns: 28px minmax(0, 1fr) auto auto; }
+.zc-root.is-compact { overflow-y: auto !important; }
+.zc-root.is-compact .zc-wrapper { height: auto !important; min-height: 100%; }
+.zc-root.is-compact .zc-section,
+.zc-root.is-compact .zc-workspace-layout { flex: none !important; height: auto !important; min-height: 0 !important; overflow: visible !important; }
+.zc-root.is-compact .zc-workspace-primary,
+.zc-root.is-compact .zc-workspace-aside,
+.zc-root.is-compact .zc-section-body,
+.zc-root.is-compact .zc-panel-body,
+.zc-root.is-compact .zc-scroll { max-height: none !important; height: auto !important; overflow: visible !important; }
+
+/* -------------------------------------------------------------------------
+   Shared ZENdian surface language
+
+   The homepage and project console are two views of the same local-first
+   workspace. Keep their visual grammar identical: the same type, 4px spacing
+   rhythm, restrained 12px cards, Obsidian-aware surfaces and visible focus.
+   ------------------------------------------------------------------------- */
+.zendian-homepage,
+.zc-root {
+  --zd-ui-surface: var(--zd-bg-primary, var(--background-primary));
+  --zd-ui-surface-raised: color-mix(in srgb, var(--zd-ui-surface) 94%, var(--zd-primary) 6%);
+  --zd-ui-border: var(--zd-border-default, var(--background-modifier-border));
+  --zd-ui-border-strong: var(--zd-border-hover, var(--background-modifier-border-hover));
+  --zd-ui-radius-card: var(--zd-radius-lg, 12px);
+  --zd-ui-radius-control: var(--zd-radius-md, 8px);
+  --zd-ui-shadow-card: var(--zd-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.12));
+  --zd-ui-shadow-hover: var(--zd-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.18));
+  font-family: var(--zd-font-sans, var(--font-interface, sans-serif));
+}
+
+.zendian-homepage {
+  --hp-gap: var(--zd-space-4, 16px);
+  --hp-radius: var(--zd-ui-radius-card);
+  --hp-radius-sm: var(--zd-ui-radius-control);
+  --hp-radius-xs: var(--zd-radius-sm, 4px);
+  --hp-padding: var(--zd-space-6, 24px);
+  --hp-search-bg: var(--zd-ui-surface);
+  --hp-search-border: var(--zd-ui-border);
+  --hp-border: var(--zd-ui-border);
+  --hp-divider: var(--zd-divider, var(--background-modifier-border));
+  --hp-hover-bg: var(--zd-bg-hover, var(--background-modifier-hover));
+  --hp-shadow: var(--zd-ui-shadow-card);
+  --hp-shadow-sm: var(--zd-shadow-xs, 0 0 0 1px var(--background-modifier-border));
+  --hp-tag-blue-bg: color-mix(in srgb, var(--zd-info) 12%, var(--zd-ui-surface));
+  --hp-tag-blue-text: var(--zd-info);
+  --hp-tag-red-bg: color-mix(in srgb, var(--zd-error) 12%, var(--zd-ui-surface));
+  --hp-tag-red-text: var(--zd-error);
+  --hp-tag-green-bg: color-mix(in srgb, var(--zd-success) 12%, var(--zd-ui-surface));
+  --hp-tag-green-text: var(--zd-success);
+}
+
+.zendian-homepage .homepage-card,
+.zendian-homepage .hp-detail-panel,
+.zendian-homepage .hp-all-panel,
+.zendian-homepage .hp-all-project-card,
+.zendian-homepage .homepage-todo-item,
+.zendian-homepage .homepage-sticky-note {
+  border-radius: var(--zd-ui-radius-card);
+  border-color: var(--zd-ui-border);
+  box-shadow: var(--zd-ui-shadow-card);
+}
+
+.zendian-homepage .homepage-card:hover,
+.zendian-homepage .hp-all-project-card:hover,
+.zendian-homepage .homepage-todo-item:hover,
+.zendian-homepage .homepage-sticky-note:hover {
+  border-color: var(--zd-ui-border-strong);
+  box-shadow: var(--zd-ui-shadow-hover);
+}
+
+.zendian-homepage .homepage-project-item,
+.zendian-homepage .homepage-card-icon-btn,
+.zendian-homepage .hp-detail-open-btn,
+.zendian-homepage .hp-detail-close,
+.zendian-homepage .homepage-todo-checkbox,
+.zendian-homepage .homepage-filter-select,
+.zendian-homepage .hp-all-project-search-input {
+  border-radius: var(--zd-ui-radius-control);
+}
+
+.zendian-homepage :is(button, input, textarea, select):focus-visible,
+.zc-root :is(button, input, textarea, select):focus-visible {
+  outline: 2px solid var(--zd-primary, var(--interactive-accent));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zendian-homepage *,
+  .zc-root * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Shared local-first identity strip. The path is intentionally visible so the
+   display name and the Obsidian-managed folder never look like the same ID. */
+.zc-root .zc-location-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0 0 var(--zd-space-4, 16px);
+  padding: 8px 12px;
+  border: 1px solid var(--zd-ui-border);
+  border-radius: var(--zd-ui-radius-control);
+  background: var(--zd-ui-surface-raised);
+  color: var(--zd-text-secondary, var(--text-muted));
+  font-size: var(--zd-text-sm, 12px);
+  line-height: 1.4;
+}
+
+.zc-root .zc-location-label {
+  color: var(--zd-text-tertiary, var(--text-faint));
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.zc-root .zc-location-path {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--zd-text-primary, var(--text-normal));
+  font-family: var(--font-monospace, ui-monospace, monospace);
+  font-size: 0.92em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zc-root .zc-location-hint {
+  flex: 1 1 280px;
+  min-width: 0;
+  color: var(--zd-text-tertiary, var(--text-faint));
+}
+
+/* The in-pane popouts and fallback native Modals share one visual shell. */
+.zendian-popout-form,
+.zendian-shared-modal,
+.zc-checkpoint-confirm,
+.zc-snapshot-modal,
+.zc-release-submit-modal,
+.zc-release-picker-modal {
+  --zd-modal-surface: var(--zd-ui-surface, var(--background-primary));
+  --zd-modal-surface-raised: var(--zd-ui-surface-raised, var(--background-secondary));
+  --zd-modal-border: var(--zd-ui-border, var(--background-modifier-border));
+  --zd-modal-border-strong: var(--zd-ui-border-strong, var(--background-modifier-border-hover));
+  color: var(--zd-text-primary, var(--text-normal));
+  font-family: var(--zd-font-sans, var(--font-interface, sans-serif));
+}
+
+.modal:is(.zc-checkpoint-confirm, .zc-snapshot-modal, .zc-release-submit-modal, .zc-release-picker-modal) .modal-content {
+  padding: 22px;
+  border: 1px solid var(--zd-modal-border);
+  border-radius: var(--zd-ui-radius-card, 12px);
+  background: var(--zd-modal-surface);
+  box-shadow: var(--zd-ui-shadow-hover, 0 12px 34px rgba(0, 0, 0, 0.18));
+}
+
+.modal.zendian-shared-modal .modal-content {
+  padding: 22px;
+  border: 1px solid var(--zd-modal-border);
+  border-radius: var(--zd-ui-radius-card, 12px);
+  background: var(--zd-modal-surface);
+  box-shadow: var(--zd-ui-shadow-hover, 0 12px 34px rgba(0, 0, 0, 0.18));
+}
+
+/* Donation keeps its white QR frame, while the modal shell still follows the
+   same surface, radius, border and spacing language as every other dialog. */
+.modal.zendian-donation-modal.zendian-shared-modal .modal-content {
+  padding: 14px 14px 16px;
+}
+
+.zendian-popout-form h2,
+.zendian-shared-modal h2,
+.zc-checkpoint-confirm h2,
+.zc-snapshot-modal h2,
+.zc-release-submit-modal h2,
+.zc-release-picker-modal h2 {
+  margin: 0 0 14px;
+  color: var(--zd-text-primary, var(--text-normal));
+  font-size: var(--zd-text-xl, 18px);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.zendian-popout-form .setting-item,
+.zendian-shared-modal .setting-item,
+.zc-checkpoint-confirm .setting-item,
+.zc-snapshot-modal .setting-item,
+.zc-release-submit-modal .setting-item,
+.zc-release-picker-modal .setting-item {
+  border-color: var(--zd-modal-border);
+  border-radius: var(--zd-ui-radius-control, 8px);
+  background: var(--zd-modal-surface-raised);
+}
+
+.zendian-popout-form-actions,
+.zendian-confirm-actions,
+.zc-release-modal-actions,
+.zc-checkpoint-confirm-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--zd-space-2, 8px);
+  margin-top: var(--zd-space-5, 20px);
+  padding-top: var(--zd-space-4, 16px);
+  border-top: 1px solid var(--zd-modal-border);
+}
+
+.zendian-popout-form-actions button,
+.zendian-confirm-actions button,
+.zc-release-modal-actions button,
+.zc-checkpoint-confirm-actions button,
+.modal:is(.zc-checkpoint-confirm, .zc-snapshot-modal, .zc-release-submit-modal, .zc-release-picker-modal) button {
+  min-height: 32px;
+  border-radius: var(--zd-ui-radius-control, 8px);
+}
+
+.zendian-popout-form :is(input, textarea, select),
+.zendian-shared-modal :is(input, textarea, select),
+.zc-checkpoint-confirm :is(input, textarea, select),
+.zc-snapshot-modal :is(input, textarea, select),
+.zc-release-submit-modal :is(input, textarea, select),
+.zc-release-picker-modal :is(input, textarea, select) {
+  border-radius: var(--zd-ui-radius-control, 8px);
+  border-color: var(--zd-modal-border);
+}
+
+.zendian-popout-form :is(input, textarea, select):focus,
+.zendian-shared-modal :is(input, textarea, select):focus,
+.zc-checkpoint-confirm :is(input, textarea, select):focus,
+.zc-snapshot-modal :is(input, textarea, select):focus,
+.zc-release-submit-modal :is(input, textarea, select):focus,
+.zc-release-picker-modal :is(input, textarea, select):focus {
+  border-color: var(--zd-modal-border-strong);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--zd-primary, var(--interactive-accent)) 18%, transparent);
+}
+
+@media (max-width: 640px) {
+  .zc-root .zc-location-strip {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .zc-root .zc-location-path,
+  .zc-root .zc-location-hint {
+    width: 100%;
   }
 }

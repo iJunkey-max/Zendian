@@ -1,0 +1,338 @@
+/* ============================================================
+   ZENdian Unified UI — 非项目主页界面的最终统一层
+
+   主页、设置、弹窗、弹出面板、专注时钟与图谱控制面板共享
+   同一套 surface / border / radius / shadow / focus 语言。
+   项目控制台（.zc-root）保留自己的内容编排，不在这里重排。
+   ============================================================ */
+
+body {
+    --zd-ui-page: var(--zd-ui-surface, var(--background-primary));
+    --zd-ui-control: var(--zd-ui-surface-raised, var(--background-secondary));
+    --zd-ui-control-hover: color-mix(in srgb, var(--zd-ui-control) 88%, var(--zd-primary) 12%);
+    --zd-ui-text: var(--zd-text-primary, var(--text-normal));
+    --zd-ui-text-muted: var(--zd-text-secondary, var(--text-muted));
+    --zd-ui-text-faint: var(--zd-text-tertiary, var(--text-faint));
+    --zd-ui-divider: var(--zd-ui-border, var(--background-modifier-border));
+    --zd-ui-divider-strong: var(--zd-ui-border-strong, var(--background-modifier-border-hover));
+    --zd-ui-shadow-dialog: var(--zd-ui-shadow-hover, 0 12px 34px rgba(0, 0, 0, 0.18));
+    --zd-ui-control-height: 34px;
+    --zd-ui-card-padding: 16px;
+}
+
+/* Shared host surface. :has() is already used by the plugin CSS and is
+   supported by the Chromium runtime shipped with Obsidian. */
+.workspace-leaf-content:has(.zendian-homepage),
+.workspace-leaf-content:has(.zendian-settings-wrapper),
+.workspace-leaf-content:has(.zendian-popout-form) {
+    background: var(--zd-ui-page);
+    color: var(--zd-ui-text);
+}
+
+/* Homepage --------------------------------------------------- */
+.zendian-homepage {
+    --bg: var(--zd-ui-page);
+    --surface: var(--zd-ui-control);
+    --shadow-card: var(--zd-ui-shadow-card);
+    --shadow-card-hover: var(--zd-ui-shadow-hover);
+    --hp-border: var(--zd-ui-divider);
+    --hp-divider: var(--zd-ui-divider);
+    --text-main: var(--zd-ui-text);
+    --text-muted: var(--zd-ui-text-muted);
+    --text-lighter: var(--zd-ui-text-faint);
+    --text-faint: var(--zd-ui-text-faint);
+    background: var(--zd-ui-page);
+    color: var(--zd-ui-text);
+}
+
+/* Project console keeps its workbench information architecture, but its
+   surface primitives are intentionally the same as the main homepage and
+   other plugin interfaces. */
+.zc-root {
+    --zc-bg: var(--zd-ui-page);
+    --zc-bg-secondary: var(--zd-ui-control);
+    --zc-text: var(--zd-ui-text);
+    --zc-text-secondary: var(--zd-ui-text-muted);
+    --zc-text-tertiary: var(--zd-ui-text-faint);
+    --zc-border: var(--zd-ui-divider);
+    --zc-border-hover: var(--zd-ui-divider-strong);
+    --zc-shadow: var(--zd-ui-shadow-card);
+    --zc-shadow-hover: var(--zd-ui-shadow-hover);
+    --zc-radius: var(--zd-ui-radius-card);
+    --zc-radius-sm: var(--zd-ui-radius-control);
+    --zc-radius-xs: var(--zd-ui-radius-control);
+    background: var(--zd-ui-page);
+    color: var(--zd-ui-text);
+}
+
+.zc-root :is(button, input, select, textarea):focus-visible {
+    outline: var(--zd-ui-focus-ring);
+    outline-offset: 2px;
+}
+
+.zendian-homepage .homepage-wrapper {
+    background-color: var(--zd-ui-page);
+    background-image:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--zd-primary) 8%, transparent), transparent 34%),
+        radial-gradient(circle at 88% 100%, color-mix(in srgb, var(--zd-primary) 5%, transparent), transparent 38%);
+    background-size: 100% 100%;
+}
+
+.zendian-homepage .homepage-card,
+.zendian-homepage .hp-detail-panel,
+.zendian-homepage .hp-all-panel,
+.zendian-homepage .homepage-weather-card {
+    background: var(--zd-ui-control);
+    border: 1px solid var(--zd-ui-divider);
+    border-radius: var(--zd-ui-radius-card);
+    box-shadow: var(--zd-ui-shadow-card);
+}
+
+.zendian-homepage .homepage-card:hover,
+.zendian-homepage .hp-all-project-card:hover,
+.zendian-homepage .hp-detail-panel:hover {
+    border-color: var(--zd-ui-divider-strong);
+    box-shadow: var(--zd-ui-shadow-hover);
+}
+
+.zendian-homepage :is(
+    .homepage-search-input,
+    .hp-all-project-search-input,
+    .hp-all-project-filter-wrap .homepage-filter-select,
+    .homepage-card-icon-btn,
+    .homepage-todo-tab,
+    .homepage-project-type-tag
+) {
+    border-radius: var(--zd-ui-radius-control);
+}
+
+.zendian-homepage :is(
+    .homepage-search-input,
+    .hp-all-project-search-input,
+    .hp-all-project-filter-wrap .homepage-filter-select
+) {
+    border-color: var(--zd-ui-divider);
+    background: var(--zd-ui-page);
+    color: var(--zd-ui-text);
+}
+
+.zendian-homepage :is(
+    .homepage-search-input,
+    .hp-all-project-search-input,
+    .hp-all-project-filter-wrap .homepage-filter-select,
+    .homepage-card-icon-btn,
+    .homepage-todo-tab
+):focus-visible {
+    outline: var(--zd-ui-focus-ring);
+    outline-offset: 2px;
+}
+
+/* Settings --------------------------------------------------- */
+.zendian-settings-wrapper {
+    --zd-settings-card: var(--zd-ui-control);
+    --zd-settings-line: var(--zd-ui-divider);
+    --zd-settings-shadow: var(--zd-ui-shadow-card);
+    --zd-settings-shadow-hover: var(--zd-ui-shadow-hover);
+    --zd-settings-radius-card: var(--zd-ui-radius-card);
+    --zd-settings-radius-control: var(--zd-ui-radius-control);
+    color: var(--zd-ui-text);
+    background: transparent;
+}
+
+.zendian-settings-wrapper .zendian-nav,
+.zendian-settings-wrapper .zendian-section-card,
+.zendian-settings-wrapper .zendian-heading-wrapper,
+.zendian-settings-wrapper .zendian-about-card,
+.zendian-settings-wrapper .zendian-about-support,
+.zendian-settings-wrapper .zendian-empty-state {
+    border-color: var(--zd-ui-divider);
+    border-radius: var(--zd-ui-radius-card);
+    background: var(--zd-ui-control);
+    box-shadow: var(--zd-ui-shadow-card);
+}
+
+.zendian-settings-wrapper .zendian-nav {
+    background: color-mix(in srgb, var(--zd-ui-control) 92%, transparent);
+}
+
+.zendian-settings-wrapper .zendian-nav-item,
+.zendian-settings-wrapper :is(input, select, textarea, button) {
+    border-radius: var(--zd-ui-radius-control);
+}
+
+.zendian-settings-wrapper :is(input, select, textarea) {
+    border-color: var(--zd-ui-divider);
+    background: var(--zd-ui-page);
+    color: var(--zd-ui-text);
+}
+
+.zendian-settings-wrapper :is(input, select, textarea, button):focus-visible {
+    outline: var(--zd-ui-focus-ring);
+    outline-offset: 2px;
+}
+
+/* Dialogs and popouts --------------------------------------- */
+.zendian-popout-form,
+.modal.zendian-shared-modal .modal-content,
+.modal.zendian-shared-modal .modal-header,
+.modal.zendian-shared-modal .modal-footer {
+    color: var(--zd-ui-text);
+    font-family: var(--font-interface, var(--zd-font-sans, sans-serif));
+}
+
+.zendian-popout-form {
+    background: var(--zd-ui-page);
+}
+
+.modal.zendian-shared-modal .modal-content {
+    border-color: var(--zd-ui-divider);
+    border-radius: var(--zd-ui-radius-card);
+    background: var(--zd-ui-page);
+    box-shadow: var(--zd-ui-shadow-dialog);
+}
+
+.zendian-popout-form :is(input, textarea, select),
+.modal.zendian-shared-modal :is(input, textarea, select) {
+    min-height: var(--zd-ui-control-height);
+    border: 1px solid var(--zd-ui-divider);
+    border-radius: var(--zd-ui-radius-control);
+    background: var(--zd-ui-page);
+    color: var(--zd-ui-text);
+}
+
+.zendian-popout-form :is(input, textarea, select):focus,
+.modal.zendian-shared-modal :is(input, textarea, select):focus {
+    border-color: var(--zd-primary, var(--interactive-accent));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--zd-primary, var(--interactive-accent)) 18%, transparent);
+}
+
+.zendian-popout-form :is(input, textarea)::placeholder,
+.modal.zendian-shared-modal :is(input, textarea)::placeholder,
+.zendian-settings-wrapper :is(input, textarea)::placeholder {
+    color: var(--zd-ui-text-faint);
+    opacity: 1;
+}
+
+.zendian-popout-form :is(button, .button),
+.modal.zendian-shared-modal :is(button, .button) {
+    min-height: 32px;
+    border-radius: var(--zd-ui-radius-control);
+}
+
+.zendian-popout-form-actions,
+.zendian-confirm-actions,
+.modal.zendian-shared-modal .setting-item:last-child {
+    border-color: var(--zd-ui-divider);
+}
+
+/* Focus clock and graph controls ---------------------------- */
+.zendian-focus-clock-panel,
+.zendian-focus-clock-workspace,
+.zendian-popout-form.zendian-focus-clock-popout {
+    --zd-focus-panel-surface: var(--zd-ui-page);
+    --zd-focus-panel-surface-raised: var(--zd-ui-control);
+    --zd-focus-panel-border: var(--zd-ui-divider);
+    --zd-focus-panel-radius-card: var(--zd-ui-radius-card);
+    --zd-focus-panel-radius-control: var(--zd-ui-radius-control);
+    --zd-focus-panel-shadow: var(--zd-ui-shadow-dialog);
+}
+
+.zendian-popout-form.zendian-focus-clock-popout {
+    background: var(--zd-ui-page);
+}
+
+.zendian-graph .graph-controls,
+.zendian-graph .graph-controls.is-close {
+    border-color: var(--zd-ui-divider);
+    border-radius: var(--zd-ui-radius-card);
+    box-shadow: var(--zd-ui-shadow-hover);
+}
+
+.zendian-graph .graph-controls :is(input, select, button):focus-visible {
+    outline: var(--zd-ui-focus-ring);
+    outline-offset: 2px;
+}
+
+/* Homepage date/time picker popovers use the same dialog shell, even though
+   they are positioned directly in the active workspace. */
+.zendian-schedule-popover {
+    border-color: var(--zd-ui-divider);
+    border-radius: var(--zd-ui-radius-card);
+    background: var(--zd-ui-page);
+    color: var(--zd-ui-text);
+    box-shadow: var(--zd-ui-shadow-dialog);
+}
+
+.zendian-schedule-popover :is(button, input, select) {
+    border-radius: var(--zd-ui-radius-control);
+}
+
+/* Legacy in-pane fallback dialogs use the same tokens as native modals.  The
+   current homepage opens native/shared modals first, but keeping this fallback
+   aligned prevents a visible style jump if a popout cannot be created. */
+.homepage-project-modal-overlay {
+    background: color-mix(in srgb, var(--zd-ui-page) 42%, transparent);
+    backdrop-filter: blur(4px);
+}
+
+.homepage-project-modal {
+    width: min(20rem, calc(100vw - 32px));
+    background: var(--zd-ui-page);
+    border-color: var(--zd-ui-divider);
+    border-radius: var(--zd-ui-radius-card);
+    box-shadow: var(--zd-ui-shadow-dialog);
+    color: var(--zd-ui-text);
+}
+
+.homepage-project-modal-title,
+.homepage-project-modal-label {
+    color: var(--zd-ui-text);
+}
+
+.homepage-project-modal-input,
+.homepage-project-modal-select,
+.homepage-project-modal-icon-current,
+.homepage-project-modal-btn {
+    border-color: var(--zd-ui-divider);
+    border-radius: var(--zd-ui-radius-control);
+    background: var(--zd-ui-page);
+    color: var(--zd-ui-text);
+}
+
+.homepage-project-modal-input:focus,
+.homepage-project-modal-select:focus,
+.homepage-project-modal-btn:focus-visible {
+    outline: var(--zd-ui-focus-ring);
+    outline-offset: 2px;
+    border-color: var(--zd-primary, var(--interactive-accent));
+}
+
+.homepage-project-modal-btn:hover {
+    background: var(--zd-ui-control-hover);
+}
+
+.homepage-project-modal-btn--primary {
+    background: var(--zd-primary, var(--interactive-accent));
+    border-color: transparent;
+    color: var(--text-on-accent);
+}
+
+/* Shared compact geometry for touch targets. */
+.zendian-popout-form :is(button, input, select, textarea),
+.modal.zendian-shared-modal :is(button, input, select, textarea),
+.zendian-focus-clock-panel :is(button, input, select, textarea),
+.zendian-focus-clock-workspace :is(button, input, select, textarea) {
+    font-family: var(--font-interface, var(--zd-font-sans, sans-serif));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .zendian-homepage *,
+    .zendian-settings-wrapper *,
+    .zendian-popout-form *,
+    .modal.zendian-shared-modal * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+

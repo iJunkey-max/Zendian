@@ -1,3 +1,4 @@
+import { ProjectRegistry } from "../homepage/services/ProjectRegistry";
 import { App, Notice, setIcon } from "obsidian";
 import type { EventBus } from "../core/event-bus";
 import { Events } from "../core/event-bus";
@@ -9,6 +10,7 @@ import type {
 import type { ActivityLogService } from "../services/ActivityLogService";
 import type { PluginSettings } from "../types/settings.types";
 import { openPopoutForm } from "../ui/popout-form";
+import { resolveFocusProject, type FocusProjectCandidate } from "./focus-project";
 
 interface BreakState {
   status: "running" | "paused";
@@ -38,6 +40,8 @@ export class FocusClockController {
   private breakState: BreakState | null = null;
   private selectedMinutes = 25;
   private customDurationSelected = false;
+  /** undefined = follow active file; null = explicitly unassigned. */
+  private projectSelection: string | null | undefined;
   private temporarilyEnabledFocusMode = false;
   private completionFlashTimer: number | null = null;
 
@@ -304,6 +308,43 @@ export class FocusClockController {
     }
 
     const activeFile = this.app.workspace.getActiveFile();
+    const projectField = controls.createDiv("zendian-focus-clock-field");
+    projectField.createEl("label", { text: "归属项目（可选）" });
+    const projectSelect = projectField.createEl("select", {
+      attr: { "aria-label": "归属项目（可选）" },
+    });
+    const loadingOption = projectSelect.createEl("option", { value: "", text: "正在读取项目…" });
+    loadingOption.disabled = true;
+
+    const discoverReadyProjects = async (): Promise<FocusProjectCandidate[]> => {
+      const result = await new ProjectRegistry(this.app).discover();
+      return result.projects.filter((project) => project.state === "ready" && !!project.projectId);
+    };
+
+    const populateProjects = async (): Promise<void> => {
+      try {
+        const projects = await discoverReadyProjects();
+        if (!projectSelect.isConnected) return;
+        const auto = resolveFocusProject(projects, undefined, activeFile?.path);
+        projectSelect.empty();
+        projectSelect.createEl("option", { value: "", text: "不归属项目" });
+        for (const project of projects.sort((a, b) => a.name.localeCompare(b.name, "zh-CN"))) {
+          projectSelect.createEl("option", { value: project.projectId!, text: `${project.name} · ${project.folderPath}` });
+        }
+        projectSelect.value = this.projectSelection ?? auto?.projectId ?? "";
+        if (auto && activeFile?.extension === "home" && targetInput.value === activeFile.basename) targetInput.value = auto.name;
+      } catch (error) {
+        if (!projectSelect.isConnected) return;
+        projectSelect.empty();
+        projectSelect.createEl("option", { value: "", text: "项目读取失败，可重试" });
+        console.error("[FocusClock] 项目列表读取失败", error);
+      }
+    };
+    projectSelect.addEventListener("change", () => {
+      this.projectSelection = projectSelect.value || null;
+    });
+    void populateProjects();
+
     const targetField = controls.createDiv("zendian-focus-clock-field");
     targetField.createEl("label", { text: "专注目标" });
     const targetInput = targetField.createEl("input", {
@@ -312,6 +353,11 @@ export class FocusClockController {
       placeholder: "例如：完成方案初稿",
       attr: { maxlength: "120" },
     });
+
+    const resolveProject = async (): Promise<FocusProjectCandidate | undefined> => {
+      const projects = await discoverReadyProjects();
+      return resolveFocusProject(projects, this.projectSelection, activeFile?.path);
+    };
 
     const breakMinutes = this.settingsManager.getSettings().editorEnhance.focusClockBreakMinutes;
     const breakRow = controls.createDiv({ cls: "zendian-focus-clock-break-row" });
@@ -333,11 +379,18 @@ export class FocusClockController {
     });
     setIcon(startButton, "play");
     startButton.createSpan({ text: "开始专注" });
-    startButton.addEventListener("click", () => {
-      const targetLabel = targetInput.value.trim() || activeFile?.basename || "未命名专注";
-      const targetPath = activeFile && targetLabel === activeFile.basename ? activeFile.path : undefined;
-      const selectedBreak = breakToggle.checked ? Math.max(1, Math.min(30, Number(breakInput.value) || 5)) : 0;
-      this.startFocus(this.selectedMinutes, targetLabel, targetPath, selectedBreak);
+    startButton.addEventListener("click", async () => {
+      startButton.disabled = true;
+      try {
+        const project = await resolveProject();
+        const targetLabel = targetInput.value.trim() || activeFile?.basename || "未命名专注";
+        const targetPath = activeFile && targetLabel === activeFile.basename ? activeFile.path : undefined;
+        const selectedBreak = breakToggle.checked ? Math.max(1, Math.min(30, Number(breakInput.value) || 5)) : 0;
+        this.startFocus(this.selectedMinutes, targetLabel, targetPath, selectedBreak, project?.projectId || undefined, project?.name);
+      } catch (error) {
+        startButton.disabled = false;
+        new Notice(String(error));
+      }
     });
   }
 
@@ -395,7 +448,7 @@ export class FocusClockController {
     close.addEventListener("click", () => this.closePanel());
   }
 
-  private startFocus(minutes: number, targetLabel: string, targetPath: string | undefined, breakMinutes: number): void {
+  private startFocus(minutes: number, targetLabel: string, targetPath: string | undefined, breakMinutes: number, projectId?: string, projectName?: string): void {
     const now = Date.now();
     this.session = {
       id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
@@ -404,6 +457,8 @@ export class FocusClockController {
       plannedSeconds: Math.max(60, Math.round(minutes * 60)),
       targetLabel,
       targetPath,
+      projectId,
+      projectName,
       segments: [],
       activeSegmentStartedAt: now,
       breakMinutes,
@@ -442,19 +497,47 @@ export class FocusClockController {
   private completeFocusSession(status: FocusSessionRecord["status"], natural: boolean): void {
     if (!this.session) return;
     const session = this.session;
-    if (session.status === "running") this.finalizeActiveSegment(Date.now());
-    const focusedSeconds = Math.round(session.segments.reduce((sum, segment) => sum + (segment.end - segment.start) / 1000, 0));
+    const endedAt = Date.now();
+    // Build a completion snapshot first. Do not mutate the live session until
+    // ActivityLogService accepts the record; a failed validation must leave a
+    // retryable session instead of deleting its active segment and freezing it.
+    const segments = session.segments.map(segment => ({ ...segment }));
+    if (session.status === "running" && session.activeSegmentStartedAt !== undefined) {
+      const completedSeconds = segments.reduce((sum, segment) => sum + (segment.end - segment.start) / 1000, 0);
+      const remainingBeforeSegment = Math.max(0, session.plannedSeconds - completedSeconds);
+      const exactEnd = Math.min(endedAt, session.activeSegmentStartedAt + remainingBeforeSegment * 1000);
+      if (exactEnd > session.activeSegmentStartedAt) {
+        segments.push({ start: session.activeSegmentStartedAt, end: exactEnd });
+      }
+    }
+    const focusedSeconds = Math.round(segments.reduce((sum, segment) => sum + (segment.end - segment.start) / 1000, 0));
     const record: FocusSessionRecord = {
       id: session.id,
       startedAt: session.startedAt,
-      endedAt: Date.now(),
+      endedAt,
       plannedSeconds: session.plannedSeconds,
       focusedSeconds,
       status,
       targetLabel: session.targetLabel,
       targetPath: session.targetPath,
+      projectId: session.projectId,
+      projectName: session.projectName,
     };
-    this.activityLog.recordFocusSession(record, session.segments);
+    if (!this.activityLog.recordFocusSession(record, segments)) {
+      // Stop automatic retries when the clock/data is invalid, but retain the
+      // session in a safe paused state so the user can inspect the clock and
+      // resume or retry after correcting it.
+      session.status = "paused";
+      delete session.activeSegmentStartedAt;
+      this.activityLog.setActiveFocusSession(session);
+      this.stopTicker();
+      this.renderStatus();
+      if (this.panelEl) this.refreshFocusPanelControls();
+      new Notice("专注时间段异常，未计入统计；会话已保留，请检查系统时间后重试");
+      return;
+    }
+    session.segments = segments;
+    delete session.activeSegmentStartedAt;
     const breakMinutes = natural && status === "completed" ? session.breakMinutes : 0;
     this.session = null;
     this.stopTicker();

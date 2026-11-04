@@ -70,13 +70,23 @@ requireMatch(
 );
 requireMatch(
   "src/homepage/services/ServiceManager.ts",
-  /rebaseProjectPath\(oldProjectPath[\s\S]*fileWatcher\.rebaseProjectPath[\s\S]*snapshots\.rebaseProjectPath/,
-  "项目改名必须同步迁移监听器与快照路径",
+  /rebaseProjectPath\(oldProjectPath[\s\S]*snapshots\.rebaseProjectPath[\s\S]*fileWatcher\.rebaseProjectPath/,
+  "项目改名必须先提交快照路径，再同步迁移监听器",
+);
+requireMatch(
+  "src/main.ts",
+  /new ProjectReconciler\(this\.app,[\s\S]*\(\) => !this\.unloading\)/,
+  "插件卸载期间必须停止项目核对及路径迁移",
 );
 requireMatch(
   "src/homepage/services/ProjectSnapshotService.ts",
   /rebaseProjectPath\(oldProjectPath[\s\S]*filePath:\s*rebasePath/,
   "项目快照必须支持文件夹改名后的路径迁移",
+);
+requireMatch(
+  "src/homepage/services/TimelineService.ts",
+  /event\.kind === "project-moved"[\s\S]*type: "project-moved"/,
+  "时间轴必须展示 Obsidian 关闭期间发现的项目目录移动",
 );
 requireMatch(
   "src/homepage/ProjectConsoleView.ts",

@@ -37,7 +37,7 @@ ZENdian 是一款面向 Obsidian 的工作空间增强插件。它在不改变 M
 - 同时适配桌面端、平板与手机端，并支持 Obsidian 原生浅色/深色模式。
 
 > [!IMPORTANT]
-> ZENdian 当前要求 **Obsidian 1.12.7 或更高版本**。升级前建议备份知识库，并阅读对应版本的 [Release Notes](./RELEASE_NOTES_3.2.05.md)。
+> ZENdian 当前要求 **Obsidian 1.12.7 或更高版本**。升级前建议备份知识库，并阅读 [V4.0.00 发布说明](./notes/RELEASE_NOTES_4.0.00.md)。
 
 ## 核心能力
 
@@ -56,6 +56,8 @@ ZENdian 是一款面向 Obsidian 的工作空间增强插件。它在不改变 M
 - 时间线与检查点提供新建、恢复和删除操作；
 - 交付物可按项目分类配置目录，并支持打开、删除和旧目录兼容；
 - 发布构建可生成包含 `main.js`、`manifest.json` 与 `styles.css` 的标准插件包。
+
+项目管理使用稳定 `projectId` 识别项目，分类和显示名称独立于目录位置。直接在文件管理器或 Obsidian 文件树中移动、重命名项目文件夹后，启动核对器会按当前 `.home` 重新关联；“项目检查与关联”可处理缺失、重复、嵌套和根目录冲突。关闭 Obsidian 期间无法记录逐次操作，重新打开后只记录当前可验证的文件事实，具体规则见 [数据与恢复说明](./docs/项目管理数据与恢复说明.md)。
 
 ### 专注与复盘
 
@@ -170,6 +172,7 @@ npm run build
 - 插件会尽可能迁移既有设置；
 - V2 用户应先备份知识库，再升级至 V3；
 - V3.2.02 会继续识别既有 `.home` 项目数据和旧交付物目录；
+- V4.0.00 会为项目注册表与历史索引提供首次写入前备份；Vault 根目录 `.home` 需要移动到独立项目文件夹后再登记；
 - 跨大版本升级前，请阅读 [更新日志](./CHANGELOG.md) 与对应发布说明。
 
 ## 开发
@@ -187,7 +190,8 @@ npm run build
 | `npm run typecheck` | 执行 TypeScript 类型检查 |
 | `npm run check:settings` | 校验设置定义与设置界面映射 |
 | `npm run check:safety` | 检查高风险代码模式 |
-| `npm run check` | 运行全部静态检查 |
+| `npm run check:projects` | 使用模拟 Vault 运行项目行为回归测试 |
+| `npm run check` | 运行类型、契约和行为检查 |
 
 提交代码前建议至少运行：
 
@@ -254,15 +258,16 @@ Pull Request 应保持改动范围清晰，并确保 `npm run check` 与 `npm ru
 
 ## 版本与许可
 
-- 当前版本：**V3.2.05**
+- 当前版本：**V4.0.00**
 - [更新日志](./CHANGELOG.md)
-- [V3.2.05 发布说明](./RELEASE_NOTES_3.2.05.md)
-- [V3.2.03 发布说明](./RELEASE_NOTES_3.2.03.md)
-- [V3.2.02 发布说明](./RELEASE_NOTES_3.2.02.md)
-- [V3.2.01 发布说明](./RELEASE_NOTES_3.2.01.md)
-- [V3.2.00 发布说明](./RELEASE_NOTES_3.2.00.md)
-- [V3.1.04 发布说明](./RELEASE_NOTES_3.1.04.md)
-- [V3.1.03 发布说明](./RELEASE_NOTES_3.1.03.md)
+- [V4.0.00 发布说明](./notes/RELEASE_NOTES_4.0.00.md)
+- [V3.2.05 发布说明](./notes/RELEASE_NOTES_3.2.05.md)
+- [V3.2.03 发布说明](./notes/RELEASE_NOTES_3.2.03.md)
+- [V3.2.02 发布说明](./notes/RELEASE_NOTES_3.2.02.md)
+- [V3.2.01 发布说明](./notes/RELEASE_NOTES_3.2.01.md)
+- [V3.2.00 发布说明](./notes/RELEASE_NOTES_3.2.00.md)
+- [V3.1.04 发布说明](./notes/RELEASE_NOTES_3.1.04.md)
+- [V3.1.03 发布说明](./notes/RELEASE_NOTES_3.1.03.md)
 - [全部版本发布](https://github.com/iJunkey-max/Zendian/releases)
 
 本项目基于 [MIT License](./LICENSE) 开源。

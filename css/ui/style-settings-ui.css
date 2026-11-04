@@ -1252,9 +1252,12 @@
    ============================================================ */
 
 .zendian-settings-wrapper {
-    --zd-settings-card: color-mix(in srgb, var(--background-secondary) 88%, transparent);
-    --zd-settings-line: color-mix(in srgb, var(--background-modifier-border) 82%, transparent);
-    --zd-settings-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 9px 30px rgba(0, 0, 0, 0.035);
+    --zd-settings-card: var(--zd-ui-surface-raised, var(--background-secondary));
+    --zd-settings-line: var(--zd-ui-border, var(--background-modifier-border));
+    --zd-settings-shadow: var(--zd-ui-shadow-card, 0 1px 3px rgba(0, 0, 0, 0.12));
+    --zd-settings-shadow-hover: var(--zd-ui-shadow-hover, 0 4px 12px rgba(0, 0, 0, 0.18));
+    --zd-settings-radius-card: var(--zd-ui-radius-card, 12px);
+    --zd-settings-radius-control: var(--zd-ui-radius-control, 8px);
     --text-muted: var(--zd-text-secondary);
     --text-faint: var(--zd-text-tertiary);
     display: block;
@@ -1313,7 +1316,7 @@
     height: 34px;
     padding: 0 12px;
     border: 1px solid var(--zd-settings-line);
-    border-radius: 10px;
+    border-radius: var(--zd-settings-radius-control);
     background: var(--background-primary);
     color: var(--text-normal);
     font-size: 12px;
@@ -1367,7 +1370,7 @@
     overflow-x: auto;
     overflow-y: hidden;
     border: 1px solid var(--zd-settings-line);
-    border-radius: 12px;
+    border-radius: var(--zd-settings-radius-card);
     background: color-mix(in srgb, var(--background-secondary) 92%, transparent);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.045);
     backdrop-filter: blur(16px);
@@ -1391,7 +1394,7 @@
     min-height: 36px;
     padding: 7px 12px;
     border: 0;
-    border-radius: 9px;
+    border-radius: var(--zd-settings-radius-control);
     background: transparent;
     color: var(--text-muted);
     font-size: 12px;
@@ -1438,7 +1441,7 @@
     margin-bottom: 14px;
     overflow: clip;
     border: 1px solid var(--zd-settings-line);
-    border-radius: 14px;
+    border-radius: var(--zd-settings-radius-card);
     background: var(--zd-settings-card);
     box-shadow: var(--zd-settings-shadow);
 }
@@ -1567,19 +1570,20 @@
 .zendian-heading-group {
     padding: 10px 12px;
     border: 1px solid var(--zd-settings-line);
-    border-radius: 10px;
+    border-radius: var(--zd-settings-radius-control);
     background: var(--background-primary);
 }
 
 .zendian-heading-tabs {
     margin: 10px 0;
     border: 0;
-    background: var(--background-primary);
+    border-radius: var(--zd-settings-radius-control);
+    background: var(--zd-ui-surface, var(--background-primary));
 }
 
 .zendian-heading-tab-btn {
     min-height: 34px;
-    border-radius: 7px;
+    border-radius: var(--zd-settings-radius-control);
 }
 
 .zendian-heading-tab-btn.active {
@@ -1589,7 +1593,7 @@
 .zendian-empty-state {
     padding: 48px 20px;
     border: 1px dashed var(--zd-settings-line);
-    border-radius: 14px;
+    border-radius: var(--zd-settings-radius-card);
     color: var(--text-muted);
     text-align: center;
 }
@@ -1659,7 +1663,7 @@
     margin: 18px 0;
     padding: 18px;
     border: 1px solid var(--zd-settings-line);
-    border-radius: 14px;
+    border-radius: var(--zd-settings-radius-card);
     background:
         linear-gradient(135deg, color-mix(in srgb, var(--interactive-accent) 8%, transparent), transparent 55%),
         var(--zd-settings-card);
@@ -1700,8 +1704,8 @@
     justify-content: center;
     padding: 10px 14px;
     border: 1px solid var(--zd-settings-line);
-    border-radius: 11px;
-    background: var(--background-primary);
+    border-radius: var(--zd-settings-radius-control);
+    background: var(--zd-ui-surface, var(--background-primary));
     color: var(--text-normal);
     box-shadow: none;
     cursor: pointer;
@@ -1746,7 +1750,9 @@
 }
 
 .zendian-donation-modal .modal-content {
-    padding: 4px 4px 8px;
+    /* The QR frame stays white; the dialog itself follows the shared modal
+       shell instead of reverting to a cramped, legacy padding value. */
+    padding: 14px 14px 16px;
 }
 
 .zendian-donation-view {
@@ -1777,7 +1783,7 @@
     justify-content: center;
     overflow: hidden;
     border: 1px solid var(--background-modifier-border);
-    border-radius: 14px;
+    border-radius: var(--zd-settings-radius-card);
     background: #fff;
 }
 
@@ -1930,4 +1936,42 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* Final normalization pass: legacy settings sub-views still share the same
+   host wrapper, so their controls and nested cards must use the same geometry
+   as the current tab shell above. */
+.zendian-settings-wrapper :is(
+    input[type="text"],
+    input[type="number"],
+    input[type="search"],
+    input[type="color"],
+    select,
+    textarea,
+    button,
+    .zendian-nav-item,
+    .zendian-heading-tab-btn,
+    .zendian-project-category-row,
+    .zendian-project-category-add-row,
+    .zendian-project-subfolder-row,
+    .zendian-project-subfolder-add-row,
+    .zendian-project-deliverable-folder,
+    .zendian-about-feature-card,
+    .zendian-about-feat-icon
+) {
+    border-radius: var(--zd-settings-radius-control, 8px);
+}
+
+.zendian-settings-wrapper :is(
+    .zendian-section-card,
+    .zendian-about-card,
+    .zendian-about-support,
+    .zendian-empty-state
+) {
+    border-radius: var(--zd-settings-radius-card, 12px);
+}
+
+.zendian-settings-wrapper :is(button, input, select, textarea):focus-visible {
+    outline: var(--zd-ui-focus-ring, 2px solid var(--interactive-accent));
+    outline-offset: 2px;
 }

@@ -16,6 +16,7 @@ export class QuickNoteModal extends Modal {
   }
 
   onOpen(): void {
+    this.modalEl.addClass("zendian-shared-modal");
     this.form.render(this.contentEl);
   }
 

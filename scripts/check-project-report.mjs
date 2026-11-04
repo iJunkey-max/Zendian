@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import ts from 'typescript';
+const pathSource=fs.readFileSync('src/utils/project-path.ts','utf8');
+const pathJs=ts.transpileModule(pathSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+const pathModule={exports:{}};
+new Function('module','exports',pathJs)(pathModule,pathModule.exports);
+const {isPortableProjectPath,projectFileStem}=pathModule.exports;
+for(const name of ['../跨目录/名称','CON','NUL.txt','...','包含\n换行','😀'.repeat(100),'']) {
+  const stem=projectFileStem(name);
+  assert(!stem.includes('/'));
+  assert(isPortableProjectPath(stem+'.md'));
+}
+const source=fs.readFileSync('src/homepage/services/ExportService.ts','utf8');
+const ast=ts.createSourceFile('ExportService.ts',source,ts.ScriptTarget.Latest,true);
+const service=ast.statements.find(node=>ts.isClassDeclaration(node)&&node.name?.text==='ExportService');
+const methods=['exportToFile','generateCsvReport'].map(name=>service.members.find(node=>node.name?.getText(ast)===name).getText(ast)).join('\n');
+const js=ts.transpileModule(`class Harness { ${methods} }; return Harness;`,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+const Harness=new Function('Notice','isPortableProjectPath',js)(class {},isPortableProjectPath);
+const h=new Harness();
+const disk=new Map([['项目',''],['项目/报告.md','用户保留的报告']]);
+h.app={vault:{adapter:{exists:async path=>disk.has(path),mkdir:async path=>disk.set(path,'')},create:async(path,text)=>{if(disk.has(path))throw Error('exists');disk.set(path,text);}}};
+h.exportProjectReport=async()=> '新报告';
+await h.exportToFile('项目','项目/报告.md');
+await h.exportToFile('项目','项目/报告.md');
+assert.equal(disk.get('项目/报告.md'),'用户保留的报告');
+assert.equal(disk.get('项目/报告_1.md'),'新报告');
+assert.equal(disk.get('项目/报告_2.md'),'新报告');
+await assert.rejects(()=>h.exportToFile('项目','项目/../外部.md'),/输出路径/);
+await assert.rejects(()=>h.exportToFile('项目','其他项目/报告.md'),/输出路径/);
+const csv=await h.generateCsvReport({tasks:[{text:'任务,"引号"\n第二行',completed:false,tags:['标签,逗号','"双引号"']}],deliverables:[{name:'交付,名称',path:'目录/a,b.txt',status:'done'}]},{});
+assert(csv.includes('"任务,""引号""\n第二行"'));
+assert(csv.includes('"标签,逗号;""双引号"""'));
+assert(csv.includes('"交付,名称","已完成","目录/a,b.txt"'));
+console.log('✓ 显示名称不会成为导出路径，重复报告不覆盖，CSV 文本、标签和路径统一转义');

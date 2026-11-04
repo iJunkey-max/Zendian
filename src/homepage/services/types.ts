@@ -59,7 +59,7 @@ export interface ProjectHealth {
 // ============================================================
 
 export interface TimelineEvent {
-  type: "file-created" | "file-modified" | "file-deleted" | "file-restored" | "task-created" | "task-completed" | "deliverable-added" | "milestone" | "status-changed" | "checkpoint";
+  type: "file-created" | "file-modified" | "file-deleted" | "file-renamed" | "file-restored" | "project-restored" | "project-moved" | "task-created" | "task-updated" | "task-completed" | "task-reopened" | "task-deleted" | "task-restored" | "deliverable-added" | "deliverable-updated" | "deliverable-removed" | "milestone" | "status-changed" | "checkpoint";
   date: string;
   timestamp: number;
   title: string;

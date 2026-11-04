@@ -22,7 +22,7 @@
   margin: 0;
   padding: 0 4px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--zd-ui-radius-control, 8px);
   color: inherit;
   background: transparent;
   box-shadow: none;
@@ -66,7 +66,7 @@
 .zendian-focus-clock-time::before {
   position: absolute;
   inset: 2px;
-  border-radius: 6px;
+  border-radius: var(--zd-ui-radius-control, 8px);
   background: conic-gradient(
     from 0deg,
     color-mix(in srgb, var(--interactive-accent) 35%, transparent) var(--zd-focus-progress),
@@ -105,6 +105,12 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
 .zendian-focus-clock-panel,
 .zendian-focus-clock-workspace {
   --zd-focus-panel-accent: var(--interactive-accent);
+  --zd-focus-panel-surface: var(--zd-ui-surface, var(--background-primary));
+  --zd-focus-panel-surface-raised: var(--zd-ui-surface-raised, var(--background-secondary));
+  --zd-focus-panel-border: var(--zd-ui-border, var(--background-modifier-border));
+  --zd-focus-panel-radius-card: var(--zd-ui-radius-card, 12px);
+  --zd-focus-panel-radius-control: var(--zd-ui-radius-control, 8px);
+  --zd-focus-panel-shadow: var(--zd-ui-shadow-hover, 0 4px 12px rgba(0, 0, 0, 0.18));
   color: var(--text-normal);
 }
 
@@ -113,12 +119,12 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   z-index: var(--layer-popover, 1000);
   width: min(340px, calc(100vw - 24px));
   padding: 14px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 16px;
+  border: 1px solid var(--zd-focus-panel-border);
+  border-radius: var(--zd-focus-panel-radius-card);
   background:
     radial-gradient(circle at 50% 22%, color-mix(in srgb, var(--zd-focus-panel-accent) 9%, transparent), transparent 38%),
-    var(--background-primary);
-  box-shadow: 0 18px 48px rgb(0 0 0 / 0.18), 0 3px 12px rgb(0 0 0 / 0.1);
+    var(--zd-focus-panel-surface);
+  box-shadow: var(--zd-focus-panel-shadow);
   animation: zendian-focus-clock-in 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -220,7 +226,7 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--zd-focus-panel-radius-control, 8px);
   color: var(--text-muted);
   background: transparent;
   box-shadow: none;
@@ -338,10 +344,10 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   width: 100%;
   height: 34px;
   padding: 0 8px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 9px;
+  border: 1px solid var(--zd-focus-panel-border);
+  border-radius: var(--zd-focus-panel-radius-control);
   color: var(--text-muted);
-  background: var(--background-secondary);
+  background: var(--zd-focus-panel-surface-raised);
   box-shadow: none;
   text-align: center;
 }
@@ -378,13 +384,13 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   font-weight: 600;
 }
 
-.zendian-focus-clock-field input {
+.zendian-focus-clock-field :is(input, select) {
   width: 100%;
   height: 38px;
   padding: 0 11px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 10px;
-  background: var(--background-secondary);
+  border: 1px solid var(--zd-focus-panel-border);
+  border-radius: var(--zd-focus-panel-radius-control);
+  background: var(--zd-focus-panel-surface-raised);
   box-shadow: none;
 }
 
@@ -403,9 +409,9 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   height: 28px;
   margin-left: auto;
   padding: 0 5px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 7px;
-  background: var(--background-secondary);
+  border: 1px solid var(--zd-focus-panel-border);
+  border-radius: var(--zd-focus-panel-radius-control);
+  background: var(--zd-focus-panel-surface-raised);
   text-align: center;
 }
 
@@ -422,7 +428,7 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   width: 100%;
   height: 40px;
   border: 0;
-  border-radius: 11px;
+  border-radius: var(--zd-focus-panel-radius-control);
   box-shadow: none;
   cursor: pointer;
 }
@@ -438,7 +444,7 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
 
 .zendian-focus-clock-secondary {
   color: var(--text-normal);
-  background: var(--background-secondary);
+  background: var(--zd-focus-panel-surface-raised);
 }
 
 .zendian-focus-clock-target {
@@ -471,19 +477,19 @@ body:not(.is-mobile).status-bar-autohide.zendian-focus-clock-active .horizontal-
   justify-content: center;
   gap: 7px;
   min-height: 36px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 9px;
+  border: 1px solid var(--zd-focus-panel-border);
+  border-radius: var(--zd-focus-panel-radius-control);
   color: var(--text-normal);
-  background: var(--background-secondary);
+  background: var(--zd-focus-panel-surface-raised);
   box-shadow: none;
   cursor: pointer;
 }
 
 .zendian-focus-clock-confirm {
   padding: 12px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 12px;
-  background: var(--background-secondary-alt);
+  border: 1px solid var(--zd-focus-panel-border);
+  border-radius: var(--zd-focus-panel-radius-card);
+  background: var(--zd-focus-panel-surface-raised);
 }
 
 .zendian-focus-clock-confirm-title {
