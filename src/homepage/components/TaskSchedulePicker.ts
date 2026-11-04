@@ -30,6 +30,7 @@ export function createTaskSchedulePicker(
   onChange: (value: TaskScheduleValue) => void,
 ): () => void {
   const doc = parent.ownerDocument;
+  const view = doc.defaultView ?? window;
   let current = { ...value };
   let panel: HTMLElement | null = null;
   let activeTrigger: HTMLButtonElement | null = null;
@@ -62,8 +63,8 @@ export function createTaskSchedulePicker(
     const margin = 10;
     let left = anchorRect.left;
     let top = anchorRect.bottom + 8;
-    if (left + panelRect.width > window.innerWidth - margin) left = window.innerWidth - panelRect.width - margin;
-    if (top + panelRect.height > window.innerHeight - margin) top = anchorRect.top - panelRect.height - 8;
+    if (left + panelRect.width > view.innerWidth - margin) left = view.innerWidth - panelRect.width - margin;
+    if (top + panelRect.height > view.innerHeight - margin) top = anchorRect.top - panelRect.height - 8;
     panel.style.left = `${Math.max(margin, left)}px`;
     panel.style.top = `${Math.max(margin, top)}px`;
     panel.style.visibility = "visible";
@@ -84,7 +85,7 @@ export function createTaskSchedulePicker(
     panel.style.visibility = "hidden";
     if (kind === "date") renderCalendar(panel, current.date, emit, closePanel);
     else renderTimePicker(panel, current.time, emit, closePanel);
-    requestAnimationFrame(positionPanel);
+    view.requestAnimationFrame(positionPanel);
   };
 
   dateTrigger.addEventListener("click", () => openPanel(dateTrigger, "date"));
@@ -104,16 +105,16 @@ export function createTaskSchedulePicker(
   };
   doc.addEventListener("pointerdown", onPointerDown);
   doc.addEventListener("keydown", onKeyDown);
-  window.addEventListener("resize", positionPanel);
-  window.addEventListener("scroll", positionPanel, true);
+  view.addEventListener("resize", positionPanel);
+  view.addEventListener("scroll", positionPanel, true);
   refreshTriggers();
 
   return () => {
     closePanel();
     doc.removeEventListener("pointerdown", onPointerDown);
     doc.removeEventListener("keydown", onKeyDown);
-    window.removeEventListener("resize", positionPanel);
-    window.removeEventListener("scroll", positionPanel, true);
+    view.removeEventListener("resize", positionPanel);
+    view.removeEventListener("scroll", positionPanel, true);
   };
 }
 

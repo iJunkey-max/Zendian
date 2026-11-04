@@ -2,6 +2,7 @@
 
 import { App, Modal, Notice, Setting, TFolder } from "obsidian";
 import type { HomepageQuickNote } from "./types";
+import { createSharedFormShell } from "../ui/panel-shell";
 
 type QuickNoteSaveCallback = (note: Omit<HomepageQuickNote, "id">) => Promise<void> | void;
 
@@ -72,16 +73,17 @@ export class QuickNoteFormController {
 
   render(contentEl: HTMLElement): void {
     contentEl.empty();
-    contentEl.addClass("zendian-quicknote-create-modal");
-    contentEl.createEl("h2", { text: "新建灵感速记" });
-    contentEl.createDiv({
-      cls: "zendian-quicknote-create-intro",
-      text: this.fixedFolderPath
+    const shell = createSharedFormShell(contentEl, {
+      title: "新建灵感速记",
+      description: this.fixedFolderPath
         ? `将自动保存到“${this.fixedFolderPath}”文件夹。`
         : "选择仓库文件夹，速记将绑定到同名 Markdown 文件。",
+      panelClass: "zendian-quicknote-create-modal",
+      actionsClass: "zendian-popout-form-actions",
     });
+    const formBody = shell.body;
 
-    new Setting(contentEl)
+    new Setting(formBody)
       .setName("标签名称")
       .addText((text) => {
         text
@@ -95,7 +97,7 @@ export class QuickNoteFormController {
       });
 
     if (!this.fixedFolderPath) {
-      const folderSetting = new Setting(contentEl).setName("存放文件夹");
+      const folderSetting = new Setting(formBody).setName("存放文件夹");
       folderSetting.settingEl.addClass("zendian-quicknote-folder-setting");
       folderSetting.controlEl.addClass("zendian-quicknote-folder-control");
       folderSetting.addText((text) => {
@@ -127,10 +129,10 @@ export class QuickNoteFormController {
       });
     }
 
-    this.previewEl = contentEl.createDiv({ cls: "zendian-quicknote-path-preview" });
+    this.previewEl = formBody.createDiv({ cls: "zendian-quicknote-path-preview" });
     this.updatePathPreview();
 
-    const actions = contentEl.createDiv("zendian-popout-form-actions");
+    const actions = shell.actions;
     const cancel = actions.createEl("button", { text: "取消", attr: { type: "button" } });
     cancel.addEventListener("click", () => this.close());
     const submit = actions.createEl("button", { cls: "mod-cta", text: "创建速记", attr: { type: "button" } });

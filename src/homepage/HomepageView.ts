@@ -49,6 +49,7 @@ import { formatDate } from "../utils/date";
 import { openPopoutForm, type PopoutFormOptions } from "../ui/popout-form";
 import { confirmAction } from "../ui/confirm-modal";
 import { resolveIconSvg } from "../utils/icon-renderer";
+import { createSharedFormShell, createSharedPanelShell } from "../ui/panel-shell";
 
 export const VIEW_TYPE_HOMEPAGE = "zendian-homepage";
 export const VIEW_TYPE_PROJECT_CREATE = "zendian-project-create";
@@ -105,6 +106,18 @@ const TODO_TABS = [
   { key: "done", label: "已完成" },
 ] as const;
 
+// Homepage keeps its established selectors as an explicit compatibility map.
+// The shared primitive itself remains free of hp-* business classes.
+const HOMEPAGE_PANEL_CLASSES = {
+  header: "zd-panel-header hp-detail-header",
+  icon: "zd-panel-icon hp-detail-icon",
+  info: "zd-panel-header-info hp-detail-header-info",
+  title: "zd-panel-title hp-detail-title",
+  meta: "zd-panel-meta hp-detail-meta-text",
+  close: "zd-panel-close hp-detail-close",
+  body: "zd-panel-body hp-detail-body",
+};
+
 type TodoTabKey = (typeof TODO_TABS)[number]["key"];
 
 function createPopoutContent(leaf: WorkspaceLeaf, cls: string): HTMLElement {
@@ -151,6 +164,13 @@ class ProjectCreateModal extends Modal {
   onOpen(): void {
     this.modalEl.addClass("zendian-shared-modal");
     const { contentEl } = this;
+    const shell = createSharedFormShell(contentEl, {
+      title: "新建项目",
+      description: "建立项目主页并选择它在知识库中的分类与存放位置。",
+      panelClass: "homepage-project-create-form",
+      actionsClass: "zendian-popout-form-actions",
+    });
+    const formBody = shell.body;
     const settings = this.settingsManager.getSettings();
     const categories = settings.homepage.projectCategories;
     const customIcons: Record<string, string> = settings?.iconSystem?.customIcons || {};
@@ -160,10 +180,8 @@ class ProjectCreateModal extends Modal {
       label: category.name,
     }));
 
-    contentEl.createEl("h2", { text: "新建项目" });
-
     // 项目编号 + 名称
-    const nameSetting = new Setting(contentEl)
+    const nameSetting = new Setting(formBody)
       .setName("项目名称")
       .setDesc("编号可留空；分类与存放位置分别设置");
     nameSetting.settingEl.addClass("homepage-project-name-setting");
@@ -180,7 +198,7 @@ class ProjectCreateModal extends Modal {
     });
 
     // 项目简介
-    const descriptionSetting = new Setting(contentEl).setName("项目简介");
+    const descriptionSetting = new Setting(formBody).setName("项目简介");
     descriptionSetting.settingEl.addClass("homepage-project-description-setting");
     descriptionSetting.addTextArea((text) => {
       text.setPlaceholder("输入项目简介，支持 Markdown 和换行").onChange((v) => (this.descValue = v));
@@ -188,19 +206,19 @@ class ProjectCreateModal extends Modal {
     });
 
     // 项目类型
-    const typeSetting = new Setting(contentEl).setName("项目类型");
+    const typeSetting = new Setting(formBody).setName("项目类型");
     const select = typeSetting.controlEl.createEl("select");
     for (const opt of typeOptions) {
       select.createEl("option", { value: opt.folder, text: opt.label });
     }
     select.createEl("option", { value: "", text: "未分类" });
     this.typeSelect = select;
-    new Setting(contentEl).setName("存放目录")
+    new Setting(formBody).setName("存放目录")
       .setDesc("留空使用分类默认目录；输入 / 放在知识库根目录，也可输入任意相对目录，如 工作/2026")
       .addText(text => text.setPlaceholder("分类默认目录").onChange(value => { this.parentPathValue = value; }));
 
     // 项目图标
-    const iconSetting = new Setting(contentEl).setName("项目图标");
+    const iconSetting = new Setting(formBody).setName("项目图标");
     this.iconDisplay = iconSetting.controlEl.createDiv({ cls: "homepage-project-modal-icon-current" });
     this.refreshIconDisplay();
     const changeBtn = iconSetting.controlEl.createEl("button", { text: "更换" });
@@ -222,14 +240,11 @@ class ProjectCreateModal extends Modal {
     });
 
     // 创建按钮
-    new Setting(contentEl).addButton((btn) =>
-      btn
-        .setButtonText("创建")
-        .setCta()
-        .onClick(async () => {
-          await this.createProject(customIcons);
-        })
-    );
+    const actions = shell.actions;
+    const cancel = actions.createEl("button", { text: "取消", attr: { type: "button" } });
+    cancel.addEventListener("click", () => this.close());
+    const submit = actions.createEl("button", { cls: "mod-cta", text: "创建", attr: { type: "button" } });
+    submit.addEventListener("click", async () => this.createProject(customIcons));
 
     // 自动聚焦
     setTimeout(() => {
@@ -339,6 +354,13 @@ export class ProjectCreatePopoutView extends ItemView {
 
   async onOpen(): Promise<void> {
     const contentEl = createPopoutContent(this.leaf, "zendian-popout-form");
+    const shell = createSharedFormShell(contentEl, {
+      title: "新建项目",
+      description: "建立项目主页并选择它在知识库中的分类与存放位置。",
+      panelClass: "homepage-project-create-form",
+      actionsClass: "zendian-popout-form-actions",
+    });
+    const formBody = shell.body;
     const persistDraft = () => this.app.workspace.requestSaveLayout();
     const settings = this.settingsManager.getSettings();
     const categories = settings.homepage.projectCategories;
@@ -348,9 +370,7 @@ export class ProjectCreatePopoutView extends ItemView {
       label: category.name,
     }));
 
-    contentEl.createEl("h2", { text: "新建项目" });
-
-    const nameSetting = new Setting(contentEl)
+    const nameSetting = new Setting(formBody)
       .setName("项目名称")
       .setDesc("编号可留空；分类与存放位置分别设置");
     nameSetting.settingEl.addClass("homepage-project-name-setting");
@@ -366,14 +386,14 @@ export class ProjectCreatePopoutView extends ItemView {
       text.setPlaceholder("输入项目名称").setValue(this.nameValue).onChange((value) => { this.nameValue = value; persistDraft(); });
     });
 
-    const descriptionSetting = new Setting(contentEl).setName("项目简介");
+    const descriptionSetting = new Setting(formBody).setName("项目简介");
     descriptionSetting.settingEl.addClass("homepage-project-description-setting");
     descriptionSetting.addTextArea((text) => {
       text.setPlaceholder("输入项目简介，支持 Markdown 和换行").setValue(this.descValue).onChange((v) => { this.descValue = v; persistDraft(); });
       text.inputEl.addClass("homepage-project-description-input");
     });
 
-    const typeSetting = new Setting(contentEl).setName("项目类型");
+    const typeSetting = new Setting(formBody).setName("项目类型");
     const select = typeSetting.controlEl.createEl("select");
     for (const opt of typeOptions) select.createEl("option", { value: opt.folder, text: opt.label });
     select.createEl("option", { value: "", text: "未分类" });
@@ -383,11 +403,11 @@ export class ProjectCreatePopoutView extends ItemView {
     else if (typeOptions.some(option => option.folder === this.typeFolder)) select.value = this.typeFolder;
     else { select.value = ""; this.typeFolder = ""; }
     select.addEventListener("change", () => { this.typeFolder = select.value; persistDraft(); });
-    new Setting(contentEl).setName("存放目录")
+    new Setting(formBody).setName("存放目录")
       .setDesc("留空使用分类默认目录；输入 / 放在知识库根目录，也可输入任意相对目录，如 工作/2026")
       .addText(text => text.setPlaceholder("分类默认目录").setValue(this.parentPathValue).onChange(value => { this.parentPathValue = value; persistDraft(); }));
 
-    const iconSetting = new Setting(contentEl).setName("项目图标");
+    const iconSetting = new Setting(formBody).setName("项目图标");
     this.iconDisplay = iconSetting.controlEl.createDiv({ cls: "homepage-project-modal-icon-current" });
     this.refreshIconDisplay();
     const changeBtn = iconSetting.controlEl.createEl("button", { text: "更换" });
@@ -403,7 +423,7 @@ export class ProjectCreatePopoutView extends ItemView {
       }).open();
     });
 
-    const actions = contentEl.createDiv("zendian-popout-form-actions");
+    const actions = shell.actions;
     const cancel = actions.createEl("button", { text: "取消", attr: { type: "button" } });
     cancel.addEventListener("click", () => this.closeLeaf());
     const submit = actions.createEl("button", { cls: "mod-cta", text: "创建", attr: { type: "button" } });
@@ -474,26 +494,32 @@ class HomepageTaskCreateModal extends Modal {
   onOpen(): void {
     this.modalEl.addClass("zendian-shared-modal");
     this.contentEl.empty();
-    this.contentEl.createEl("h2", { text: "添加待办" });
+    const shell = createSharedFormShell(this.contentEl, {
+      title: "添加待办",
+      description: "把一个明确的下一步动作加入项目任务列表。",
+      panelClass: "homepage-task-create-form",
+      actionsClass: "zendian-popout-form-actions",
+    });
+    const formBody = shell.body;
 
-    new Setting(this.contentEl).setName("项目").addDropdown((dropdown) => {
+    new Setting(formBody).setName("项目").addDropdown((dropdown) => {
       for (const project of this.projects) dropdown.addOption(project.folderPath, project.name);
       dropdown.setValue(this.projectPath).onChange((value) => { this.projectPath = value; });
     });
-    const taskContentSetting = new Setting(this.contentEl).setName("任务内容");
+    const taskContentSetting = new Setting(formBody).setName("任务内容");
     taskContentSetting.settingEl.addClass("homepage-task-content-setting");
     taskContentSetting.addTextArea((input) => {
       input.setPlaceholder("输入任务内容，支持 Markdown 和换行").onChange((value) => { this.text = value; });
       input.inputEl.addClass("homepage-task-content-input");
     });
-    const scheduleSetting = new Setting(this.contentEl).setName("截止时间");
+    const scheduleSetting = new Setting(formBody).setName("截止时间");
     scheduleSetting.settingEl.addClass("zendian-task-schedule-setting");
     scheduleSetting.controlEl.addClass("zendian-task-schedule-controls");
     this.destroySchedulePicker = createTaskSchedulePicker(scheduleSetting.controlEl, { date: this.due, time: this.dueTime }, (value) => {
       this.due = value.date;
       this.dueTime = value.time;
     });
-    new Setting(this.contentEl).setName("优先级").addDropdown((dropdown) => {
+    new Setting(formBody).setName("优先级").addDropdown((dropdown) => {
       dropdown
         .addOption("urgent", "紧急（P0）")
         .addOption("high", "重要（P1）")
@@ -502,8 +528,11 @@ class HomepageTaskCreateModal extends Modal {
         .setValue(this.priority)
         .onChange((value) => { this.priority = value as StorageTaskPriority; });
     });
-    new Setting(this.contentEl).addButton((button) => {
-      button.setButtonText("添加").setCta().onClick(async () => {
+    const actions = shell.actions;
+    const cancel = actions.createEl("button", { text: "取消", attr: { type: "button" } });
+    cancel.addEventListener("click", () => this.close());
+    const submit = actions.createEl("button", { cls: "mod-cta", text: "添加", attr: { type: "button" } });
+    submit.addEventListener("click", async () => {
         if (!this.projectPath || !this.text) {
           new Notice("请选择项目并填写任务内容");
           return;
@@ -513,7 +542,6 @@ class HomepageTaskCreateModal extends Modal {
           return;
         }
         if (await this.onSubmit(this.projectPath, this.text, this.due, this.dueTime, this.priority)) this.close();
-      });
     });
   }
 
@@ -582,8 +610,14 @@ export class HomepageTaskCreatePopoutView extends ItemView {
 
   async onOpen(): Promise<void> {
     const contentEl = createPopoutContent(this.leaf, "zendian-popout-form");
+    const shell = createSharedFormShell(contentEl, {
+      title: "添加待办",
+      description: "把一个明确的下一步动作加入项目任务列表。",
+      panelClass: "homepage-task-create-form",
+      actionsClass: "zendian-popout-form-actions",
+    });
+    const formBody = shell.body;
     const persistDraft = () => this.app.workspace.requestSaveLayout();
-    contentEl.createEl("h2", { text: "添加待办" });
 
     const homepage = this.settingsManager.getSettings().homepage;
     const projects = await this.scanService.getProjects(homepage.projectCategories, homepage.projectArchiveFolder);
@@ -605,11 +639,11 @@ export class HomepageTaskCreatePopoutView extends ItemView {
     }
 
     if (!projects.length) {
-      contentEl.createDiv({ cls: "homepage-empty-text", text: "暂无可添加任务的项目" });
+      formBody.createDiv({ cls: "homepage-empty-text", text: "暂无可添加任务的项目" });
       return;
     }
 
-    new Setting(contentEl).setName("项目").addDropdown((dropdown) => {
+    new Setting(formBody).setName("项目").addDropdown((dropdown) => {
       dropdown.addOption("", "请选择项目");
       for (const project of projects) dropdown.addOption(project.folderPath, project.name);
       dropdown.setValue(this.projectPath).onChange((value) => {
@@ -620,14 +654,14 @@ export class HomepageTaskCreatePopoutView extends ItemView {
       });
     });
 
-    const taskContentSetting = new Setting(contentEl).setName("任务内容");
+    const taskContentSetting = new Setting(formBody).setName("任务内容");
     taskContentSetting.settingEl.addClass("homepage-task-content-setting");
     taskContentSetting.addTextArea((input) => {
       input.setPlaceholder("输入任务内容，支持 Markdown 和换行").setValue(this.text).onChange((value) => { this.text = value; persistDraft(); });
       input.inputEl.addClass("homepage-task-content-input");
     });
 
-    const scheduleSetting = new Setting(contentEl).setName("截止时间");
+    const scheduleSetting = new Setting(formBody).setName("截止时间");
     scheduleSetting.settingEl.addClass("zendian-task-schedule-setting");
     scheduleSetting.controlEl.addClass("zendian-task-schedule-controls");
     this.destroySchedulePicker = createTaskSchedulePicker(scheduleSetting.controlEl, { date: this.due, time: this.dueTime }, (value) => {
@@ -636,7 +670,7 @@ export class HomepageTaskCreatePopoutView extends ItemView {
       persistDraft();
     });
 
-    new Setting(contentEl).setName("优先级").addDropdown((dropdown) => {
+    new Setting(formBody).setName("优先级").addDropdown((dropdown) => {
       dropdown
         .addOption("urgent", "紧急（P0）")
         .addOption("high", "重要（P1）")
@@ -646,7 +680,7 @@ export class HomepageTaskCreatePopoutView extends ItemView {
         .onChange((value) => { this.priority = value as StorageTaskPriority; persistDraft(); });
     });
 
-    const actions = contentEl.createDiv("zendian-popout-form-actions");
+    const actions = shell.actions;
     const cancel = actions.createEl("button", { text: "取消", attr: { type: "button" } });
     cancel.addEventListener("click", () => this.closeLeaf());
     const submit = actions.createEl("button", { cls: "mod-cta", text: "添加", attr: { type: "button" } });
@@ -780,7 +814,7 @@ export class HomepageView extends ItemView {
       this.onProjectVaultChange(file.path);
       this.onProjectVaultChange(oldPath);
     }));
-    this.registerDomEvent(document, "click", (event) => {
+    this.registerDomEvent(this.containerEl.ownerDocument, "click", (event) => {
       const searchBox = this.searchBoxEl;
       if (searchBox && !searchBox.contains(event.target as Node)) {
         this.searchPanelEl?.removeClass("is-visible");
@@ -1109,8 +1143,8 @@ export class HomepageView extends ItemView {
   }
 
   private async loadBookmarks(generation = this.renderGeneration): Promise<void> {
-    const list = this.containerEl.querySelector('[data-section="bookmarks"] .homepage-bookmark-list');
-    if (!(list instanceof HTMLElement)) return;
+    const list = this.containerEl.querySelector('[data-section="bookmarks"] .homepage-bookmark-list') as HTMLElement | null;
+    if (!list) return;
 
     const bookmarks = await this.bookmarksService.getBookmarks(6);
     if (generation !== this.renderGeneration || !list.isConnected) return;
@@ -1269,7 +1303,7 @@ export class HomepageView extends ItemView {
 
       if (iconWrap) {
         iconWrap.innerHTML = weather.iconSvg;
-        const isDark = document.body.classList.contains("theme-dark");
+        const isDark = this.containerEl.ownerDocument.body.classList.contains("theme-dark");
         iconWrap.style.background = isDark ? weather.iconBgDark : weather.iconBgLight;
         iconWrap.style.color = isDark ? weather.iconColorDark : weather.iconColorLight;
       }
@@ -1441,7 +1475,7 @@ export class HomepageView extends ItemView {
     if (!filterContainer) {
       const header = section.querySelector('.homepage-section-header');
       if (header) {
-        filterContainer = document.createElement('div');
+        filterContainer = section.ownerDocument.createElement('div');
         filterContainer.className = 'homepage-project-filter-bar';
         header.after(filterContainer);
       }
@@ -1543,26 +1577,25 @@ export class HomepageView extends ItemView {
     const statsPromise = this.dependencies.statisticsService.getProjectOverviewStatistics(project.folderPath);
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay" });
-    const panel = overlay.createDiv({ cls: "hp-detail-panel hp-detail-panel-enhanced" });
-
-    // 头部
-    const header = panel.createDiv({ cls: "hp-detail-header" });
-    const iconWrap = header.createDiv({ cls: "hp-detail-icon" });
-    this.renderProjectIcon(iconWrap, project);
-    const headerInfo = header.createDiv({ cls: "hp-detail-header-info" });
-    headerInfo.createEl("h2", { text: project.name, cls: "hp-detail-title" });
+    const shell = createSharedPanelShell(overlay, {
+      panelClass: "hp-detail-panel hp-detail-panel-enhanced",
+      classNames: HOMEPAGE_PANEL_CLASSES,
+      title: project.name,
+      iconHtml: "",
+      onClose: () => overlay.remove(),
+      closeLabel: `关闭项目详情：${project.name}`,
+      bodyClass: "hp-detail-body",
+    });
+    this.renderProjectIcon(shell.icon, project);
+    const headerInfo = shell.info;
     const metaRow = headerInfo.createDiv({ cls: "hp-detail-meta" });
     metaRow.createSpan({ cls: "hp-detail-type-tag", text: project.type, attr: { style: `background: ${tagColor}18; color: ${tagColor}` } });
     this.renderProjectStatusTag(metaRow, project.status);
     metaRow.createSpan({ cls: "hp-detail-meta-text", text: `${project.taskDone}/${project.taskTotal} 任务完成` });
-
-    // 关闭按钮
-    const closeBtn = header.createDiv({ cls: "hp-detail-close", text: "×" });
-    closeBtn.addEventListener("click", () => overlay.remove());
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
 
     // 内容区域（可滚动）
-    const body = panel.createDiv({ cls: "hp-detail-body" });
+    const body = shell.body;
 
     const progressSection = body.createDiv({ cls: "hp-detail-progress" });
     this.renderProjectProgress(progressSection, project);
@@ -1617,7 +1650,7 @@ export class HomepageView extends ItemView {
     }
 
     // 底部操作
-    const actions = panel.createDiv({ cls: "hp-detail-actions" });
+    const actions = shell.panel.createDiv({ cls: "hp-detail-actions" });
     const openBtn = actions.createEl("a", { cls: "hp-detail-open-btn", text: "打开项目" });
     openBtn.addEventListener("click", () => { overlay.remove(); void this.openProjectInNewTab(project.folderPath, project.id !== project.folderPath ? project.id : null); });
 
@@ -1629,7 +1662,7 @@ export class HomepageView extends ItemView {
       });
     }
 
-    setTimeout(() => closeBtn.focus(), 50);
+    setTimeout(() => shell.closeButton?.focus(), 50);
   }
 
   /**
@@ -1665,29 +1698,23 @@ export class HomepageView extends ItemView {
 
   private renderAllProjectsPanel(host: HTMLElement, projects: HomepageProject[], close: () => void): void {
     host.addClass("zendian-homepage");
-    const panel = host.createDiv({ cls: "hp-all-panel hp-all-projects-panel" });
     const activeProjects = projects.filter((project) => project.status !== "completed" && project.status !== "paused").length;
     const progressProjects = projects.filter((project) => project.status !== "paused");
     const averageProgress = progressProjects.length > 0
       ? Math.round(progressProjects.reduce((sum, project) => sum + project.progress, 0) / progressProjects.length)
       : 0;
     const totalPendingTasks = projects.reduce((sum, project) => sum + Math.max(0, project.taskTotal - project.taskDone), 0);
-
-    const header = panel.createDiv({ cls: "hp-detail-header" });
-    const icon = header.createDiv({ cls: "hp-detail-icon" });
-    icon.innerHTML = SVG_ICON.folder;
-    const info = header.createDiv({ cls: "hp-detail-header-info" });
-    info.createEl("h2", { text: "全部项目", cls: "hp-detail-title" });
-    info.createDiv({
-      cls: "hp-detail-meta-text",
-      text: projects.length > 0 ? `${projects.length} 个项目 · ${activeProjects} 个进行中 · ${totalPendingTasks} 个待办` : "还没有扫描到项目",
+    const shell = createSharedPanelShell(host, {
+      panelClass: "hp-all-panel hp-all-projects-panel",
+      classNames: HOMEPAGE_PANEL_CLASSES,
+      title: "全部项目",
+      meta: projects.length > 0 ? `${projects.length} 个项目 · ${activeProjects} 个进行中 · ${totalPendingTasks} 个待办` : "还没有扫描到项目",
+      iconHtml: SVG_ICON.folder,
+      onClose: close,
+      closeLabel: "关闭全部项目",
+      bodyClass: "hp-all-body hp-all-project-body",
     });
-    const closeBtn = header.createEl("button", {
-      cls: "hp-detail-close",
-      text: "×",
-      attr: { type: "button", title: "关闭", "aria-label": "关闭全部项目" },
-    });
-    closeBtn.addEventListener("click", close);
+    const panel = shell.panel;
 
     const overview = panel.createDiv({ cls: "hp-all-project-overview" });
     for (const item of [
@@ -1701,7 +1728,7 @@ export class HomepageView extends ItemView {
       stat.createDiv({ cls: "hp-all-project-stat-label", text: item.label });
     }
 
-    const body = panel.createDiv({ cls: "hp-all-body hp-all-project-body" });
+    const body = shell.body;
     if (!projects.length) {
       body.createDiv({ cls: "homepage-empty-text", text: "暂无项目" });
       return;
@@ -1780,23 +1807,17 @@ export class HomepageView extends ItemView {
       const totalPendingTasks = projects.reduce((sum, project) => sum + Math.max(0, project.taskTotal - project.taskDone), 0);
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay zendian-homepage" });
-    const panel = overlay.createDiv({ cls: "hp-all-panel hp-all-projects-panel" });
-
-    const header = panel.createDiv({ cls: "hp-detail-header" });
-    const icon = header.createDiv({ cls: "hp-detail-icon" });
-    icon.innerHTML = SVG_ICON.folder;
-    const info = header.createDiv({ cls: "hp-detail-header-info" });
-    info.createEl("h2", { text: "全部项目", cls: "hp-detail-title" });
-    info.createDiv({
-      cls: "hp-detail-meta-text",
-      text: projects.length > 0 ? `${projects.length} 个项目 · ${activeProjects} 个进行中 · ${totalPendingTasks} 个待办` : "还没有扫描到项目",
+    const shell = createSharedPanelShell(overlay, {
+      panelClass: "hp-all-panel hp-all-projects-panel",
+      classNames: HOMEPAGE_PANEL_CLASSES,
+      title: "全部项目",
+      meta: projects.length > 0 ? `${projects.length} 个项目 · ${activeProjects} 个进行中 · ${totalPendingTasks} 个待办` : "还没有扫描到项目",
+      iconHtml: SVG_ICON.folder,
+      onClose: () => overlay.remove(),
+      closeLabel: "关闭全部项目",
+      bodyClass: "hp-all-body hp-all-project-body",
     });
-    const closeBtn = header.createEl("button", {
-      cls: "hp-detail-close",
-      text: "×",
-      attr: { type: "button", title: "关闭", "aria-label": "关闭全部项目" },
-    });
-    closeBtn.addEventListener("click", () => overlay.remove());
+    const panel = shell.panel;
     overlay.addEventListener("click", (event) => { if (event.target === overlay) overlay.remove(); });
 
     const overview = panel.createDiv({ cls: "hp-all-project-overview" });
@@ -1824,7 +1845,7 @@ export class HomepageView extends ItemView {
       },
     });
     const filterWrap = tools.createDiv({ cls: "hp-all-project-filter-wrap" });
-    const body = panel.createDiv({ cls: "hp-all-body hp-all-project-body" });
+    const body = shell.body;
 
     const renderResults = () => {
       body.empty();
@@ -2105,20 +2126,18 @@ export class HomepageView extends ItemView {
       size: { width: 760, height: 680 },
       className: "zendian-homepage",
       render: async (container, api) => {
-        const panel = container.createDiv({ cls: "hp-all-panel hp-all-todo-panel" });
-        const header = panel.createDiv({ cls: "hp-detail-header" });
-        const icon = header.createDiv({ cls: "hp-detail-icon" });
-        icon.innerHTML = SVG_ICON.checkSquare;
-        const info = header.createDiv({ cls: "hp-detail-header-info" });
-        info.createEl("h2", { cls: "hp-detail-title", text: "全部待办" });
-        const meta = info.createDiv({ cls: "hp-detail-meta-text", text: `当前筛选：${activeTab?.label || "全部"}` });
-        const closeButton = header.createEl("button", {
-          cls: "hp-detail-close",
-          text: "×",
-          attr: { type: "button", title: "关闭", "aria-label": "关闭全部待办" },
+        const shell = createSharedPanelShell(container, {
+          panelClass: "hp-all-panel hp-all-todo-panel",
+          classNames: HOMEPAGE_PANEL_CLASSES,
+          title: "全部待办",
+          meta: `当前筛选：${activeTab?.label || "全部"}`,
+          iconHtml: SVG_ICON.checkSquare,
+          onClose: api.close,
+          closeLabel: "关闭全部待办",
+          bodyClass: "hp-all-body hp-all-todo-body homepage-todo-list",
         });
-        closeButton.addEventListener("click", api.close);
-        const body = panel.createDiv({ cls: "hp-all-body hp-all-todo-body homepage-todo-list" });
+        const meta = shell.meta!;
+        const body = shell.body;
         const renderTasks = async (): Promise<void> => {
           body.empty();
           body.createDiv({ cls: "homepage-empty-text", text: "加载中..." });
@@ -2143,23 +2162,20 @@ export class HomepageView extends ItemView {
     })) return;
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay zendian-homepage" });
-    const panel = overlay.createDiv({ cls: "hp-all-panel hp-all-todo-panel" });
-
-    const header = panel.createDiv({ cls: "hp-detail-header" });
-    const icon = header.createDiv({ cls: "hp-detail-icon" });
-    icon.innerHTML = SVG_ICON.checkSquare;
-    const info = header.createDiv({ cls: "hp-detail-header-info" });
-    info.createEl("h2", { cls: "hp-detail-title", text: "全部待办" });
-    const meta = info.createDiv({ cls: "hp-detail-meta-text", text: `当前筛选：${activeTab?.label || "全部"}` });
-    const closeButton = header.createEl("button", {
-      cls: "hp-detail-close",
-      text: "×",
-      attr: { type: "button", title: "关闭", "aria-label": "关闭全部待办" },
+    const shell = createSharedPanelShell(overlay, {
+      panelClass: "hp-all-panel hp-all-todo-panel",
+      classNames: HOMEPAGE_PANEL_CLASSES,
+      title: "全部待办",
+      meta: `当前筛选：${activeTab?.label || "全部"}`,
+      iconHtml: SVG_ICON.checkSquare,
+      onClose: () => overlay.remove(),
+      closeLabel: "关闭全部待办",
+      bodyClass: "hp-all-body hp-all-todo-body homepage-todo-list",
     });
-    closeButton.addEventListener("click", () => overlay.remove());
+    const meta = shell.meta!;
     overlay.addEventListener("click", (event) => { if (event.target === overlay) overlay.remove(); });
 
-    const body = panel.createDiv({ cls: "hp-all-body hp-all-todo-body homepage-todo-list" });
+    const body = shell.body;
     const renderTasks = async () => {
       body.empty();
       body.createDiv({ cls: "homepage-empty-text", text: "加载中..." });
@@ -2183,7 +2199,7 @@ export class HomepageView extends ItemView {
     };
 
     await renderTasks();
-    setTimeout(() => closeButton.focus(), 50);
+    setTimeout(() => shell.closeButton?.focus(), 50);
   }
 
   private async openTaskCreateModal(): Promise<void> {
@@ -2563,7 +2579,7 @@ export class HomepageView extends ItemView {
     if (noteEl.querySelector(".homepage-sticky-editor")) return;
     const textEl = noteEl.querySelector(".homepage-sticky-text") as HTMLElement | null;
     if (!textEl) return;
-    const editor = document.createElement("textarea");
+    const editor = noteEl.ownerDocument.createElement("textarea");
     editor.className = "homepage-sticky-editor";
     editor.value = note.content || "";
     editor.placeholder = "记录此刻的想法…";
@@ -2606,24 +2622,22 @@ export class HomepageView extends ItemView {
       size: { width: 760, height: 680 },
       className: "zendian-homepage",
       render: (container, api) => {
-        const panel = container.createDiv({ cls: "hp-all-panel hp-all-sticky-panel" });
-        const header = panel.createDiv({ cls: "hp-detail-header" });
-        const icon = header.createDiv({ cls: "hp-detail-icon" });
-        icon.innerHTML = SVG_ICON.stickyNote;
-        const info = header.createDiv({ cls: "hp-detail-header-info" });
-        info.createEl("h2", { cls: "hp-detail-title", text: "全部灵感速记" });
-        const meta = info.createDiv({ cls: "hp-detail-meta-text" });
-        const closeButton = header.createEl("button", {
-          cls: "hp-detail-close",
-          text: "×",
-          attr: { type: "button", title: "关闭", "aria-label": "关闭全部便签" },
+        const shell = createSharedPanelShell(container, {
+          panelClass: "hp-all-panel hp-all-sticky-panel",
+          classNames: HOMEPAGE_PANEL_CLASSES,
+          title: "全部灵感速记",
+          meta: "加载中…",
+          iconHtml: SVG_ICON.stickyNote,
+          onClose: api.close,
+          closeLabel: "关闭全部便签",
+          bodyClass: "hp-all-body hp-all-sticky-body homepage-sticky-grid",
         });
-        closeButton.addEventListener("click", api.close);
-        const body = panel.createDiv({ cls: "hp-all-body hp-all-sticky-body homepage-sticky-grid" });
+        const meta = shell.meta;
+        const body = shell.body;
         const renderNotes = async (): Promise<void> => {
           const notes = this.getStickyNotes();
           body.empty();
-          meta.textContent = `${notes.length} 条速记`;
+          if (meta) meta.textContent = `${notes.length} 条速记`;
           if (notes.length === 0) {
             body.createDiv({ cls: "homepage-empty-text", text: "暂无灵感速记" });
             return;
@@ -2638,26 +2652,24 @@ export class HomepageView extends ItemView {
     })) return;
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay zendian-homepage" });
-    const panel = overlay.createDiv({ cls: "hp-all-panel hp-all-sticky-panel" });
-    const header = panel.createDiv({ cls: "hp-detail-header" });
-    const icon = header.createDiv({ cls: "hp-detail-icon" });
-    icon.innerHTML = SVG_ICON.stickyNote;
-    const info = header.createDiv({ cls: "hp-detail-header-info" });
-    info.createEl("h2", { cls: "hp-detail-title", text: "全部灵感速记" });
-    const meta = info.createDiv({ cls: "hp-detail-meta-text" });
-    const closeButton = header.createEl("button", {
-      cls: "hp-detail-close",
-      text: "×",
-      attr: { type: "button", title: "关闭", "aria-label": "关闭全部便签" },
+    const shell = createSharedPanelShell(overlay, {
+      panelClass: "hp-all-panel hp-all-sticky-panel",
+      classNames: HOMEPAGE_PANEL_CLASSES,
+      title: "全部灵感速记",
+      meta: "加载中…",
+      iconHtml: SVG_ICON.stickyNote,
+      onClose: () => overlay.remove(),
+      closeLabel: "关闭全部便签",
+      bodyClass: "hp-all-body hp-all-sticky-body homepage-sticky-grid",
     });
-    closeButton.addEventListener("click", () => overlay.remove());
+    const meta = shell.meta;
     overlay.addEventListener("click", (event) => { if (event.target === overlay) overlay.remove(); });
 
-    const body = panel.createDiv({ cls: "hp-all-body hp-all-sticky-body homepage-sticky-grid" });
+    const body = shell.body;
     const renderNotes = async () => {
       const notes = this.getStickyNotes();
       body.empty();
-      meta.textContent = `${notes.length} 条速记`;
+      if (meta) meta.textContent = `${notes.length} 条速记`;
       if (notes.length === 0) {
         body.createDiv({ cls: "homepage-empty-text", text: "暂无灵感速记" });
         return;
@@ -2669,7 +2681,7 @@ export class HomepageView extends ItemView {
     };
 
     void renderNotes();
-    setTimeout(() => closeButton.focus(), 50);
+    setTimeout(() => shell.closeButton?.focus(), 50);
   }
 
   private async saveQuickNote(data: Omit<HomepageQuickNote, "id">, existing?: HomepageQuickNote): Promise<void> {

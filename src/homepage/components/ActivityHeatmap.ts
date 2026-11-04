@@ -26,6 +26,7 @@ export function mountActivityHeatmap(
   options: ActivityHeatmapOptions = {},
 ): () => void {
   const days = [...input].sort((left, right) => left.date.localeCompare(right.date));
+  const view = host.ownerDocument.defaultView ?? window;
   const minWeeks = options.minWeeks ?? 8;
   const maxWeeks = options.maxWeeks ?? 52;
   const tooltipUnit = options.tooltipUnit ?? "次活动";
@@ -66,7 +67,7 @@ export function mountActivityHeatmap(
 
   const render = () => {
     if (disposed || !host.isConnected) return;
-    const styles = window.getComputedStyle(host);
+    const styles = view.getComputedStyle(host);
     const cellSize = Number.parseFloat(styles.getPropertyValue("--rhythm-cell-size")) || 14;
     const cellGap = Number.parseFloat(styles.getPropertyValue("--rhythm-cell-gap")) || 3;
     const labelsWidth = dayLabelsEl.offsetWidth || 16;
@@ -113,8 +114,8 @@ export function mountActivityHeatmap(
 
   const scheduleRender = () => {
     if (disposed) return;
-    if (frame !== null) window.cancelAnimationFrame(frame);
-    frame = window.requestAnimationFrame(() => {
+    if (frame !== null) view.cancelAnimationFrame(frame);
+    frame = view.requestAnimationFrame(() => {
       frame = null;
       render();
     });
@@ -129,7 +130,7 @@ export function mountActivityHeatmap(
   return () => {
     disposed = true;
     observer?.disconnect();
-    if (frame !== null) window.cancelAnimationFrame(frame);
+    if (frame !== null) view.cancelAnimationFrame(frame);
     frame = null;
     wrap.remove();
     summaryEl?.remove();

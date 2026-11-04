@@ -23,6 +23,8 @@ const CSS_MERGE_ORDER = [
   "css/overlays/console-enhanced.css", // 项目控制台增强样式
   "css/ui/style-settings-ui.css",
   "css/ui/unified-ui.css",              // 非项目主页界面的最终统一层
+  "css/ui/polish-ui.css",               // 主页、面板与控件的最终视觉校准层
+  "css/overlays/project-home-redesign.css", // 项目主页与二级面板最终重构层
 ];
 
 function countUnescapedQuotes(text, quote) {

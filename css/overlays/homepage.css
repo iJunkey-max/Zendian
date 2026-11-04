@@ -2943,11 +2943,13 @@
   overflow: visible;
 }
 
-.zendian-quicknote-create-modal > h2 {
+.zendian-quicknote-create-modal > h2,
+.zendian-quicknote-create-modal .zd-form-title {
   margin-bottom: 0.375rem;
 }
 
-.zendian-quicknote-create-intro {
+.zendian-quicknote-create-intro,
+.zendian-quicknote-create-modal .zd-form-description {
   margin-bottom: 1rem;
   color: var(--text-muted);
   font-size: var(--font-ui-small);

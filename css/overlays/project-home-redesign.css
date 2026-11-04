@@ -1,0 +1,1462 @@
+/*
+ * Project home redesign
+ *
+ * The project view is a working document, not a statistics dashboard.  A
+ * single surface carries the current work; dividers, type scale and quiet
+ * metadata create hierarchy.  Secondary views reuse the same document frame
+ * instead of introducing another visual language.
+ */
+
+.zc-root.zc-project-home {
+  container-type: inline-size;
+  overflow-y: auto;
+  overflow-x: hidden;
+  --zc-home-page: var(--background-secondary);
+  --zc-home-surface: var(--background-primary);
+  --zc-home-surface-soft: var(--background-primary-alt);
+  --zc-home-ink: var(--text-normal);
+  --zc-home-muted: var(--text-muted);
+  --zc-home-faint: var(--text-faint);
+  --zc-home-line: color-mix(in srgb, var(--background-modifier-border) 78%, transparent);
+  --zc-home-line-soft: color-mix(in srgb, var(--background-modifier-border) 48%, transparent);
+  --zc-home-accent: var(--interactive-accent);
+  --zc-home-accent-soft: color-mix(in srgb, var(--interactive-accent) 11%, var(--zc-home-surface));
+  --zc-home-warning: var(--text-warning, #b7791f);
+  --zc-home-radius: 12px;
+  --zc-home-control-radius: 8px;
+  --zc-home-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 26px rgba(15, 23, 42, .035);
+  --zc-home-content-width: 1220px;
+  color: var(--zc-home-ink);
+  background: var(--zc-home-page);
+  font-family: var(--font-interface);
+  line-height: 1.55;
+}
+
+.zc-root.zc-project-home,
+.zc-root.zc-project-home * {
+  box-sizing: border-box;
+}
+
+.zc-root.zc-project-home .zc-wrapper {
+  display: block;
+  height: auto;
+  min-height: 100%;
+  width: min(100%, var(--zc-home-content-width));
+  margin: 0 auto;
+  padding: 16px 28px 48px;
+}
+
+.zc-root.zc-project-home .zc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  margin: 0;
+  color: var(--zc-home-muted);
+  font-size: 12px;
+  letter-spacing: .01em;
+}
+
+.zc-root.zc-project-home .zc-breadcrumb > span:last-child {
+  color: var(--zc-home-ink);
+  font-weight: 600;
+}
+
+.zc-root.zc-project-home .zc-breadcrumb-separator {
+  color: var(--zc-home-faint);
+}
+
+.zc-root.zc-project-home .zc-location-strip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--zc-home-accent);
+  border-top: 1px solid var(--zc-home-line-soft);
+  border-bottom: 1px solid var(--zc-home-line-soft);
+  color: var(--zc-home-muted);
+  font-size: 12px;
+}
+
+.zc-root.zc-project-home .zc-location-label {
+  flex: 0 0 auto;
+  color: var(--zc-home-ink);
+  font-weight: 600;
+}
+
+.zc-root.zc-project-home .zc-location-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-monospace);
+  color: var(--zc-home-muted);
+}
+
+.zc-root.zc-project-home .zc-location-hint {
+  margin-left: auto;
+  flex: 0 0 auto;
+  color: var(--zc-home-faint);
+}
+
+.zc-root.zc-project-home .zc-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 34px;
+  align-items: end;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--zc-home-line);
+}
+
+.zc-root.zc-project-home .zc-hero-info {
+  min-width: 0;
+}
+
+.zc-root.zc-project-home .zc-hero-eyebrow,
+.zc-root.zc-project-home .zc-action-label,
+.zc-root.zc-project-home .zc-overview-label,
+.zc-root.zc-project-home .zc-content-eyebrow,
+.zc-root.zc-project-home .zc-aside-title {
+  color: var(--zc-home-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.zc-root.zc-project-home .zc-hero-eyebrow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.zc-root.zc-project-home .zc-hero-eyebrow-separator {
+  color: var(--zc-home-accent);
+}
+
+.zc-root.zc-project-home .zc-hero-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.zc-root.zc-project-home .zc-hero-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin: 0;
+  color: var(--zc-home-ink);
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -.045em;
+  line-height: 1.04;
+}
+
+.zc-root.zc-project-home .zc-hero-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zc-root.zc-project-home .zc-hero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  color: var(--zc-home-accent);
+  background: var(--zc-home-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--zc-home-accent) 26%, var(--zc-home-line));
+  border-radius: 12px;
+}
+
+.zc-root.zc-project-home .zc-hero-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.zc-root.zc-project-home .zc-hero-title-edit,
+.zc-root.zc-project-home .zc-hero-desc-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin-left: 2px;
+  padding: 0;
+  color: var(--zc-home-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--zc-home-control-radius);
+  cursor: pointer;
+}
+
+.zc-root.zc-project-home .zc-hero-title-edit:hover,
+.zc-root.zc-project-home .zc-hero-desc-edit:hover {
+  color: var(--zc-home-accent);
+  background: var(--zc-home-accent-soft);
+  border-color: var(--zc-home-line);
+}
+
+.zc-root.zc-project-home .zc-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 13px;
+  margin-top: 10px;
+  margin-left: 0;
+  justify-content: flex-start;
+}
+
+.zc-root.zc-project-home .zc-hero-tag {
+  padding: 3px 8px;
+  color: color-mix(in srgb, var(--tag-color, var(--zc-home-accent)) 82%, var(--zc-home-ink));
+  background: color-mix(in srgb, var(--tag-color, var(--zc-home-accent)) 10%, var(--zc-home-surface));
+  border: 1px solid color-mix(in srgb, var(--tag-color, var(--zc-home-accent)) 25%, var(--zc-home-line));
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.zc-root.zc-project-home .zc-hero-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--zc-home-muted);
+  font-size: 12px;
+}
+
+.zc-root.zc-project-home .zc-hero-date svg {
+  color: var(--zc-home-faint);
+}
+
+.zc-root.zc-project-home .zc-hero-deadline svg {
+  color: var(--zc-home-warning);
+}
+
+.zc-root.zc-project-home .zc-hero-desc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 700px;
+  margin-top: 17px;
+  color: var(--zc-home-muted);
+  font-size: 14px;
+}
+
+.zc-root.zc-project-home .zc-hero-info > .zc-hero-desc {
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.zc-root.zc-project-home .zc-hero-desc-text,
+.zc-root.zc-project-home .zc-hero-desc-placeholder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zc-root.zc-project-home .zc-hero-desc-text p {
+  margin: 0;
+}
+
+.zc-root.zc-project-home .zc-hero-desc-placeholder {
+  color: var(--zc-home-faint);
+  cursor: pointer;
+}
+
+.zc-root.zc-project-home .zc-hero-actions {
+  display: flex;
+  align-items: end;
+  gap: 20px;
+  padding-bottom: 1px;
+}
+
+.zc-root.zc-project-home .zc-hero-status-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.zc-root.zc-project-home button.zd-project-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--zc-home-ink);
+  background: var(--zc-home-surface);
+  border: 1px solid var(--zc-home-line);
+  border-radius: var(--zc-home-control-radius);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.zc-root.zc-project-home button.zd-project-status-tag:hover {
+  border-color: color-mix(in srgb, var(--zc-home-accent) 45%, var(--zc-home-line));
+  background: var(--zc-home-accent-soft);
+}
+
+.zc-root.zc-project-home .zd-project-status-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--zd-project-status-color, var(--zc-home-accent));
+  border-radius: 50%;
+}
+
+.zc-root.zc-project-home .zd-project-status-chevron {
+  color: var(--zc-home-faint);
+  font-size: 13px;
+}
+
+.zc-root.zc-project-home .zc-hero-export,
+.zc-root.zc-project-home .zc-panel-action,
+.zc-root.zc-project-home .zc-content-heading button,
+.zc-root.zc-project-home .zc-overview-section-heading button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  color: var(--zc-home-ink);
+  background: transparent;
+  border: 1px solid var(--zc-home-line);
+  border-radius: var(--zc-home-control-radius);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.zc-root.zc-project-home .zc-hero-export {
+  width: auto !important;
+  min-width: 70px;
+  flex: 0 0 auto;
+}
+
+.zc-root.zc-project-home .zc-hero-export:hover,
+.zc-root.zc-project-home .zc-panel-action:hover,
+.zc-root.zc-project-home .zc-content-heading button:hover,
+.zc-root.zc-project-home .zc-overview-section-heading button:hover {
+  color: var(--zc-home-accent);
+  border-color: color-mix(in srgb, var(--zc-home-accent) 38%, var(--zc-home-line));
+  background: var(--zc-home-accent-soft);
+}
+
+.zc-root.zc-project-home .zc-section {
+  margin-top: 12px;
+}
+
+.zc-root.zc-project-home .zc-tabs {
+  display: flex;
+  gap: 23px;
+  align-items: stretch;
+  min-height: 48px;
+  padding: 0;
+  overflow-x: auto;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--zc-home-line) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.zc-root.zc-project-home .zc-tab {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 1px;
+  color: var(--zc-home-muted);
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.zc-root.zc-project-home .zc-tab:hover {
+  color: var(--zc-home-ink);
+}
+
+.zc-root.zc-project-home .zc-tab.is-active {
+  color: var(--zc-home-accent);
+  border-bottom-color: var(--zc-home-accent) !important;
+}
+
+.zc-root.zc-project-home .zc-workspace-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 284px;
+  gap: 25px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+.zc-root.zc-project-home .zc-workspace-primary,
+.zc-root.zc-project-home .zc-workspace-aside {
+  min-width: 0;
+}
+
+.zc-root.zc-project-home .zc-workspace-aside {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.zc-root.zc-project-home .zc-section,
+.zc-root.zc-project-home .zc-workspace-layout,
+.zc-root.zc-project-home .zc-workspace-primary,
+.zc-root.zc-project-home .zc-section-body {
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+  flex: none;
+}
+
+.zc-root.zc-project-home .zc-workspace-primary,
+.zc-root.zc-project-home .zc-section-body {
+  display: block;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.zc-root.zc-project-home .zc-hero,
+.zc-root.zc-project-home .zc-hero:hover {
+  margin: 0;
+  height: auto;
+  min-height: 0;
+  flex-shrink: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.zc-root.zc-project-home .zc-status-panel {
+  display: block;
+}
+
+.zc-root.zc-project-home .zc-status-heading {
+  flex-wrap: wrap;
+}
+
+.zc-root.zc-project-home .zc-status-health {
+  white-space: nowrap;
+}
+
+.zc-root.zc-project-home .zc-status-progress {
+  background: transparent;
+  border-radius: 0;
+}
+
+.zc-root.zc-project-home .zc-status-row {
+  background: transparent;
+  border-radius: 0;
+  min-height: 0;
+  height: auto;
+  margin: 0;
+  align-items: start;
+}
+
+.zc-root.zc-project-home button.zc-overview-next-row {
+  height: auto;
+  min-height: 62px;
+  box-shadow: none;
+  border-radius: 0;
+  white-space: normal;
+}
+
+.zc-root.zc-project-home .zc-content-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px 16px;
+  background: var(--zc-home-surface);
+  border: 1px solid var(--zc-home-line);
+  border-bottom: 1px solid var(--zc-home-line-soft);
+  border-radius: var(--zc-home-radius) var(--zc-home-radius) 0 0;
+  box-shadow: var(--zc-home-shadow);
+}
+
+.zc-root.zc-project-home .zc-content-heading-copy {
+  min-width: 0;
+}
+
+.zc-root.zc-project-home .zc-content-title-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.zc-root.zc-project-home .zc-content-title {
+  margin: 0;
+  color: var(--zc-home-ink);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1.2;
+}
+
+.zc-root.zc-project-home .zc-content-count {
+  color: var(--zc-home-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.zc-root.zc-project-home .zc-panel-body {
+  min-width: 0;
+  padding: 25px 24px 29px;
+  color: var(--zc-home-ink);
+  background: var(--zc-home-surface) !important;
+  border: 1px solid var(--zc-home-line);
+  border-top: 0;
+  border-radius: 0 0 var(--zc-home-radius) var(--zc-home-radius);
+  box-shadow: var(--zc-home-shadow);
+}
+
+.zc-root.zc-project-home .zc-panel-body.zc-scroll {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  flex: none;
+}
+
+.zc-root.zc-project-home .zc-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.16fr) minmax(250px, .84fr);
+  gap: 31px;
+}
+
+.zc-root.zc-project-home .zc-overview-brief {
+  min-width: 0;
+  padding-right: 30px;
+  border-right: 1px solid var(--zc-home-line-soft);
+}
+
+.zc-root.zc-project-home .zc-overview-copy {
+  margin-top: 13px;
+  color: var(--zc-home-ink);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.zc-root.zc-project-home .zc-overview-copy > :first-child {
+  margin-top: 0;
+}
+
+.zc-root.zc-project-home .zc-overview-copy > :last-child {
+  margin-bottom: 0;
+}
+
+.zc-root.zc-project-home .zc-overview-empty {
+  padding: 15px 16px;
+  color: var(--zc-home-muted);
+  background: var(--zc-home-surface-soft);
+  border-left: 2px solid var(--zc-home-line);
+  font-size: 13px;
+}
+
+.zc-root.zc-project-home .zc-overview-pulse {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  align-items: center;
+  margin-top: 31px;
+  padding-top: 17px;
+  border-top: 1px solid var(--zc-home-line-soft);
+}
+
+.zc-root.zc-project-home .zc-overview-pulse-label,
+.zc-root.zc-project-home .zc-overview-pulse-value {
+  font-size: 12px;
+}
+
+.zc-root.zc-project-home .zc-overview-pulse-label {
+  color: var(--zc-home-muted);
+}
+
+.zc-root.zc-project-home .zc-overview-pulse-value {
+  color: var(--zc-home-ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.zc-root.zc-project-home .zc-overview-pulse-track {
+  grid-column: 1 / -1;
+  height: 5px;
+  overflow: hidden;
+  background: var(--zc-home-surface-soft);
+  border-radius: 99px;
+}
+
+.zc-root.zc-project-home .zc-overview-pulse-track span {
+  display: block;
+  height: 100%;
+  background: var(--zc-home-accent);
+  border-radius: inherit;
+}
+
+.zc-root.zc-project-home .zc-overview-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--zc-home-line-soft);
+}
+
+.zc-root.zc-project-home .zc-overview-section-sub,
+.zc-root.zc-project-home .zc-status-heading-sub {
+  margin-top: 4px;
+  color: var(--zc-home-muted);
+  font-size: 12px;
+}
+
+.zc-root.zc-project-home .zc-overview-next-list {
+  margin-top: 3px;
+}
+
+.zc-root.zc-project-home .zc-overview-next-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 11px;
+  width: 100%;
+  padding: 13px 0;
+  color: var(--zc-home-ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--zc-home-line-soft);
+  cursor: pointer;
+}
+
+.zc-root.zc-project-home .zc-overview-next-row:hover .zc-overview-next-text {
+  color: var(--zc-home-accent);
+}
+
+.zc-root.zc-project-home .zc-overview-next-index {
+  padding-top: 2px;
+  color: var(--zc-home-faint);
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.zc-root.zc-project-home .zc-overview-next-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+
+.zc-root.zc-project-home .zc-overview-next-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.zc-root.zc-project-home .zc-overview-next-detail {
+  color: var(--zc-home-muted);
+  font-size: 11px;
+}
+
+.zc-root.zc-project-home .zc-overview-next-empty {
+  padding: 22px 0 12px;
+}
+
+.zc-root.zc-project-home .zc-overview-next-empty-title {
+  color: var(--zc-home-ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.zc-root.zc-project-home .zc-overview-next-empty-copy {
+  margin-top: 5px;
+  color: var(--zc-home-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.zc-root.zc-project-home .zc-overview-focus-note {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--zc-home-line-soft);
+  color: var(--zc-home-muted);
+  font-size: 12px;
+}
+
+.zc-root.zc-project-home .zc-overview-focus-note-hint {
+  color: var(--zc-home-faint);
+}
+
+.zc-root.zc-project-home .zc-status-panel,
+.zc-root.zc-project-home .zc-workspace-index {
+  padding: 20px;
+  background: var(--zc-home-surface);
+  border: 1px solid var(--zc-home-line);
+  border-radius: var(--zc-home-radius);
+  box-shadow: var(--zc-home-shadow);
+}
+
+.zc-root.zc-project-home .zc-status-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zc-root.zc-project-home .zc-status-health {
+  color: var(--zc-home-accent);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.zc-root.zc-project-home .zc-status-progress {
+  margin-top: 20px;
+  min-height: 0;
+  height: auto;
+  padding: 15px 0 17px;
+  border-top: 1px solid var(--zc-home-line-soft);
+  border-bottom: 1px solid var(--zc-home-line-soft);
+}
+
+.zc-root.zc-project-home .zc-status-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--zc-home-muted);
+  font-size: 12px;
+}
+
+.zc-root.zc-project-home .zc-status-progress-value {
+  color: var(--zc-home-ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.zc-root.zc-project-home .zc-status-progress-track {
+  display: flex;
+  position: relative;
+  justify-content: space-between;
+  align-items: center;
+  height: 16px;
+  margin-top: 12px;
+}
+
+.zc-root.zc-project-home .zc-status-progress-track::before {
+  position: absolute;
+  top: 7px;
+  right: 5px;
+  left: 5px;
+  height: 2px;
+  background: var(--zc-home-line);
+  content: "";
+}
+
+.zc-root.zc-project-home .zc-status-progress-track .zd-project-progress-node {
+  position: relative;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  background: var(--zc-home-surface);
+  border: 2px solid var(--zc-home-line);
+  border-radius: 50%;
+}
+
+.zc-root.zc-project-home .zc-status-progress-track .zd-project-progress-node.is-done {
+  background: var(--zc-home-accent);
+  border-color: var(--zc-home-accent);
+}
+
+.zc-root.zc-project-home .zc-status-progress-track .zd-project-progress-node.is-current {
+  width: 12px;
+  height: 12px;
+  background: var(--zc-home-surface);
+  border: 3px solid var(--zc-home-accent);
+}
+
+.zc-root.zc-project-home .zc-status-progress-track.is-paused .zd-project-progress-node {
+  opacity: .45;
+}
+
+.zc-root.zc-project-home .zc-status-row {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--zc-home-line-soft);
+}
+
+.zc-root.zc-project-home .zc-status-row:last-child {
+  border-bottom: 0;
+}
+
+.zc-root.zc-project-home .zc-status-label,
+.zc-root.zc-project-home .zc-status-hint {
+  color: var(--zc-home-muted);
+  font-size: 11px;
+}
+
+.zc-root.zc-project-home .zc-status-value-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+  text-align: right;
+  min-height: 0;
+  height: auto;
+}
+
+.zc-root.zc-project-home .zc-status-value {
+  color: var(--zc-home-ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.zc-root.zc-project-home .zc-recent-activity {
+  margin-top: 18px;
+  padding: 20px;
+}
+
+.zc-root.zc-project-home .zc-recent-activity-scroll {
+  margin-top: 14px;
+}
+
+.zc-root.zc-project-home .zc-summary-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  width: 100%;
+  padding: 11px 0;
+  color: var(--zc-home-ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--zc-home-line-soft);
+  cursor: pointer;
+}
+
+.zc-root.zc-project-home .zc-summary-row:last-child {
+  border-bottom: 0;
+}
+
+.zc-root.zc-project-home .zc-summary-row:hover .zc-summary-primary {
+  color: var(--zc-home-accent);
+}
+
+.zc-root.zc-project-home .zc-summary-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--zc-home-accent);
+  background: var(--zc-home-accent-soft);
+  border-radius: 6px;
+}
+
+.zc-root.zc-project-home .zc-summary-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.zc-root.zc-project-home .zc-summary-primary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.zc-root.zc-project-home .zc-summary-secondary,
+.zc-root.zc-project-home .zc-summary-time {
+  color: var(--zc-home-muted);
+  font-size: 10px;
+}
+
+.zc-root.zc-project-home .zc-summary-time {
+  white-space: nowrap;
+}
+
+/* All secondary project views use the same quiet, document-like rows. */
+.zc-root.zc-project-home .zc-task-quick-create {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 19px;
+  padding-bottom: 19px;
+  border-bottom: 1px solid var(--zc-home-line-soft);
+}
+
+.zc-root.zc-project-home .zc-task-quick-create input,
+.zc-root.zc-project-home .zc-panel-body > input[type="search"],
+.zc-root.zc-project-home .zc-timeline-filters button,
+.zc-root.zc-project-home .zc-analytics-container button {
+  min-height: 34px;
+  color: var(--zc-home-ink);
+  background: var(--zc-home-surface);
+  border: 1px solid var(--zc-home-line);
+  border-radius: var(--zc-home-control-radius);
+}
+
+.zc-root.zc-project-home .zc-task-quick-create input,
+.zc-root.zc-project-home .zc-panel-body > input[type="search"] {
+  flex: 1;
+  min-width: 0;
+  padding: 0 11px;
+}
+
+.zc-root.zc-project-home .zc-task-quick-create input:focus,
+.zc-root.zc-project-home .zc-panel-body > input[type="search"]:focus {
+  border-color: var(--zc-home-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--zc-home-accent) 19%, transparent);
+  outline: 0;
+}
+
+.zc-root.zc-project-home .zc-task-quick-create button.mod-cta,
+.zc-root.zc-project-home .zc-panel-body button.mod-cta {
+  min-height: 34px;
+  padding: 0 13px;
+  border-radius: var(--zc-home-control-radius);
+}
+
+.zc-root.zc-project-home .zc-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  gap: 11px;
+  align-items: start;
+  padding: 14px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--zc-home-line-soft);
+  border-radius: 0;
+}
+
+.zc-root.zc-project-home .zc-row:hover {
+  background: color-mix(in srgb, var(--zc-home-accent) 3%, transparent);
+}
+
+.zc-root.zc-project-home .zc-row:last-child {
+  border-bottom: 0;
+}
+
+.zc-root.zc-project-home .zc-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--zc-home-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.zc-root.zc-project-home .zc-check:hover {
+  color: var(--zc-home-accent);
+}
+
+.zc-root.zc-project-home .zc-row-content,
+.zc-root.zc-project-home .zc-row-main {
+  min-width: 0;
+}
+
+.zc-root.zc-project-home .zc-row-text {
+  color: var(--zc-home-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.zc-root.zc-project-home .zc-row.is-done .zc-row-text {
+  color: var(--zc-home-muted);
+  text-decoration: line-through;
+}
+
+.zc-root.zc-project-home .zc-row-second-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  margin-top: 5px;
+  color: var(--zc-home-muted);
+  font-size: 11px;
+}
+
+.zc-root.zc-project-home .zc-row-second-line button,
+.zc-root.zc-project-home .zc-row > button:not(.zc-check):not(.zc-del) {
+  color: var(--zc-home-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.zc-root.zc-project-home .zc-row-second-line button:hover,
+.zc-root.zc-project-home .zc-row > button:not(.zc-check):not(.zc-del):hover {
+  color: var(--zc-home-accent);
+}
+
+.zc-root.zc-project-home .zc-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--zc-home-faint);
+  background: transparent;
+  border: 0;
+  opacity: .72;
+  cursor: pointer;
+}
+
+.zc-root.zc-project-home .zc-del:hover {
+  color: var(--text-error);
+}
+
+.zc-root.zc-project-home .zc-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--zc-home-line);
+}
+
+.zc-root.zc-project-home .zc-empty,
+.zc-root.zc-project-home .zc-summary-empty,
+.zc-root.zc-project-home .zc-analytics-state {
+  padding: 34px 18px;
+  color: var(--zc-home-muted);
+  text-align: center;
+  background: var(--zc-home-surface-soft);
+  border: 1px dashed var(--zc-home-line);
+  border-radius: var(--zc-home-control-radius);
+}
+
+.zc-root.zc-project-home .zc-empty-title,
+.zc-root.zc-project-home .zc-analytics-state-title {
+  margin-top: 9px;
+  color: var(--zc-home-ink);
+  font-weight: 650;
+}
+
+.zc-root.zc-project-home .zc-empty-sub,
+.zc-root.zc-project-home .zc-analytics-state-copy {
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.zc-root.zc-project-home .zc-grid-card {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  padding: 15px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--zc-home-line-soft);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.zc-root.zc-project-home .zc-grid-card:last-child {
+  border-bottom: 0;
+}
+
+.zc-root.zc-project-home .zc-grid-card:hover {
+  background: color-mix(in srgb, var(--zc-home-accent) 3%, transparent);
+}
+
+.zc-root.zc-project-home .zc-timeline-filters {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.zc-root.zc-project-home .zc-timeline-filters button {
+  padding: 0 10px;
+  color: var(--zc-home-muted);
+  font-size: 12px;
+}
+
+.zc-root.zc-project-home .zc-timeline-filters button.is-active {
+  color: var(--zc-home-accent);
+  background: var(--zc-home-accent-soft);
+  border-color: color-mix(in srgb, var(--zc-home-accent) 32%, var(--zc-home-line));
+}
+
+.zc-root.zc-project-home .zc-analytics-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin-bottom: 25px;
+  border-top: 1px solid var(--zc-home-line-soft);
+  border-bottom: 1px solid var(--zc-home-line-soft);
+}
+
+.zc-root.zc-project-home .zc-analytics-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 12px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--zc-home-line-soft);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.zc-root.zc-project-home .zc-analytics-card:last-child {
+  border-right: 0;
+}
+
+.zc-root.zc-project-home .zc-analytics-card-icon {
+  color: var(--zc-home-accent);
+}
+
+.zc-root.zc-project-home .zc-analytics-card-value {
+  color: var(--zc-home-ink);
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.zc-root.zc-project-home .zc-analytics-card-label {
+  color: var(--zc-home-muted);
+  font-size: 10px;
+}
+
+.zc-root.zc-project-home .zc-analytics-card-warning .zc-analytics-card-value {
+  color: var(--text-error);
+}
+
+.zc-root.zc-project-home .zc-analytics-section {
+  padding-top: 21px;
+  border-top: 1px solid var(--zc-home-line-soft);
+}
+
+.zc-root.zc-project-home .zc-analytics-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zc-root.zc-project-home .zc-analytics-section-title {
+  color: var(--zc-home-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.zc-root.zc-project-home .zc-analytics-section-copy {
+  color: var(--zc-home-muted);
+  font-size: 11px;
+}
+
+/* Modal and popout forms inherit the same project-document language. */
+.modal-container:has(.zendian-shared-modal) .modal-content,
+.workspace-leaf-content:has(.zd-form-shell) {
+  color: var(--text-normal);
+}
+
+.zendian-shared-modal .modal-content,
+.zd-form-shell {
+  --zd-form-surface: var(--background-primary);
+  --zd-form-line: var(--background-modifier-border);
+  --zd-form-radius: 12px;
+  color: var(--text-normal);
+  background: var(--zd-form-surface);
+}
+
+.zendian-shared-modal .modal-content {
+  padding: 25px;
+}
+
+.zendian-shared-modal .setting-item {
+  gap: 16px;
+  padding: 16px 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.zendian-shared-modal .zc-task-content-setting {
+  display: block;
+}
+
+.zendian-shared-modal .zc-task-content-setting .setting-item-control {
+  margin-top: 10px;
+}
+
+.modal.zendian-shared-modal .setting-item-control textarea.zc-long-textarea {
+  width: 100%;
+  min-height: 112px;
+  padding: 10px 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.zendian-shared-modal .setting-item button {
+  min-height: 34px;
+}
+
+.zendian-shared-modal .modal-content > h2,
+.zd-form-title {
+  margin: 0;
+  color: var(--text-normal);
+  font-size: 20px;
+  letter-spacing: -.025em;
+}
+
+.zendian-shared-modal .modal-content > p,
+.zd-form-description {
+  margin: 8px 0 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.zd-form-shell {
+  min-width: min(100%, 680px);
+  overflow: hidden;
+  border: 1px solid var(--zd-form-line);
+  border-radius: var(--zd-form-radius);
+  box-shadow: var(--shadow-l, 0 10px 32px rgba(0, 0, 0, .12));
+}
+
+.zd-form-header {
+  padding: 23px 25px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--zd-form-line) 62%, transparent);
+}
+
+.zd-form-body {
+  padding: 20px 25px;
+}
+
+.zd-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 25px;
+  background: var(--background-secondary);
+  border-top: 1px solid color-mix(in srgb, var(--zd-form-line) 62%, transparent);
+}
+
+.zc-root.zc-project-home :is(button, input, select, textarea):focus-visible,
+.zd-form-shell :is(button, input, select, textarea):focus-visible,
+.zendian-shared-modal :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--interactive-accent) 58%, transparent);
+  outline-offset: 2px;
+}
+
+.zc-export-menu {
+  min-width: 220px;
+  padding: 5px;
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 9px;
+  box-shadow: var(--shadow-l, 0 12px 32px rgba(0, 0, 0, .18));
+  z-index: 1000;
+}
+
+.zc-export-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 0 9px;
+  color: var(--text-normal);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.zc-export-option:hover {
+  color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+}
+
+.zc-export-icon {
+  width: 18px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.zc-export-label {
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .zc-root.zc-project-home .zc-workspace-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zc-root.zc-project-home .zc-workspace-aside {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .zc-root.zc-project-home .zc-recent-activity {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .zc-root.zc-project-home .zc-wrapper {
+    padding: 20px 16px 48px;
+  }
+
+  .zc-root.zc-project-home .zc-location-hint {
+    display: none;
+  }
+
+  .zc-root.zc-project-home .zc-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 21px;
+    padding-top: 27px;
+  }
+
+  .zc-root.zc-project-home .zc-hero-actions {
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .zc-root.zc-project-home .zc-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .zc-root.zc-project-home .zc-overview-brief {
+    padding-right: 0;
+    padding-bottom: 26px;
+    border-right: 0;
+    border-bottom: 1px solid var(--zc-home-line-soft);
+  }
+
+  .zc-root.zc-project-home .zc-content-heading,
+  .zc-root.zc-project-home .zc-panel-body {
+    padding-right: 17px;
+    padding-left: 17px;
+  }
+
+  .zc-root.zc-project-home .zc-content-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .zc-root.zc-project-home .zc-workspace-aside {
+    display: block;
+  }
+
+  .zc-root.zc-project-home .zc-recent-activity {
+    margin-top: 18px;
+  }
+
+  .zc-root.zc-project-home .zc-analytics-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zc-root.zc-project-home .zc-analytics-card:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .zc-root.zc-project-home .zc-analytics-card:nth-child(n + 3) {
+    border-top: 1px solid var(--zc-home-line-soft);
+  }
+
+  .zc-root.zc-project-home .zc-row {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+  }
+
+  .zc-root.zc-project-home .zc-row > button:not(.zc-check):not(.zc-del) {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .zc-root.zc-project-home .zc-hero-title {
+    font-size: clamp(28px, 10vw, 39px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zc-root.zc-project-home *,
+  .zd-form-shell *,
+  .zendian-shared-modal * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@container (max-width: 1000px) {
+  .zc-root.zc-project-home .zc-workspace-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zc-root.zc-project-home .zc-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .zc-root.zc-project-home .zc-overview-brief {
+    padding: 0 0 20px;
+    border-right: 0;
+    border-bottom: 1px solid var(--zc-home-line-soft);
+  }
+
+  .zc-root.zc-project-home .zc-workspace-aside {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .zc-root.zc-project-home .zc-recent-activity {
+    margin-top: 0;
+  }
+}
+
+@container (max-width: 620px) {
+  .zc-root.zc-project-home .zc-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .zc-root.zc-project-home .zc-hero-actions {
+    justify-content: space-between;
+  }
+
+  .zc-root.zc-project-home .zc-workspace-aside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

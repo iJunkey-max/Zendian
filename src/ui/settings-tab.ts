@@ -13,6 +13,7 @@ import { BUILTIN_LIBRARIES, type IconSystemModule } from "../modules/icon-system
 import { IconPickerModal } from "./icon-picker-modal";
 import { DonationModal, type DonationChannel } from "./donation-modal";
 import { confirmAction } from "./confirm-modal";
+import { openPopoutForm } from "./popout-form";
 import { getProjectSubfolderName, validateProjectSubfolderTemplate } from "../homepage/project-subfolders";
 
 // ============================================================
@@ -535,7 +536,6 @@ const SECTION_SOURCE: TabDef[] = [
         settings: [
           toggle("card-layout-pad-open", "平板卡片布局", (s) => s.mobile.cardLayoutPad, (s, v) => ({ mobile: { ...s.mobile, cardLayoutPad: v } }), "在平板设备上启用卡片式笔记布局"),
           toggle("drawer-phone-full-width", "手机侧边栏全屏", (s) => s.mobile.drawerPhoneFullWidth, (s, v) => ({ mobile: { ...s.mobile, drawerPhoneFullWidth: v } }), "在手机端打开侧边栏时自动全屏显示，关闭后返回笔记"),
-          toggle("homepage-popout-panels", "面板使用新窗口", (s) => s.mobile.openPanelsInNewWindow ?? true, (s, v) => ({ mobile: { ...s.mobile, openPanelsInNewWindow: v } }), "开启后，新建项目、新建待办、灵感速记、全部列表和专注钟等面板会优先在新窗口打开"),
         ],
       },
       {
@@ -553,6 +553,7 @@ const SECTION_SOURCE: TabDef[] = [
         id: "homepage-basic", title: "Homepage", titleZh: "主页设置",
         settings: [
           toggle("homepage-enabled", "启用主页", (s) => s.homepage.enabled, (s, v) => ({ homepage: { ...s.homepage, enabled: v } }), "将新标签页默认内容替换为主页仪表盘"),
+          toggle("homepage-popout-panels", "面板使用新窗口", (s) => s.mobile.openPanelsInNewWindow ?? true, (s, v) => ({ mobile: { ...s.mobile, openPanelsInNewWindow: v } }), "新建项目、待办、速记、全部列表和专注钟会优先在独立窗口打开；不支持时自动回退到当前窗口"),
           text("homepage-username", "用户名", (s) => s.homepage.userName, (s, v) => ({ homepage: { ...s.homepage, userName: v } }), "你的名字", "用于主页问候语显示"),
           text("homepage-project-archive", "项目归档文件夹", (s) => s.homepage.projectArchiveFolder, (s, v) => ({ homepage: { ...s.homepage, projectArchiveFolder: v } }), "99_归档", "项目归档时移动到此文件夹"),
         ],
@@ -829,7 +830,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
     this.displayIn(this.containerEl);
   }
 
-  displayIn(containerEl: HTMLElement): void {
+  displayIn(containerEl: HTMLElement, options: { showWindowButton?: boolean } = {}): void {
     containerEl.empty();
     this.navItems.clear();
 
@@ -842,6 +843,16 @@ export class ZENdianSettingTab extends PluginSettingTab {
     const search = actions.createEl("input", { cls: "zendian-search", type: "search", placeholder: "搜索设置…" });
     search.setAttribute("aria-label", "搜索设置");
     search.addEventListener("input", () => this.renderSearch(search.value));
+    if (options.showWindowButton !== false) {
+      const openWindow = actions.createEl("button", {
+        cls: "zendian-open-window",
+        attr: { type: "button", "aria-label": "在新窗口打开 ZENdian 设置", title: "在新窗口打开" },
+      });
+      const openWindowIcon = getIcon("panel-top-open");
+      if (openWindowIcon) openWindow.appendChild(openWindowIcon);
+      openWindow.createSpan({ text: "新窗口" });
+      openWindow.addEventListener("click", () => { void this.openSettingsPopout(); });
+    }
     const resetAll = actions.createEl("button", { cls: "zendian-reset-all", text: "全部恢复默认" });
     resetAll.addEventListener("click", async () => {
       if (!await confirmAction(this.app, {
@@ -872,6 +883,26 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
     this.contentEl = shell.createDiv("zendian-content");
     this.renderActiveTab();
+  }
+
+  private async openSettingsPopout(): Promise<void> {
+    const popoutTab = new ZENdianSettingTab(
+      this.app,
+      this.zendianPlugin,
+      this.settingsManager,
+      this.moduleManager,
+    );
+    popoutTab.activeTabId = this.activeTabId;
+    const opened = await openPopoutForm(this.app, {
+      title: "ZENdian 设置",
+      icon: "settings-2",
+      size: { width: 1120, height: 820 },
+      className: "zendian-settings-popout",
+      render: (container) => {
+        popoutTab.displayIn(container, { showWindowButton: false });
+      },
+    });
+    if (!opened) new Notice("当前设备不支持独立设置窗口，已保留当前设置页");
   }
 
   private switchTab(tabId: string): void {

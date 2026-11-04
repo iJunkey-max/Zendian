@@ -1,0 +1,365 @@
+/* ============================================================
+   ZENdian UI polish
+
+   This is intentionally a compatibility layer, not a new visual theme.
+   The homepage stylesheet remains the source of truth: dotted background,
+   quiet white/Obsidian surfaces, restrained radius, pastel notes and the
+   Obsidian accent colour. The rules below only make controls and secondary
+   surfaces use that same language.
+   ============================================================ */
+
+:root {
+  --zd-polish-accent: var(--interactive-accent);
+  --zd-polish-page: var(--zd-ui-surface, var(--background-primary));
+  --zd-polish-surface: var(--zd-ui-surface-raised, var(--background-primary));
+  --zd-polish-surface-soft: var(--zd-ui-surface-soft, var(--background-secondary));
+  --zd-polish-border: var(--zd-ui-divider, var(--background-modifier-border));
+  --zd-polish-border-strong: var(--zd-ui-divider-strong, var(--background-modifier-border-hover));
+  --zd-polish-ink: var(--zd-ui-text, var(--text-normal));
+  --zd-polish-muted: var(--zd-ui-text-muted, var(--text-muted));
+  --zd-polish-faint: var(--zd-ui-text-faint, var(--text-faint));
+  --zd-polish-radius: var(--zd-ui-radius-card, 12px);
+  --zd-polish-radius-control: var(--zd-ui-radius-control, 8px);
+  --zd-polish-shadow: var(--zd-ui-shadow-card, 0 1px 3px rgba(0, 0, 0, 0.08));
+}
+
+/* Shared control language ---------------------------------- */
+:is(.zendian-homepage, .zc-root, .zendian-settings-wrapper, .zendian-popout-form, .modal.zendian-shared-modal) :is(
+  input[type="text"], input[type="search"], input[type="number"], select, textarea
+) {
+  border: 1px solid var(--zd-polish-border);
+  border-radius: var(--zd-polish-radius-control);
+  background: var(--zd-polish-page);
+  color: var(--zd-polish-ink);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+:is(.zendian-homepage, .zc-root, .zendian-settings-wrapper, .zendian-popout-form, .modal.zendian-shared-modal) :is(
+  input[type="text"], input[type="search"], input[type="number"], select, textarea
+):hover {
+  border-color: var(--zd-polish-border-strong);
+}
+
+:is(.zendian-homepage, .zc-root, .zendian-settings-wrapper, .zendian-popout-form, .modal.zendian-shared-modal) :is(
+  input[type="text"], input[type="search"], input[type="number"], select, textarea
+):focus {
+  border-color: color-mix(in srgb, var(--zd-polish-accent) 68%, var(--zd-polish-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zd-polish-accent) 13%, transparent);
+  outline: 0;
+}
+
+:is(.zendian-homepage, .zc-root, .zendian-settings-wrapper, .zendian-popout-form, .modal.zendian-shared-modal) :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--zd-polish-accent) 70%, white 30%);
+  outline-offset: 2px;
+}
+
+:is(.zendian-homepage, .zc-root, .zendian-settings-wrapper, .zendian-popout-form, .modal.zendian-shared-modal) button {
+  border-radius: var(--zd-polish-radius-control);
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+/* Homepage: preserve the previous layout and proportions -------- */
+.zendian-homepage .homepage-container {
+  max-width: var(--hp-max-width, 1240px);
+  padding: 0.75rem 1.5rem 0;
+}
+
+.zendian-homepage .homepage-wrapper {
+  /* Keep the original dot/radial background; do not replace it with a grid. */
+  background-color: var(--bg);
+}
+
+.zendian-homepage .homepage-header-greeting {
+  font-size: 1.5rem;
+  letter-spacing: -0.025em;
+}
+
+.zendian-homepage .homepage-search-input {
+  width: 14rem;
+  border-radius: 9999px;
+  background: var(--surface);
+  box-shadow: var(--hp-shadow-sm, var(--shadow-note));
+}
+
+.zendian-homepage .homepage-weather-card,
+.zendian-homepage .homepage-card {
+  border-color: var(--hp-border);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.zendian-homepage .homepage-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 14%, var(--hp-border));
+  box-shadow: var(--shadow-card-hover);
+}
+
+.zendian-homepage .homepage-card-title-row {
+  border-bottom-color: var(--hp-divider);
+}
+
+.zendian-homepage :is(.homepage-card-link, .homepage-card-icon-btn, .homepage-sticky-nav-button) {
+  border-color: var(--hp-border);
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.zendian-homepage :is(.homepage-card-link, .homepage-card-icon-btn, .homepage-sticky-nav-button):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--hp-border));
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+  color: var(--primary);
+}
+
+.zendian-homepage :is(.homepage-project-item, .homepage-todo-item, .homepage-recent-item):hover {
+  background: var(--hp-hover-bg);
+}
+
+.zendian-homepage .homepage-todo-tabs {
+  border-bottom-color: var(--hp-divider);
+  background: transparent;
+}
+
+.zendian-homepage .homepage-sticky-note {
+  box-shadow: var(--shadow-note);
+}
+
+/* Detail sheets keep the same white/soft-surface card language. */
+.hp-detail-overlay {
+  background: rgba(24, 30, 42, 0.38);
+}
+
+.zendian-homepage :is(.hp-detail-panel, .hp-all-panel) {
+  border: 1px solid var(--hp-border);
+  border-radius: var(--hp-radius, 12px);
+  background: var(--surface);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.zendian-homepage .hp-detail-header {
+  border-bottom-color: var(--hp-divider);
+}
+
+.zendian-homepage .hp-detail-close {
+  border: 1px solid var(--hp-border);
+  border-radius: var(--hp-radius-xs, 4px);
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.zendian-homepage .hp-detail-close:hover {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--hp-border));
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+  color: var(--primary);
+}
+
+/* Project console: refine only the surfaces, keeping its existing layout. */
+.zc-root {
+  --zc-page: var(--zd-polish-page);
+  --zc-bg: var(--zd-polish-page);
+  --zc-bg-secondary: var(--zd-polish-surface-soft);
+  --zc-surface: var(--zd-polish-surface);
+  --zc-surface-raised: var(--zd-polish-surface);
+  --zc-text: var(--zd-polish-ink);
+  --zc-text-secondary: var(--zd-polish-muted);
+  --zc-text-tertiary: var(--zd-polish-faint);
+  --zc-border: var(--zd-polish-border);
+  --zc-border-hover: var(--zd-polish-border-strong);
+  background: var(--zd-polish-page);
+}
+
+.zc-root :is(.zc-workspace-primary .zc-scroll, .zc-workspace-aside, .zc-dossier-summary) {
+  border-color: var(--zd-polish-border);
+  border-radius: var(--zd-polish-radius);
+  background: var(--zd-polish-surface);
+  box-shadow: var(--zd-polish-shadow);
+}
+
+.zc-root :is(.zc-workspace-primary .zc-row, .zc-status-row, .zc-summary-row.zc-clickable):hover {
+  background: color-mix(in srgb, var(--zd-polish-accent) 6%, transparent);
+}
+
+/* Settings and popout forms -------------------------------- */
+.zendian-settings-wrapper,
+.zendian-settings-popout,
+.zendian-popout-form {
+  background: var(--zd-polish-page);
+  color: var(--zd-polish-ink);
+}
+
+.zendian-toolbar {
+  border-bottom-color: var(--zd-polish-border);
+}
+
+.zendian-open-window,
+.zendian-reset-all,
+.zendian-card-reset {
+  border: 1px solid var(--zd-polish-border);
+  border-radius: var(--zd-polish-radius-control);
+  background: var(--zd-polish-surface);
+  color: var(--zd-polish-muted);
+}
+
+.zendian-open-window:hover,
+.zendian-reset-all:hover,
+.zendian-card-reset:hover {
+  border-color: color-mix(in srgb, var(--zd-polish-accent) 32%, var(--zd-polish-border));
+  background: color-mix(in srgb, var(--zd-polish-accent) 7%, var(--zd-polish-surface));
+  color: var(--zd-polish-ink);
+}
+
+.zendian-nav {
+  border-color: var(--zd-polish-border);
+  border-radius: var(--zd-polish-radius-control);
+  background: var(--zd-polish-surface);
+  box-shadow: none;
+}
+
+.zendian-nav-item {
+  border-radius: calc(var(--zd-polish-radius-control) - 2px);
+}
+
+.zendian-nav-item.active {
+  color: var(--zd-polish-accent);
+  background: color-mix(in srgb, var(--zd-polish-accent) 9%, var(--zd-polish-surface));
+}
+
+:is(.zendian-section-card, .zendian-about-card, .zendian-about-support, .zendian-empty-state) {
+  border-color: var(--zd-polish-border);
+  border-radius: var(--zd-polish-radius);
+  background: var(--zd-polish-surface);
+  box-shadow: var(--zd-polish-shadow);
+}
+
+.zendian-section-heading {
+  border-bottom-color: var(--zd-polish-border);
+}
+
+.zendian-settings-wrapper .setting-item:hover {
+  background: color-mix(in srgb, var(--zd-polish-accent) 4%, transparent);
+}
+
+.zendian-settings-wrapper .checkbox-container.is-enabled {
+  background-color: var(--zd-polish-accent);
+}
+
+.zendian-settings-wrapper input[type="range"] {
+  accent-color: var(--zd-polish-accent);
+}
+
+.zendian-popout-form {
+  width: min(100%, 680px);
+  max-width: 680px;
+  padding: 28px 30px 22px;
+}
+
+.zendian-popout-form .setting-item,
+.zendian-shared-modal .setting-item {
+  border-color: var(--zd-polish-border);
+  border-radius: var(--zd-polish-radius-control);
+  background: var(--zd-polish-surface);
+}
+
+/* Popout homepage panels intentionally lose the modal chrome and become
+   full-window versions of the same page. */
+.zendian-popout-form.zendian-homepage .hp-all-panel,
+.zendian-popout-form.zendian-homepage .hp-detail-panel {
+  border: 0;
+  border-radius: 0;
+  background: var(--bg);
+  box-shadow: none;
+}
+
+/* Shared panel shell --------------------------------------- */
+.zd-panel-shell {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+}
+
+.zd-panel-shell .zd-panel-header {
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.zd-panel-shell .zd-panel-icon {
+  flex: 0 0 var(--zd-ui-panel-icon-size, 48px);
+  width: var(--zd-ui-panel-icon-size, 48px);
+  height: var(--zd-ui-panel-icon-size, 48px);
+}
+
+.zd-panel-shell .zd-panel-header-info {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.zd-panel-shell .zd-panel-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zd-panel-shell .zd-panel-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zd-panel-shell .zd-panel-close {
+  flex: 0 0 auto;
+}
+
+.zd-panel-shell .zd-panel-body {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Shared form shell ---------------------------------------- */
+.zd-form-shell {
+  box-sizing: border-box;
+  min-width: 0;
+  color: var(--zd-polish-ink);
+}
+
+.zd-form-header {
+  margin-bottom: var(--zd-space-4, 16px);
+}
+
+.zd-form-title {
+  margin: 0 0 6px;
+  color: var(--zd-polish-ink);
+  font-size: var(--zd-text-xl, 18px);
+  font-weight: var(--zd-font-bold, 700);
+  line-height: 1.3;
+}
+
+.zd-form-description {
+  color: var(--zd-polish-muted);
+  font-size: var(--font-ui-small, 12px);
+  line-height: 1.5;
+}
+
+.zd-form-body {
+  min-width: 0;
+}
+
+.zd-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--zd-space-2, 8px);
+  margin-top: var(--zd-space-5, 20px);
+  padding-top: var(--zd-space-4, 16px);
+  border-top: 1px solid var(--zd-polish-border);
+  background: var(--zd-polish-page);
+}
+
+@media (max-width: 720px) {
+  .zendian-homepage .homepage-container {
+    padding-right: 0.875rem;
+    padding-left: 0.875rem;
+  }
+
+  .zendian-popout-form {
+    padding: 20px 16px 18px;
+  }
+}

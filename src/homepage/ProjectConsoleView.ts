@@ -4,7 +4,7 @@ import type { ActivityLogService } from "../services/ActivityLogService";
 import { TaskEditModal } from "./TaskEditModal";
 import { ProjectDetailsModal } from "./ProjectDetailsModal";
 /**
- * ProjectConsoleView — 项目控制台视图（仪表盘风格）
+ * ProjectConsoleView — 项目主页与项目工作区视图
  */
 
 import { FileView, ItemView, type WorkspaceLeaf, type App, TFile, TFolder, Menu, Modal, Setting, Notice, MarkdownRenderer } from "obsidian";
@@ -45,6 +45,7 @@ import { formatDate } from "../utils/date";
 import { openPopoutForm } from "../ui/popout-form";
 import { resolveIconSvg } from "../utils/icon-renderer";
 import { confirmAction } from "../ui/confirm-modal";
+import { createSharedContentShell } from "../ui/panel-shell";
 
 export const VIEW_TYPE_PROJECT_CONSOLE = "zendian-project-console";
 export const VIEW_TYPE_PROJECT_TASK_CREATE = "zendian-project-task-create";
@@ -1133,6 +1134,7 @@ export class ProjectConsoleView extends FileView {
     if (!c) return;
     c.empty();
     c.addClass("zc-root");
+    c.addClass("zc-project-home");
     this.layoutObserver?.disconnect();
     const updateLayout = () => c.toggleClass("is-compact", c.clientWidth < 900);
     updateLayout();
@@ -1154,7 +1156,7 @@ export class ProjectConsoleView extends FileView {
     }
   }
 
-  /** 项目信息区 */
+  /** 项目信息区：项目主页的身份、上下文与关键动作。 */
   private hero(p: HTMLElement) {
     const d = this.data!;
     const color = getProjectTypeColor(
@@ -1178,15 +1180,20 @@ export class ProjectConsoleView extends FileView {
         "aria-label": `当前项目文件夹：${this.projPath}`,
       },
     });
-    location.createSpan({ cls: "zc-location-label", text: "当前文件夹" });
+    location.createSpan({ cls: "zc-location-label", text: "项目位置" });
     location.createSpan({ cls: "zc-location-path", text: this.projPath });
     location.createSpan({
       cls: "zc-location-hint",
-      text: "文件夹由 Obsidian 管理；移动或改名后重新扫描会跟随项目身份。",
+      text: "由 Obsidian 管理",
     });
 
     const sec = p.createDiv({ cls: "zc-hero" });
     const info = sec.createDiv({ cls: "zc-hero-info" });
+    const eyebrow = info.createDiv({ cls: "zc-hero-eyebrow" });
+    eyebrow.createSpan({ text: "项目工作台" });
+    eyebrow.createSpan({ cls: "zc-hero-eyebrow-separator", text: "·" });
+    eyebrow.createSpan({ text: d.type || "未分类" });
+
     const headingRow = info.createDiv({ cls: "zc-hero-heading-row" });
     const title = headingRow.createEl("h1", { cls: "zc-hero-title" });
     const icon = title.createSpan({
@@ -1205,13 +1212,17 @@ export class ProjectConsoleView extends FileView {
     });
     renameButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
     renameButton.addEventListener("click", () => this.editProjectName(titleText, renameButton));
-    const meta = headingRow.createDiv({ cls: "zc-hero-meta" });
+    const meta = info.createDiv({ cls: "zc-hero-meta" });
     meta.createSpan({ cls: "zc-hero-tag", text: d.type || "未分类", attr: { style: `--tag-color:${color}` } });
-    this.renderProjectStatusButton(meta);
     if (d.createdAt) {
       const date = meta.createSpan({ cls: "zc-hero-date" });
       date.appendChild(svg("calendar"));
       date.createSpan({ text: fmtDate(d.createdAt) });
+    }
+    if (d.metadata?.deadline) {
+      const deadline = meta.createSpan({ cls: "zc-hero-date zc-hero-deadline" });
+      deadline.appendChild(svg("flag"));
+      deadline.createSpan({ text: `截止 ${fmtDate(d.metadata.deadline)}` });
     }
 
     const descEl = info.createDiv({ cls: "zc-hero-desc" });
@@ -1224,7 +1235,12 @@ export class ProjectConsoleView extends FileView {
     editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
     descEl.addEventListener("click", () => this.editDescription(descEl));
 
-    const exportBtn = sec.createEl("button", {
+    const actions = sec.createDiv({ cls: "zc-hero-actions" });
+    const statusBlock = actions.createDiv({ cls: "zc-hero-status-block" });
+    statusBlock.createDiv({ cls: "zc-action-label", text: "当前阶段" });
+    this.renderProjectStatusButton(statusBlock);
+
+    const exportBtn = actions.createEl("button", {
       cls: "zc-hero-export",
       attr: { type: "button", "aria-label": "导出项目数据" },
     });
@@ -1430,7 +1446,9 @@ export class ProjectConsoleView extends FileView {
   }
 
   private showExportMenu(anchor: HTMLElement) {
-    const menu = document.createElement("div");
+    const doc = anchor.ownerDocument;
+    const view = doc.defaultView ?? window;
+    const menu = doc.createElement("div");
     menu.addClass("zc-export-menu");
     menu.innerHTML = `
       <div class="zc-export-option" data-format="package"><span class="zc-export-icon">📦</span><span class="zc-export-label">项目迁移包（文件与可选历史）</span></div>
@@ -1440,7 +1458,7 @@ export class ProjectConsoleView extends FileView {
     `;
     const rect = anchor.getBoundingClientRect();
     menu.style.top = `${rect.bottom + 4}px`;
-    menu.style.right = `${window.innerWidth - rect.right}px`;
+    menu.style.right = `${view.innerWidth - rect.right}px`;
     menu.querySelectorAll(".zc-export-option").forEach((option) => {
       option.addEventListener("click", async () => {
         if (option.getAttribute("data-format") === "package") {
@@ -1456,11 +1474,11 @@ export class ProjectConsoleView extends FileView {
     const closeMenu = (event: MouseEvent) => {
       if (!menu.contains(event.target as Node)) {
         menu.remove();
-        document.removeEventListener("click", closeMenu);
+        doc.removeEventListener("click", closeMenu);
       }
     };
-    document.body.appendChild(menu);
-    setTimeout(() => document.addEventListener("click", closeMenu), 10);
+    doc.body.appendChild(menu);
+    view.setTimeout(() => doc.addEventListener("click", closeMenu), 10);
   }
 
   private openPackageExport(): void {
@@ -1604,7 +1622,7 @@ export class ProjectConsoleView extends FileView {
     saveButton.addEventListener("click", () => void save());
   }
 
-  /** 统计卡片行 */
+  /** 项目节奏摘要：只保留足以判断下一步的状态信息。 */
   private renderStats(p: HTMLElement) {
     if (!this.projectStats || !this.health) return;
 
@@ -1613,11 +1631,15 @@ export class ProjectConsoleView extends FileView {
     const files = this.projectStats.totalFiles;
     const delivers = this.data!.deliverables.length;
     const section = p.createDiv({ cls: "zc-status-panel" });
-    section.createDiv({ cls: "zc-aside-title", text: "项目状态" });
+    const heading = section.createDiv({ cls: "zc-status-heading" });
+    const headingCopy = heading.createDiv({ cls: "zc-status-heading-copy" });
+    headingCopy.createDiv({ cls: "zc-aside-title", text: "项目节奏" });
+    headingCopy.createDiv({ cls: "zc-status-heading-sub", text: "阶段与实际推进分开看" });
+    heading.createDiv({ cls: "zc-status-health", text: `健康度 ${this.health.score}` });
 
     const progress = section.createDiv({ cls: "zc-status-progress" });
     const progressHeader = progress.createDiv({ cls: "zc-status-progress-header" });
-    progressHeader.createSpan({ text: "任务完成率" });
+    progressHeader.createSpan({ text: "任务推进" });
     if (!projectProgress.isPaused) {
       progressHeader.createSpan({ cls: "zc-status-progress-value", text: `${pct}%` });
     }
@@ -1641,10 +1663,10 @@ export class ProjectConsoleView extends FileView {
     }
 
     const rows: Array<[string, string, string?]> = [
-      ["阶段", getProjectStatusOption(this.data!.status).label, "手动维护，与任务完成率独立"],
-      ["任务", `${done} / ${total}`, `${Math.max(0, total - done)} 项待推进`],
-      ["交付物", String(delivers), delivers > 0 ? "项目产出" : "暂无产出"],
-      ["文件", String(files), "项目内文件"],
+      ["当前阶段", getProjectStatusOption(this.data!.status).label, "手动维护"],
+      ["待推进", `${Math.max(0, total - done)} 项`, total > 0 ? `共 ${total} 项任务` : "先添加一个行动"],
+      ["交付物", String(delivers), delivers > 0 ? "已有项目产出" : "尚未登记"],
+      ["项目文件", String(files), files > 0 ? "个文件" : "等待第一个文件"],
     ];
 
     for (const [label, value, hint] of rows) {
@@ -1709,18 +1731,18 @@ export class ProjectConsoleView extends FileView {
     container: HTMLElement,
     options: { eyebrow: string; title: string; meta?: string; className?: string },
   ): { heading: HTMLElement; meta: HTMLElement | null; body: HTMLElement } {
-    const heading = container.createDiv({
-      cls: `zc-content-heading${options.className ? ` ${options.className}` : ""}`,
+    return createSharedContentShell(container, {
+      ...options,
+      classNames: {
+        heading: "zd-content-heading zc-content-heading",
+        headingCopy: "zd-content-heading-copy zc-content-heading-copy",
+        eyebrow: "zd-content-eyebrow zc-content-eyebrow",
+        titleRow: "zd-content-title-row zc-content-title-row",
+        title: "zd-content-title zc-content-title",
+        meta: "zd-content-count zc-content-count",
+        body: "zd-panel-body zc-panel-body zc-scroll",
+      },
     });
-    const headingText = heading.createDiv({ cls: "zc-content-heading-copy" });
-    headingText.createDiv({ cls: "zc-content-eyebrow", text: options.eyebrow });
-    const titleRow = headingText.createDiv({ cls: "zc-content-title-row" });
-    titleRow.createEl("h2", { cls: "zc-content-title", text: options.title });
-    const meta = options.meta
-      ? titleRow.createSpan({ cls: "zc-content-count", text: options.meta })
-      : null;
-    const body = container.createDiv({ cls: "zc-scroll" });
-    return { heading, meta, body };
   }
 
   private tabBody(c: HTMLElement) {
@@ -1733,7 +1755,7 @@ export class ProjectConsoleView extends FileView {
   }
 
   private overview(c: HTMLElement): void {
-    const shell = this.createPanelShell(c, { eyebrow: "项目概览", title: "目标与下一步", meta: getProjectStatusOption(this.data!.status).label });
+    const shell = this.createPanelShell(c, { eyebrow: "项目主页", title: "项目概览" });
     const edit = shell.heading.createEl("button", { text: "编辑项目属性", attr: { type: "button" } });
     edit.addEventListener("click", () => {
       const projectPath = this.projPath;
@@ -1745,22 +1767,54 @@ export class ProjectConsoleView extends FileView {
         if (epoch === this.fileEpoch && projectPath === this.projPath) this.render();
       }).open();
     });
-    const description = shell.body.createDiv({ cls: "zc-inline-markdown markdown-rendered" });
+    const overviewGrid = shell.body.createDiv({ cls: "zc-overview-grid" });
+    const brief = overviewGrid.createDiv({ cls: "zc-overview-brief" });
+    brief.createDiv({ cls: "zc-overview-label", text: "项目目标" });
+    const description = brief.createDiv({ cls: "zc-overview-copy zc-inline-markdown markdown-rendered" });
     const text = this.data!.overview?.markdown || this.data!.description;
     if (text) void MarkdownRenderer.renderMarkdown(text, description, this.projPath, this);
-    else description.setText("尚未填写项目目标，可点击顶部简介补充。");
+    else description.createDiv({ cls: "zc-overview-empty", text: "尚未填写项目目标，可点击顶部简介补充。" });
+
     const progress = this.progress();
-    shell.body.createEl("p", { text: `任务完成 ${progress.done}/${progress.total} · ${progress.pct}%` });
+    const pulse = brief.createDiv({ cls: "zc-overview-pulse" });
+    pulse.createSpan({ cls: "zc-overview-pulse-label", text: "当前推进" });
+    pulse.createSpan({ cls: "zc-overview-pulse-value", text: `${progress.done}/${progress.total} 项任务 · ${progress.pct}%` });
+    const pulseTrack = pulse.createDiv({ cls: "zc-overview-pulse-track" });
+    pulseTrack.createSpan({ attr: { style: `width:${Math.max(0, Math.min(100, progress.pct))}%` } });
+
     const next = this.timelineTasks.filter(task => !task.completed).slice(0, 5);
+    const nextSection = overviewGrid.createDiv({ cls: "zc-overview-next" });
+    const nextHeader = nextSection.createDiv({ cls: "zc-overview-section-heading" });
+    const nextCopy = nextHeader.createDiv();
+    nextCopy.createDiv({ cls: "zc-overview-label", text: "下一步行动" });
+    nextCopy.createDiv({ cls: "zc-overview-section-sub", text: next.length ? "从最靠前的一件开始" : "项目暂时没有待推进任务" });
+    const manage = nextHeader.createEl("button", { text: "打开任务", attr: { type: "button" } });
+    manage.addEventListener("click", () => { this.tab = "tasks"; this.render(); });
+
+    const nextList = nextSection.createDiv({ cls: "zc-overview-next-list" });
+    if (!next.length) {
+      const empty = nextList.createDiv({ cls: "zc-overview-next-empty" });
+      empty.createDiv({ cls: "zc-overview-next-empty-title", text: "还没有下一步" });
+      empty.createDiv({ cls: "zc-overview-next-empty-copy", text: "把一个具体动作写进任务页，项目就能继续向前。" });
+    }
+    for (const task of next) {
+      const row = nextList.createEl("button", { cls: "zc-overview-next-row", attr: { type: "button" } });
+      row.createSpan({ cls: "zc-overview-next-index", text: "○" });
+      const rowCopy = row.createSpan({ cls: "zc-overview-next-copy" });
+      rowCopy.createSpan({ cls: "zc-overview-next-text", text: task.text });
+      const priorityLabels = { urgent: "紧急", high: "重要", medium: "普通", low: "低优" };
+      const detail = task.due ? (task.dueTime ? `${task.due} ${task.dueTime}` : task.due) : (task.priority ? priorityLabels[task.priority] : "未设截止");
+      rowCopy.createSpan({ cls: "zc-overview-next-detail", text: detail });
+      row.addEventListener("click", () => { this.tab = "tasks"; this.render(); });
+    }
+
     if (this.data!.projectId && this.activityLog) {
       const focus = this.activityLog.getProjectFocusSummary(this.data!.projectId);
-      shell.body.createEl("p", { text: `近期保留的专注记录：${focus.sessions} 次 · ${Math.round(focus.seconds / 60)} 分钟` });
+      const focusNote = shell.body.createDiv({ cls: "zc-overview-focus-note" });
+      focusNote.createSpan({ cls: "zc-overview-label", text: "专注记录" });
+      focusNote.createSpan({ text: `${focus.sessions} 次 · ${Math.round(focus.seconds / 60)} 分钟` });
+      focusNote.createSpan({ cls: "zc-overview-focus-note-hint", text: "来自专注钟" });
     }
-    shell.body.createEl("h3", { text: "下一步" });
-    if (!next.length) shell.body.createEl("p", { text: "暂无待处理任务，进入任务页添加下一步行动。" });
-    for (const task of next) shell.body.createEl("p", { text: task.text });
-    const button = shell.body.createEl("button", { text: "管理任务", cls: "mod-cta" });
-    button.addEventListener("click", () => { this.tab = "tasks"; this.render(); });
   }
 
   /** 任务列表 */
@@ -3169,7 +3223,9 @@ export class ProjectConsoleView extends FileView {
   }
 
   private getAnalyticsPalette(): { accent: string } {
-    const styles = getComputedStyle(document.body);
+    const doc = this.containerEl.ownerDocument;
+    const view = doc.defaultView ?? window;
+    const styles = view.getComputedStyle(doc.body);
     const hue = styles.getPropertyValue("--accent-h").trim() || "220";
     const saturation = styles.getPropertyValue("--accent-s").trim() || "70%";
     const lightness = styles.getPropertyValue("--accent-l").trim() || "52%";

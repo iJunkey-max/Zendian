@@ -131,6 +131,18 @@ body {
   --zd-ui-focus-ring: 2px solid var(--zd-primary, var(--interactive-accent));
 }
 
+/* Panel primitives -------------------------------------------------
+   These aliases are the contract shared by homepage panels, project
+   console sections, settings cards, dialogs and popout forms. */
+body {
+  --zd-ui-panel-header-padding: var(--zd-space-6, 24px);
+  --zd-ui-panel-body-padding: var(--zd-space-6, 24px);
+  --zd-ui-panel-gap: var(--zd-space-4, 16px);
+  --zd-ui-panel-radius: var(--zd-ui-radius-card, 12px);
+  --zd-ui-panel-icon-size: 48px;
+  --zd-ui-panel-control-height: 34px;
+}
+
 /* ═══════════════════════════════════════════════════════════
    2. 间距系统 (4px 基础单位)
    ═══════════════════════════════════════════════════════════ */
