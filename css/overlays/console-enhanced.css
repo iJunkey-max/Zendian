@@ -1617,14 +1617,6 @@
   border-bottom: 1px solid var(--zd-divider);
 }
 
-.zc-root .zc-summary-row.zc-clickable {
-  cursor: pointer;
-}
-
-.zc-root .zc-summary-row.zc-clickable:hover .zc-summary-primary {
-  color: var(--zd-primary);
-}
-
 .zc-root .zc-summary-mark {
   display: inline-flex;
   align-items: center;
@@ -2668,11 +2660,6 @@
   border-bottom-color: var(--zc-rule);
 }
 
-.zc-root .zc-summary-row.zc-clickable:hover {
-  background: var(--zc-accent-soft);
-  box-shadow: 8px 0 0 var(--zc-accent-soft), -8px 0 0 var(--zc-accent-soft);
-}
-
 .zc-root .zc-summary-mark {
   width: 27px;
   height: 27px;
@@ -3398,11 +3385,6 @@
 
 .zc-root .zc-workspace-primary .zc-row:hover {
   background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.04);
-}
-
-.zc-root .zc-summary-row.zc-clickable:hover {
-  background: var(--zc-card-hover-bg);
-  box-shadow: none;
 }
 
 .zc-root .zc-next-node {
@@ -5672,45 +5654,6 @@
   }
 }
 
-/* Shared local-first identity strip. The path is intentionally visible so the
-   display name and the Obsidian-managed folder never look like the same ID. */
-.zc-root .zc-location-strip {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  margin: 0 0 var(--zd-space-4, 16px);
-  padding: 8px 12px;
-  border: 1px solid var(--zd-ui-border);
-  border-radius: var(--zd-ui-radius-control);
-  background: var(--zd-ui-surface-raised);
-  color: var(--zd-text-secondary, var(--text-muted));
-  font-size: var(--zd-text-sm, 12px);
-  line-height: 1.4;
-}
-
-.zc-root .zc-location-label {
-  color: var(--zd-text-tertiary, var(--text-faint));
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.zc-root .zc-location-path {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--zd-text-primary, var(--text-normal));
-  font-family: var(--font-monospace, ui-monospace, monospace);
-  font-size: 0.92em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.zc-root .zc-location-hint {
-  flex: 1 1 280px;
-  min-width: 0;
-  color: var(--zd-text-tertiary, var(--text-faint));
-}
-
 /* The in-pane popouts and fallback native Modals share one visual shell. */
 .zendian-popout-form,
 .zendian-shared-modal,
@@ -5815,15 +5758,125 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--zd-primary, var(--interactive-accent)) 18%, transparent);
 }
 
+/* V4.0.00 project-console layout contract. Keep the identity block and tab
+   strip in normal flow so changing tab content cannot pull the tabs upward. */
+.zc-root .zc-breadcrumb {
+  margin-bottom: 28px;
+}
+
+.zc-root .zc-hero,
+.zc-root .zc-hero:hover {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  margin-bottom: 24px;
+}
+
+.zc-root .zc-hero-info > .zc-hero-desc,
+.zc-root .zc-hero-info > .zc-hero-desc:hover {
+  margin-top: 14px;
+  cursor: default;
+  background: transparent;
+  border-color: transparent;
+}
+
+.zc-root .zc-hero-desc-text {
+  cursor: default;
+}
+
+.zc-root .zc-hero-desc-placeholder,
+.zc-root .zc-hero-desc-edit {
+  cursor: pointer;
+}
+
+.zc-root .zc-section {
+  position: relative;
+  z-index: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.zc-root .zc-tabs {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex: 0 0 52px;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 52px;
+  min-height: 52px;
+  margin: 0 0 24px;
+  padding: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  transform: none !important;
+  translate: none;
+}
+
+.zc-root .zc-tab,
+.zc-root .zc-tab:hover,
+.zc-root .zc-tab:focus,
+.zc-root .zc-tab:focus-visible,
+.zc-root .zc-tab:active {
+  position: relative;
+  inset: auto;
+  align-self: center;
+  box-sizing: border-box;
+  min-height: 38px;
+  height: 38px;
+  line-height: 20px;
+  margin: 0;
+  transform: none !important;
+  translate: none;
+}
+
+.zc-root .zc-workspace-layout {
+  position: relative;
+  z-index: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.zc-root .zc-recent-activity .zc-summary-row {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 7px 5px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--zc-card-divider);
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.zc-root .zc-recent-activity .zc-summary-row:hover,
+.zc-root .zc-recent-activity .zc-summary-row:active {
+  background: transparent;
+  box-shadow: none;
+}
+
 @media (max-width: 640px) {
-  .zc-root .zc-location-strip {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 3px;
+  .zc-root .zc-breadcrumb {
+    margin-bottom: 22px;
   }
 
-  .zc-root .zc-location-path,
-  .zc-root .zc-location-hint {
-    width: 100%;
+  .zc-root .zc-hero,
+  .zc-root .zc-hero:hover {
+    margin-bottom: 20px;
+  }
+
+  .zc-root .zc-tabs {
+    flex-basis: 52px;
+    height: 52px;
+    min-height: 52px;
+    margin-bottom: 18px;
   }
 }

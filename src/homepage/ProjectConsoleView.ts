@@ -1171,20 +1171,6 @@ export class ProjectConsoleView extends FileView {
     breadcrumb.createSpan({ cls: "zc-breadcrumb-separator", text: "/" });
     breadcrumb.createSpan({ cls: "is-current", text: d.name });
 
-    const location = p.createDiv({
-      cls: "zc-location-strip",
-      attr: {
-        role: "status",
-        "aria-label": `当前项目文件夹：${this.projPath}`,
-      },
-    });
-    location.createSpan({ cls: "zc-location-label", text: "当前文件夹" });
-    location.createSpan({ cls: "zc-location-path", text: this.projPath });
-    location.createSpan({
-      cls: "zc-location-hint",
-      text: "文件夹由 Obsidian 管理；移动或改名后重新扫描会跟随项目身份。",
-    });
-
     const sec = p.createDiv({ cls: "zc-hero" });
     const info = sec.createDiv({ cls: "zc-hero-info" });
     const headingRow = info.createDiv({ cls: "zc-hero-heading-row" });
@@ -1219,10 +1205,31 @@ export class ProjectConsoleView extends FileView {
       const rendered = descEl.createDiv({ cls: "zc-hero-desc-text zc-row-markdown zc-inline-markdown markdown-preview-view markdown-rendered" });
       void MarkdownRenderer.render(this.app, d.description, rendered, this.projPath, this);
     }
-    else descEl.createSpan({ cls: "zc-hero-desc-placeholder", text: "点击添加项目简介..." });
+    else {
+      const placeholder = descEl.createSpan({
+        cls: "zc-hero-desc-placeholder",
+        text: "点击添加项目简介...",
+        attr: { role: "button", tabindex: "0", "aria-label": "添加项目简介" },
+      });
+      placeholder.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.editDescription(descEl);
+      });
+      placeholder.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        event.stopPropagation();
+        this.editDescription(descEl);
+      });
+    }
     const editBtn = descEl.createEl("button", { cls: "zc-hero-desc-edit", attr: { type: "button", "aria-label": "编辑项目简介" } });
     editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
-    descEl.addEventListener("click", () => this.editDescription(descEl));
+    editBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.editDescription(descEl);
+    });
 
     const exportBtn = sec.createEl("button", {
       cls: "zc-hero-export",
@@ -2678,7 +2685,7 @@ export class ProjectConsoleView extends FileView {
         return;
       }
       for (const event of events) {
-        const row = scroll.createEl("button", { cls: "zc-summary-row zc-clickable", attr: { type: "button" } });
+        const row = scroll.createEl("button", { cls: "zc-summary-row", attr: { type: "button" } });
         const mark = row.createSpan({ cls: "zc-summary-mark" });
         mark.innerHTML = SVG.fileEdit;
         const copy = row.createDiv({ cls: "zc-summary-copy" });

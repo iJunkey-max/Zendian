@@ -336,3 +336,46 @@ body {
     }
 }
 
+/* Homepage compatibility with the V3.2 visual rhythm.
+   Keep the current unified tokens for the rest of the UI, but restore the
+   homepage layered page field and its flat list-item treatment. */
+.zendian-homepage .homepage-wrapper {
+    background-color: var(--bg);
+    background-image:
+        radial-gradient(circle at 1px 1px, hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.035) 1px, transparent 0),
+        radial-gradient(ellipse at 15% 10%, hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 85% 80%, hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.04) 0%, transparent 50%);
+    background-position: center, center, center;
+    background-size: 24px 24px, 100% 100%, 100% 100%;
+}
+
+.theme-dark .zendian-homepage .homepage-wrapper {
+    background-image:
+        radial-gradient(circle at 1px 1px, hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.05) 1px, transparent 0),
+        radial-gradient(ellipse at 15% 10%, hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 85% 80%, hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.05) 0%, transparent 50%);
+}
+
+.theme-light .zendian-homepage {
+    --bg: var(--background-primary);
+    --surface: #ffffff;
+}
+
+.theme-light .zendian-homepage :is(.homepage-card, .homepage-weather-card) {
+    background: #ffffff;
+}
+
+/* V3.2 list items were part of the card surface, not nested raised cards.
+   Remove the unified card shadow from both project and todo rows. */
+.zendian-homepage :is(.homepage-project-item, .homepage-todo-item) {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+.zendian-homepage :is(.homepage-project-item, .homepage-todo-item):hover {
+    background: var(--hp-hover-bg);
+    border: 0;
+    box-shadow: none;
+}
+
