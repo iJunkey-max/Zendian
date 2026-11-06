@@ -1,4 +1,5 @@
 import { App, ItemView, type WorkspaceLeaf } from "obsidian";
+import { capturePanelAnchor, placePanelWindow, type PanelAnchor } from "./panel-placement";
 
 export const VIEW_TYPE_ZENDIAN_FORM_POPOUT = "zendian-form-popout";
 
@@ -15,6 +16,7 @@ export interface PopoutFormOptions {
     height: number;
   };
   position?: "bottom-right";
+  anchor?: PanelAnchor;
   className?: string;
   render: (container: HTMLElement, api: PopoutFormApi) => void | (() => void) | Promise<void | (() => void)>;
 }
@@ -27,6 +29,8 @@ const sessions = new Map<string, PopoutFormSession>();
 const leafSessions = new WeakMap<WorkspaceLeaf, string>();
 
 export async function openPopoutForm(app: App, options: PopoutFormOptions): Promise<boolean> {
+  const sourceWindow = activeWindow;
+  const anchor = options.anchor ?? capturePanelAnchor(activeWindow);
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   let leaf: WorkspaceLeaf | null = null;
   try {
@@ -41,22 +45,8 @@ export async function openPopoutForm(app: App, options: PopoutFormOptions): Prom
     void app.workspace.revealLeaf(leaf);
     {
       const popoutWindow = leaf.view.containerEl.ownerDocument.defaultView;
-      const settleWindow = (): void => {
-        if (!popoutWindow || popoutWindow.closed) return;
-        popoutWindow.resizeTo(options.size.width, options.size.height);
-        if (options.position !== "bottom-right") return;
-        const currentDisplay = popoutWindow.screen as Screen & { availLeft?: number; availTop?: number };
-        const currentLeft = currentDisplay.availLeft ?? 0;
-        const currentTop = currentDisplay.availTop ?? 0;
-        const width = Math.min(popoutWindow.outerWidth || options.size.width, currentDisplay.availWidth - 32);
-        const height = Math.min(popoutWindow.outerHeight || options.size.height, currentDisplay.availHeight - 32);
-        popoutWindow.moveTo(
-          currentLeft + currentDisplay.availWidth - width - 16,
-          currentTop + currentDisplay.availHeight - height - 16,
-        );
-      };
-      settleWindow();
-      popoutWindow?.requestAnimationFrame(settleWindow);
+      try { placePanelWindow(popoutWindow, options.size, anchor, options.position, sourceWindow); }
+      catch (error) { console.warn("[ZENdian] Could not position popout window.", error); }
     }
     return true;
   } catch (error) {

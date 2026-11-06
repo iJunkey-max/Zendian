@@ -8,6 +8,7 @@
  */
 
 import { Notice, Plugin, TFile } from "obsidian";
+import { installPanelPlacementTracking } from "./ui/panel-placement";
 import { EventBus, Events } from "./core/event-bus";
 import { SettingsManager } from "./core/settings-manager";
 import { ModuleManager } from "./core/module-manager";
@@ -84,6 +85,7 @@ export default class ZENdianPlugin extends Plugin {
   private lastProjectReconcileNoticeAt = 0;
 
   async onload() {
+    this.register(installPanelPlacementTracking(this.app));
     this.unloading = false;
     // 1. 初始化核心服务
     this.events = new EventBus();

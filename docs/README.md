@@ -15,4 +15,4 @@
 - 仓库根目录 [AGENTS.md](../AGENTS.md) / [CLAUDE.md](../CLAUDE.md) — AI 助手的简要约定
 - 仓库根目录 [README.md](../README.md) — 用户功能与安装说明
 - [CHANGELOG.md](../CHANGELOG.md) 与 [notes/](../notes/) — 版本变更与发布说明
-- [V4.0.02 发布说明](../notes/RELEASE_NOTES_4.0.02.md) — 当前版本的修复、兼容性及验证情况
+- [V4.0.04 发布说明](../notes/RELEASE_NOTES_4.0.04.md) — 当前版本的修复、兼容性及验证情况

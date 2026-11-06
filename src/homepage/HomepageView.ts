@@ -47,6 +47,7 @@ import {
 } from "./services/ProjectHomeFileResolver";
 import { formatDate } from "../utils/date";
 import { openPopoutForm, type PopoutFormOptions } from "../ui/popout-form";
+import { bindPanelAnchor, capturePanelAnchor, placePanelWindow } from "../ui/panel-placement";
 import { confirmAction } from "../ui/confirm-modal";
 import { resolveIconSvg } from "../utils/icon-renderer";
 
@@ -1757,6 +1758,7 @@ export class HomepageView extends ItemView {
   // ── 查看全部面板 ──────────────────────────────────────────
 
   private async showAllProjects(): Promise<void> {
+    const anchor = capturePanelAnchor(this.containerEl.ownerDocument.defaultView);
     const settings = this.dependencies.settingsManager.getSettings();
     const categories = settings.homepage.projectCategories;
     const archiveFolder = settings?.homepage?.projectArchiveFolder || "99_归档";
@@ -1764,7 +1766,8 @@ export class HomepageView extends ItemView {
     if (await this.openHomepagePopout({
       title: "全部项目",
       icon: "folder",
-      size: { width: 960, height: 720 },
+      anchor,
+      size: { width: 620, height: 660 },
       className: "zendian-homepage",
       render: (container, api) => this.renderAllProjectsPanel(container, projects, api.close),
     })) return;
@@ -1781,6 +1784,7 @@ export class HomepageView extends ItemView {
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay zendian-homepage" });
     const panel = overlay.createDiv({ cls: "hp-all-panel hp-all-projects-panel" });
+    bindPanelAnchor(panel, anchor);
 
     const header = panel.createDiv({ cls: "hp-detail-header" });
     const icon = header.createDiv({ cls: "hp-detail-icon" });
@@ -1922,6 +1926,8 @@ export class HomepageView extends ItemView {
 
   private async openProjectCreateWindow(): Promise<boolean> {
     if (!this.shouldOpenPanelsInNewWindow()) return false;
+    const sourceWindow = activeWindow;
+    const anchor = capturePanelAnchor(activeWindow);
     let createdLeaf: WorkspaceLeaf | null = null;
     try {
       const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_PROJECT_CREATE)[0];
@@ -1931,6 +1937,8 @@ export class HomepageView extends ItemView {
       }
       const leaf = createdLeaf = this.app.workspace.getLeaf("window");
       await leaf.setViewState({ type: VIEW_TYPE_PROJECT_CREATE, active: true });
+      try { placePanelWindow(leaf.view.containerEl.ownerDocument.defaultView, { width: 540, height: 650 }, anchor, undefined, sourceWindow); }
+      catch (error) { console.warn("[Homepage] Could not position project window.", error); }
       void this.app.workspace.revealLeaf(leaf);
       return true;
     } catch (error) {
@@ -2100,11 +2108,13 @@ export class HomepageView extends ItemView {
   }
 
   private async showAllTodos(): Promise<void> {
+    const anchor = capturePanelAnchor(this.containerEl.ownerDocument.defaultView);
     const activeTab = TODO_TABS.find((tab) => tab.key === this.currentTodoTab);
     if (await this.openHomepagePopout({
       title: "全部待办",
       icon: "square-check-big",
-      size: { width: 760, height: 680 },
+      anchor,
+      size: { width: 500, height: 610 },
       className: "zendian-homepage",
       render: async (container, api) => {
         const panel = container.createDiv({ cls: "hp-all-panel hp-all-todo-panel" });
@@ -2146,6 +2156,7 @@ export class HomepageView extends ItemView {
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay zendian-homepage" });
     const panel = overlay.createDiv({ cls: "hp-all-panel hp-all-todo-panel" });
+    bindPanelAnchor(panel, anchor);
 
     const header = panel.createDiv({ cls: "hp-detail-header" });
     const icon = header.createDiv({ cls: "hp-detail-icon" });
@@ -2218,6 +2229,8 @@ export class HomepageView extends ItemView {
 
   private async openTaskCreateWindow(): Promise<boolean> {
     if (!this.shouldOpenPanelsInNewWindow()) return false;
+    const sourceWindow = activeWindow;
+    const anchor = capturePanelAnchor(activeWindow);
     let createdLeaf: WorkspaceLeaf | null = null;
     try {
       const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_HOMEPAGE_TASK_CREATE)[0];
@@ -2227,6 +2240,8 @@ export class HomepageView extends ItemView {
       }
       const leaf = createdLeaf = this.app.workspace.getLeaf("window");
       await leaf.setViewState({ type: VIEW_TYPE_HOMEPAGE_TASK_CREATE, active: true });
+      try { placePanelWindow(leaf.view.containerEl.ownerDocument.defaultView, { width: 500, height: 520 }, anchor, undefined, sourceWindow); }
+      catch (error) { console.warn("[Homepage] Could not position task window.", error); }
       void this.app.workspace.revealLeaf(leaf);
       return true;
     } catch (error) {
@@ -2604,10 +2619,12 @@ export class HomepageView extends ItemView {
   }
 
   private async showAllStickyNotes(): Promise<void> {
+    const anchor = capturePanelAnchor(this.containerEl.ownerDocument.defaultView);
     if (await this.openHomepagePopout({
       title: "全部灵感速记",
       icon: "sticky-note",
-      size: { width: 760, height: 680 },
+      anchor,
+      size: { width: 540, height: 630 },
       className: "zendian-homepage",
       render: (container, api) => {
         const panel = container.createDiv({ cls: "hp-all-panel hp-all-sticky-panel" });
@@ -2643,6 +2660,7 @@ export class HomepageView extends ItemView {
 
     const overlay = this.app.workspace.containerEl.createDiv({ cls: "hp-detail-overlay zendian-homepage" });
     const panel = overlay.createDiv({ cls: "hp-all-panel hp-all-sticky-panel" });
+    bindPanelAnchor(panel, anchor);
     const header = panel.createDiv({ cls: "hp-detail-header" });
     const icon = header.createDiv({ cls: "hp-detail-icon" });
     icon.innerHTML = SVG_ICON.stickyNote;
@@ -2703,7 +2721,7 @@ export class HomepageView extends ItemView {
     const opened = await this.openHomepagePopout({
       title: existing ? "编辑灵感速记" : "新建灵感速记",
       icon: "sticky-note",
-      size: { width: 640, height: 460 },
+      size: { width: 500, height: 480 },
       render: (container, api) => {
         const form = renderQuickNoteForm(
           this.app,

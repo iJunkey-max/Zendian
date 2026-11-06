@@ -2,6 +2,28 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
 
+const placementSource = fs.readFileSync('src/ui/panel-placement.ts', 'utf8');
+const placementAst = ts.createSourceFile('placement.ts', placementSource, ts.ScriptTarget.Latest, true);
+const placementFn = placementAst.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'placeNearAnchor');
+assert(placementFn);
+const placementJS = ts.transpileModule(`${placementFn.getText(placementAst).replace(/^export\s+/, '')}\nreturn placeNearAnchor;`, {
+  compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
+}).outputText;
+const placeNearAnchor = new Function(placementJS)();
+const intersectionFn = placementAst.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'intersectPanelBounds');
+assert(intersectionFn);
+const intersectionJS = ts.transpileModule(`${intersectionFn.getText(placementAst).replace(/^export\s+/, '')}\nreturn intersectPanelBounds;`, {
+  compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
+}).outputText;
+const intersectPanelBounds = new Function(intersectionJS)();
+const bounds = { left: -1920, top: 0, width: 1920, height: 1080 };
+assert.deepEqual(placeNearAnchor({ x: -1500, y: 300 }, { width: 500, height: 700 }, bounds), { x: -1750, y: 200 });
+assert.deepEqual(placeNearAnchor({ x: -10, y: 1050 }, { width: 500, height: 700 }, bounds), { x: -512, y: 368 });
+assert.deepEqual(placeNearAnchor({ x: -1915, y: 2 }, { width: 3000, height: 2000 }, bounds), { x: -1908, y: 12 });
+assert.deepEqual(intersectPanelBounds(bounds, { left: -1800, top: 100, width: 1000, height: 800 }), { left: -1800, top: 100, width: 1000, height: 800 });
+assert.deepEqual(intersectPanelBounds(bounds, { left: -2000, top: -50, width: 1000, height: 600 }), { left: -1920, top: 0, width: 920, height: 550 });
+console.log('✓ 面板围绕触发点显示，并限制在屏幕可用范围内');
+
 // Execute the actual view methods without importing Obsidian's DOM runtime.
 const source = fs.readFileSync('src/homepage/ProjectConsoleView.ts', 'utf8');
 assert(source.includes('private watchedProjectPath = "";'));
@@ -22,6 +44,28 @@ assert(maintenanceSource.includes('rollbackHistory'));
 assert(maintenanceSource.includes('rollbackLinks'));
 assert(maintenanceSource.includes('文件改名已确认，但项目重新核对失败'));
 const ast = ts.createSourceFile('view.ts', source, ts.ScriptTarget.Latest, true);
+const helpers = ['sortPendingProjectTasks', 'latestDeliverable'].map(name => {
+  const fn = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
+  assert(fn, `Missing dashboard helper ${name}`);
+  return fn.getText(ast);
+}).join('\n');
+const helperJS = ts.transpileModule(`${helpers}\nreturn {sortPendingProjectTasks, latestDeliverable};`, {
+  compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
+}).outputText;
+const { sortPendingProjectTasks, latestDeliverable } = new Function(helperJS)();
+assert.deepEqual(sortPendingProjectTasks([]), []);
+const sampleTasks = [
+  { text: '普通', priority: 'P2', completed: false },
+  { text: '已完成', priority: 'P0', completed: true },
+  { text: '优先且较晚', priority: 'P1', due: '2026-11-09', completed: false },
+  { text: '优先且较早', priority: 'P1', due: '2026-11-08', completed: false },
+];
+assert.deepEqual(sortPendingProjectTasks(sampleTasks).map(x => x.i), [3, 2, 0]);
+assert.deepEqual(sortPendingProjectTasks([sampleTasks[0]]).map(x => x.t.text), ['普通']);
+assert.equal(latestDeliverable([]), undefined);
+assert.equal(latestDeliverable([{ name: '旧' }, { name: '末项' }]).name, '末项');
+assert.equal(latestDeliverable([{ name: '新', createdAt: '2026-11-06' }, { name: '旧', createdAt: '2026-01-01' }, { name: '无日期' }]).name, '新');
+console.log('✓ 首页摘要复用待办排序，并按有效日期或原记录顺序选择最新交付物');
 const view = ast.statements.find(node => ts.isClassDeclaration(node) && node.name?.text === 'ProjectConsoleView');
 assert(view);
 const names = ['loadProjectData', 'refreshProjectTabTitle', 'queueProjectPathChange', 'applyProjectPathChange', 'stopProjectWatch', 'openCreateCheckpointPanel', 'matchesTimelineFilter', 'openSubmitDeliverablePanel', 'openAddTaskModal', 'editDescription'];
