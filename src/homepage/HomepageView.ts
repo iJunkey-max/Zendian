@@ -1922,17 +1922,19 @@ export class HomepageView extends ItemView {
 
   private async openProjectCreateWindow(): Promise<boolean> {
     if (!this.shouldOpenPanelsInNewWindow()) return false;
+    let createdLeaf: WorkspaceLeaf | null = null;
     try {
       const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_PROJECT_CREATE)[0];
       if (existing) {
         await this.app.workspace.revealLeaf(existing);
         return true;
       }
-      const leaf = this.app.workspace.openPopoutLeaf({ size: { width: 760, height: 620 } });
+      const leaf = createdLeaf = this.app.workspace.getLeaf("window");
       await leaf.setViewState({ type: VIEW_TYPE_PROJECT_CREATE, active: true });
       void this.app.workspace.revealLeaf(leaf);
       return true;
     } catch (error) {
+      if (createdLeaf) { try { await createdLeaf.detach(); } catch (cleanupError) { console.warn("[Homepage] Failed to close popout.", cleanupError); } }
       console.warn("[Homepage] Failed to open project create popout, falling back to modal.", error);
       return false;
     }
@@ -2216,17 +2218,19 @@ export class HomepageView extends ItemView {
 
   private async openTaskCreateWindow(): Promise<boolean> {
     if (!this.shouldOpenPanelsInNewWindow()) return false;
+    let createdLeaf: WorkspaceLeaf | null = null;
     try {
       const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_HOMEPAGE_TASK_CREATE)[0];
       if (existing) {
         await this.app.workspace.revealLeaf(existing);
         return true;
       }
-      const leaf = this.app.workspace.openPopoutLeaf({ size: { width: 720, height: 560 } });
+      const leaf = createdLeaf = this.app.workspace.getLeaf("window");
       await leaf.setViewState({ type: VIEW_TYPE_HOMEPAGE_TASK_CREATE, active: true });
       void this.app.workspace.revealLeaf(leaf);
       return true;
     } catch (error) {
+      if (createdLeaf) { try { await createdLeaf.detach(); } catch (cleanupError) { console.warn("[Homepage] Failed to close popout.", cleanupError); } }
       console.warn("[Homepage] Failed to open task create popout, falling back to modal.", error);
       return false;
     }

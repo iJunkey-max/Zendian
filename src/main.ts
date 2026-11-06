@@ -311,6 +311,9 @@ export default class ZENdianPlugin extends Plugin {
   onunload() {
     this.unloading = true;
     this.focusClock?.unload();
+    for (const type of [VIEW_TYPE_PROJECT_CREATE, VIEW_TYPE_HOMEPAGE_TASK_CREATE, VIEW_TYPE_PROJECT_TASK_CREATE, VIEW_TYPE_ZENDIAN_FORM_POPOUT]) {
+      this.app.workspace.detachLeavesOfType(type);
+    }
     // 在卸载清理期间立即启动所有待处理写入。
     void Promise.all([
       this.settingsManager?.flush(),

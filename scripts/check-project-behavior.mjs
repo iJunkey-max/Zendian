@@ -16,6 +16,9 @@ function load(path) {
   return module.exports;
 }
 const {ProjectRegistry}=load('src/homepage/services/ProjectRegistry.ts');
+const stagingFile={path:'ZENdian-project-staging-12345678-1234-1234-1234-123456789abc/项目主页.home',extension:'home'};
+const stagingRegistry=new ProjectRegistry({vault:{getFiles:()=>[stagingFile],read:async()=>{throw Error('暂存文件不应被扫描')}}});
+assert.deepEqual(await stagingRegistry.discover(),{projects:[],errors:[]});
 const {assertMissingProjectRelinkSafe}=load('src/homepage/services/project-relink.ts');
 assert.doesNotThrow(()=>assertMissingProjectRelinkSafe('旧位置','missing',[{projectId:null,folderPath:'新位置',name:'恢复副本'}]));
 assert.throws(()=>assertMissingProjectRelinkSafe('旧位置','missing',[{projectId:'new',folderPath:'旧位置',name:'新项目'}]),/原位置 .* 已被项目/);
@@ -423,7 +426,9 @@ const creationBeforeFailure=new Set(creationNodes.keys());
 const failedCreatorApp={vault:{...creationApp.vault,createFolder:async path=>{if(path.endsWith('/资料'))throw Error('模拟项目目录写入失败');return creationApp.vault.createFolder(path)}}};
 await assert.rejects(()=>new ProjectCreationService(failedCreatorApp).create({...creationOptions,name:'失败项目'}),/已清理暂存目录/);
 assert.equal([...creationNodes.keys()].some(path=>path.includes('/失败项目')),false);
-assert.deepEqual([...creationNodes.keys()].filter(path=>!creationBeforeFailure.has(path)&&path.includes('project-staging/')),[]);
+assert.deepEqual([...creationNodes.keys()].filter(path=>!creationBeforeFailure.has(path)&&path.startsWith('ZENdian-project-staging-')),[]);
+assert(creationWrites.some(path=>path.startsWith('ZENdian-project-staging-')));
+assert(!creationWrites.some(path=>path.startsWith('.obsidian/')));
 await assert.rejects(()=>creator.create(creationOptions),/已存在/);
 await assert.rejects(()=>creator.create({...creationOptions,name:'子项目',parentPath:createdProject.path}),/另一项目/);
 const beforeCreation=creationWrites.length;

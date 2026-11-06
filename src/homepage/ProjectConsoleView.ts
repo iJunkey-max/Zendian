@@ -1891,9 +1891,10 @@ export class ProjectConsoleView extends FileView {
 
   private async openAddTaskWindow(): Promise<boolean> {
     if (!this.shouldOpenPanelsInNewWindow()) return false;
+    let createdLeaf: WorkspaceLeaf | null = null;
     try {
       const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_PROJECT_TASK_CREATE)[0];
-      const leaf = existing || this.app.workspace.openPopoutLeaf({ size: { width: 720, height: 560 } });
+      const leaf = existing || (createdLeaf = this.app.workspace.getLeaf("window"));
       await leaf.setViewState({
         type: VIEW_TYPE_PROJECT_TASK_CREATE,
         active: true,
@@ -1902,6 +1903,7 @@ export class ProjectConsoleView extends FileView {
       void this.app.workspace.revealLeaf(leaf);
       return true;
     } catch (error) {
+      if (createdLeaf) { try { await createdLeaf.detach(); } catch (cleanupError) { console.warn("[ProjectConsoleView] Failed to close popout.", cleanupError); } }
       console.warn("[ProjectConsoleView] Failed to open task create popout, falling back to modal.", error);
       return false;
     }

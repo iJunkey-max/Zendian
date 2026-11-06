@@ -3,7 +3,6 @@ import { ProjectRegistry } from "./ProjectRegistry";
 import { createDefaultConsoleData } from "./project-factory";
 import { PROJECT_HOME_FILENAME } from "./ProjectHomeFileResolver";
 import { isPortableProjectPath } from "../../utils/project-path";
-import { getPluginDataPath } from "../../utils/plugin-paths";
 
 export interface ProjectCreationOptions {
   name: string;
@@ -49,32 +48,20 @@ export class ProjectCreationService {
       if (ancestor && !(ancestor instanceof TFolder)) throw new Error("存放路径中存在同名文件");
     }
     let published = false;
+    let stageCreated = false;
     const icons: Record<string, string> = {};
-    const stageRoot = getPluginDataPath(this.app, "project-staging");
-    const stagePath = `${stageRoot}/${globalThis.crypto.randomUUID()}`;
-    const ensureFolder = async (folderPath: string): Promise<void> => {
-      const parts = folderPath.split("/").filter(Boolean);
-      let current = "";
-      for (const part of parts) {
-        current = current ? `${current}/${part}` : part;
-        const existing = this.app.vault.getAbstractFileByPath(current);
-        if (existing) {
-          if (!(existing instanceof TFolder)) throw new Error(`暂存路径中存在同名文件：${current}`);
-          continue;
-        }
-        await this.app.vault.createFolder(current);
-      }
-    };
+    // Vault APIs do not index the hidden configuration directory.
+    const stagePath = `ZENdian-project-staging-${globalThis.crypto.randomUUID()}`;
     const removeStage = async (): Promise<void> => {
       const stage = this.app.vault.getAbstractFileByPath(stagePath);
-      if (stage) await this.app.vault.delete(stage, true);
+      if (stageCreated && stage) await this.app.vault.delete(stage, true);
     };
     try {
       // Keep the visible project absent until every child folder and the home
       // marker are ready. The selected parent is user-owned and is never
       // removed during cleanup.
-      await ensureFolder(stageRoot);
       await this.app.vault.createFolder(stagePath);
+      stageCreated = true;
       for (const template of templates) {
         const directory = `${stagePath}/${template.name}`;
         await this.app.vault.createFolder(directory);

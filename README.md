@@ -37,7 +37,7 @@ ZENdian 是一款面向 Obsidian 的工作空间增强插件。它在不改变 M
 - 同时适配桌面端、平板与手机端，并支持 Obsidian 原生浅色/深色模式。
 
 > [!IMPORTANT]
-> ZENdian 当前要求 **Obsidian 1.12.7 或更高版本**。升级前建议备份知识库，并阅读 [V4.0.00 发布说明](./notes/RELEASE_NOTES_4.0.00.md)。
+> ZENdian 当前要求 **Obsidian 1.12.7 或更高版本**。升级前建议备份知识库，并阅读 [V4.0.02 发布说明](./notes/RELEASE_NOTES_4.0.02.md)；项目数据迁移背景见 [V4.0.00 发布说明](./notes/RELEASE_NOTES_4.0.00.md)。
 
 ## 核心能力
 
@@ -57,7 +57,7 @@ ZENdian 是一款面向 Obsidian 的工作空间增强插件。它在不改变 M
 - 交付物可按项目分类配置目录，并支持打开、删除和旧目录兼容；
 - 发布构建可生成包含 `main.js`、`manifest.json` 与 `styles.css` 的标准插件包。
 
-项目管理使用稳定 `projectId` 识别项目，分类和显示名称独立于目录位置。直接在文件管理器或 Obsidian 文件树中移动、重命名项目文件夹后，启动核对器会按当前 `.home` 重新关联；“项目检查与关联”可处理缺失、重复、嵌套和根目录冲突。关闭 Obsidian 期间无法记录逐次操作，重新打开后只记录当前可验证的文件事实，具体规则见 [数据与恢复说明](./docs/项目管理数据与恢复说明.md)。
+项目管理使用稳定 `projectId` 识别项目，分类和显示名称独立于目录位置。直接在文件管理器或 Obsidian 文件树中移动、重命名项目文件夹后，启动核对器会按当前 `.home` 重新关联；“项目检查与关联”可处理缺失、重复、嵌套和根目录冲突。关闭 Obsidian 期间无法记录逐次操作，重新打开后只记录当前可验证的文件事实，具体规则见 [数据与恢复说明](./docs/项目数据与恢复.md)。
 
 ### 专注与复盘
 
@@ -258,8 +258,10 @@ Pull Request 应保持改动范围清晰，并确保 `npm run check` 与 `npm ru
 
 ## 版本与许可
 
-- 当前版本：**V4.0.00**
+- 当前版本：**V4.0.02**
 - [更新日志](./CHANGELOG.md)
+- [V4.0.02 发布说明](./notes/RELEASE_NOTES_4.0.02.md)
+- [V4.0.01Fix 发布说明](./notes/RELEASE_NOTES_4.0.01Fix.md)
 - [V4.0.00 发布说明](./notes/RELEASE_NOTES_4.0.00.md)
 - [V3.2.05 发布说明](./notes/RELEASE_NOTES_3.2.05.md)
 - [V3.2.03 发布说明](./notes/RELEASE_NOTES_3.2.03.md)

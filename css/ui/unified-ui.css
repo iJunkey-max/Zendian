@@ -162,8 +162,12 @@ body {
 
 .zendian-settings-wrapper :is(input, select, textarea) {
     border-color: var(--zd-ui-divider);
-    background: var(--zd-ui-page);
+    background-color: var(--zd-ui-page);
     color: var(--zd-ui-text);
+}
+
+.zendian-settings-wrapper select.dropdown {
+    background-repeat: no-repeat;
 }
 
 .zendian-settings-wrapper :is(input, select, textarea, button):focus-visible {

@@ -14,6 +14,7 @@ import { IconPickerModal } from "./icon-picker-modal";
 import { DonationModal, type DonationChannel } from "./donation-modal";
 import { confirmAction } from "./confirm-modal";
 import { getProjectSubfolderName, validateProjectSubfolderTemplate } from "../homepage/project-subfolders";
+import { isPortableProjectPath } from "../utils/project-path";
 
 // ============================================================
 // 设置项定义
@@ -817,6 +818,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
   private activeTabId = "zendian-about";
   private navItems = new Map<string, HTMLElement>();
   private contentEl: HTMLElement | null = null;
+  private searchQuery = "";
+  private categoryFoldersPending = new Set<string>();
 
   constructor(app: App, plugin: ZENdianPlugin, settingsManager: SettingsManager, moduleManager: ModuleManager) {
     super(app, plugin);
@@ -841,7 +844,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
     const actions = toolbar.createDiv("zendian-toolbar-actions");
     const search = actions.createEl("input", { cls: "zendian-search", type: "search", placeholder: "搜索设置…" });
     search.setAttribute("aria-label", "搜索设置");
-    search.addEventListener("input", () => this.renderSearch(search.value));
+    search.value = this.searchQuery;
+    search.addEventListener("input", () => { this.searchQuery = search.value; this.renderSearch(search.value); });
     const resetAll = actions.createEl("button", { cls: "zendian-reset-all", text: "全部恢复默认" });
     resetAll.addEventListener("click", async () => {
       if (!await confirmAction(this.app, {
@@ -851,7 +855,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
       })) return;
       await this.settingsManager.updateMultiple(structuredClone(DEFAULT_SETTINGS));
       new Notice("ZENdian 设置已恢复默认");
-      this.renderActiveTab();
+      this.refreshContent();
     });
 
     const shell = wrapper.createDiv("zendian-settings-shell");
@@ -871,12 +875,27 @@ export class ZENdianSettingTab extends PluginSettingTab {
     }
 
     this.contentEl = shell.createDiv("zendian-content");
-    this.renderActiveTab();
+    this.refreshContent();
+  }
+
+  private refreshContent(): void {
+    const content = this.contentEl;
+    if (!content) return;
+    const scrolls: Array<{ element: HTMLElement; top: number; left: number }> = [];
+    for (let element: HTMLElement | null = content; element; element = element.parentElement) {
+      scrolls.push({ element, top: element.scrollTop, left: element.scrollLeft });
+    }
+    if (this.searchQuery.trim()) this.renderSearch(this.searchQuery);
+    else this.renderActiveTab();
+    for (const { element, top, left } of scrolls) { element.scrollTop = top; element.scrollLeft = left; }
   }
 
   private switchTab(tabId: string): void {
     if (tabId === this.activeTabId) return;
     this.activeTabId = tabId;
+    this.searchQuery = "";
+    const search = this.contentEl?.closest(".zendian-settings-wrapper")?.querySelector<HTMLInputElement>(".zendian-search");
+    if (search) search.value = "";
     for (const [id, item] of this.navItems) {
       item.classList.toggle("active", id === tabId);
       item.setAttribute("aria-current", id === tabId ? "page" : "false");
@@ -1003,7 +1022,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
           await this.settingsManager.updateMultiple(def.set(current, def.get(DEFAULT_SETTINGS) as never));
         }
         new Notice(`${section.titleZh}已恢复默认`);
-        this.renderActiveTab();
+        this.refreshContent();
       });
     }
     const sectionContent = card.createDiv("zendian-section-content");
@@ -1057,7 +1076,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
       ignoreIndex = -1,
     ): { message: string; field: "number" | "name" } | null => {
       if (!/^\d+$/.test(number)) return { message: "标签编号只能包含数字", field: "number" };
-      if (!name || /[\\/:*?"<>|]/.test(name) || name === "." || name === "..") {
+      if (!name || name.includes("/") || !isPortableProjectPath(`${number}_${name}`)) {
         return { message: "请输入有效的标签名字，不能包含 \\ / : * ? \" < > |", field: "name" };
       }
       if (categories.some((category, index) => index !== ignoreIndex && category.number === number)) {
@@ -1079,6 +1098,21 @@ export class ZENdianSettingTab extends PluginSettingTab {
 
       for (let i = 0; i < categories.length; i++) {
         const category = categories[i];
+        const categoryPath = getProjectCategoryFolder(category);
+        if (/^\d+$/.test(category.number) && isPortableProjectPath(categoryPath) && !categoryPath.includes("/")) {
+          const existing = this.app.vault.getAbstractFileByPath(categoryPath);
+          if (!existing && !this.categoryFoldersPending.has(categoryPath)) {
+            this.categoryFoldersPending.add(categoryPath);
+            void this.app.vault.createFolder(categoryPath).catch((error: unknown) => {
+              if (!(this.app.vault.getAbstractFileByPath(categoryPath) instanceof TFolder)) {
+                console.error("[ZENdian] 创建分类文件夹失败:", error);
+                new Notice(`无法创建分类文件夹 ${categoryPath}：${String(error)}`);
+              }
+            }).finally(() => this.categoryFoldersPending.delete(categoryPath));
+          } else if (existing && !(existing instanceof TFolder)) {
+            new Notice(`无法创建分类文件夹：已有同名文件 ${categoryPath}`);
+          }
+        }
         const row = list.createDiv("zendian-project-category-row");
         let selectedIcon = category.icon
           || this.settingsManager.getSettings().iconSystem.customIcons[getProjectCategoryFolder(category)]
@@ -1131,7 +1165,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
           delete projectDeliverableFolders[category.number];
           await this.settingsManager.update("homepage", { projectCategories, projectSubfolders, projectDeliverableFolders });
           new Notice(`已删除分类“${category.name}”，文件夹 ${getProjectCategoryFolder(category)} 已保留`);
-          this.display();
+          this.refreshContent();
         });
 
         const updateEditState = () => {
@@ -1243,7 +1277,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
             } else {
               new Notice(`已更新分类并同步文件夹为 ${newFolderPath}`);
             }
-            this.display();
+            this.refreshContent();
           } catch (error) {
             if (renamed && oldFolder instanceof TFolder) {
               try {
@@ -1311,7 +1345,9 @@ export class ZENdianSettingTab extends PluginSettingTab {
     numberInput.addEventListener("input", updatePreview);
     nameInput.addEventListener("input", updatePreview);
 
+    let addingCategory = false;
     const addCategory = async () => {
+      if (addingCategory) return;
       const number = numberInput.value.trim();
       const name = nameInput.value.trim();
       const current = this.settingsManager.getSettings();
@@ -1331,6 +1367,8 @@ export class ZENdianSettingTab extends PluginSettingTab {
         return;
       }
 
+      addingCategory = true;
+      addButton.disabled = true;
       try {
         if (!existing) await this.app.vault.createFolder(folderPath);
         await this.settingsManager.updateMultiple({
@@ -1347,10 +1385,13 @@ export class ZENdianSettingTab extends PluginSettingTab {
         updatePreview();
         renderList();
         new Notice(existing ? `已添加分类并关联文件夹 ${folderPath}` : `已添加分类并创建文件夹 ${folderPath}`);
-        this.display();
+        this.refreshContent();
       } catch (error) {
         console.error("[ZENdian] 创建项目分类失败:", error);
-        new Notice(`创建项目分类失败：${folderPath}`);
+        new Notice(`创建项目分类失败：${folderPath}（${String(error)}）`);
+      } finally {
+        addingCategory = false;
+        addButton.disabled = false;
       }
     };
 
@@ -1646,7 +1687,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
     const update = async (value: boolean | string | number, refresh = false) => {
       const current = this.settingsManager.getSettings();
       await this.settingsManager.updateMultiple((def.set as (s: PluginSettings, value: never) => Partial<PluginSettings>)(current, value as never));
-      if (refresh) this.renderActiveTab();
+      if (refresh) this.refreshContent();
     };
 
     switch (def.type) {
@@ -1750,7 +1791,7 @@ export class ZENdianSettingTab extends PluginSettingTab {
       .onClick(async () => {
         const current = this.settingsManager.getSettings();
         await this.settingsManager.updateMultiple((def.set as (s: PluginSettings, value: never) => Partial<PluginSettings>)(current, def.get(DEFAULT_SETTINGS) as never));
-        this.renderActiveTab();
+        this.refreshContent();
       }));
   }
 

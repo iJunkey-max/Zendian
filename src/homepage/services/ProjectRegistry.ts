@@ -18,7 +18,8 @@ export class ProjectRegistry {
   async discover(): Promise<{ projects: RegisteredProject[]; errors: string[] }> {
     const projects: RegisteredProject[] = [];
     const errors: string[] = [];
-    for (const file of this.app.vault.getFiles().filter(file => file.extension === "home")) {
+    for (const file of this.app.vault.getFiles().filter(file => file.extension === "home" &&
+      !/^ZENdian-project-staging-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//i.test(file.path))) {
       try {
         const data = JSON.parse(await this.app.vault.read(file)) as ProjectConsoleData;
         if (!isProjectData(data)) {

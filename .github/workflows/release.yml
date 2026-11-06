@@ -24,9 +24,18 @@ jobs:
           npm install
           npm run build
 
+      - name: Find release notes
+        id: release_notes
+        run: |
+          file="notes/RELEASE_NOTES_${GITHUB_REF_NAME}.md"
+          if [ -f "$file" ]; then
+            echo "path=$file" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: ${{ steps.release_notes.outputs.path }}
           files: |
             dist/main.js
             dist/styles.css

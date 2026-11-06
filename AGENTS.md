@@ -1,75 +1,148 @@
 # AGENTS.md
 
-本文件为 Codex (Codex.ai/code) 在此仓库中工作时提供指导。
+本文件为 AI 编程助手（Codex、Claude Code 等）在此仓库中工作时提供指导。详细架构与文件职责索引见 [docs/开发者指南.md](docs/开发者指南.md)（本文件的超集）；用户功能与安装说明见 [README.md](README.md)。
+
+> **Obsidian API 不能靠猜。** 官方 API 仓库：https://github.com/obsidianmd/obsidian-api 。写任何 Obsidian DOM / API 相关代码前，先查文档，或用 DevTools / 真实 DOM 片段确认结构。
 
 ## 项目概述
 
-ZENdian 是一个 Obsidian UI 美化插件，集成了 Border 主题、Phycat 苹果风格色彩叠加、增强 Markdown 渲染和 Style Settings。使用 TypeScript 编写，esbuild 构建。
+ZENdian 是 Obsidian 的工作空间增强插件（桌面端 + 移动端），TypeScript 编写、esbuild 构建。它不是纯视觉主题，而是一套围绕「记录—执行—复盘」的工作流，含两层能力：
+
+1. **外观模块（24 个）**：切换 `document.body` 的 class、注入 CSS 自定义属性，增强编辑器、文件树、标题、Callout、代码块、Banner、关系图谱等界面。
+2. **生产力功能**：智能首页、项目控制台（`.home` 文件）、结构化任务、项目时间线、历史快照、交付物发布、数据统计与专注计时。
+
+> 历史说明：早期版本依赖 Obsidian「Style Settings」插件与 `@settings` CSS 块，现已移除——插件自带设置页是唯一设置入口（见 CHANGELOG）。
 
 ## 常用命令
 
-- `npm run build` — 完整生产构建（CSS + JS）
-- `npm run build:js` — 仅构建 TypeScript（esbuild）
-- `npm run build:css` — 仅构建 CSS（合并 css/ 目录文件到 dist/styles.css）
-- `npm run dev` — 监听模式，带 sourcemaps
+| 命令 | 用途 |
+| --- | --- |
+| `npm run dev` | 监听 TS 变化，输出带内联 sourcemap 的 `dist/main.js` |
+| `npm run build` | 依次构建 `dist/styles.css` + 生产版 `dist/main.js` |
+| `npm run build:js` | 仅构建 JS（esbuild） |
+| `npm run build:css` | 仅合并 CSS 到 `dist/styles.css` |
+| `npm run typecheck` | 严格类型 + 未使用/不可达代码检查（`tsc --noEmit`） |
+| `npm run check` | 运行全部静态契约检查（见下） |
 
-项目未配置测试套件或代码检查工具。
+`npm run check` 依次执行：`typecheck` + `check:settings` + `check:safety` + `check:css` + `check:typewriter` + `check:projects`（含 3 个子脚本）。这些是 `scripts/check-*.mjs` 的契约回归脚本，**没有单元测试框架**。
 
-## 架构设计
+发布产物：`dist/main.js`、`dist/styles.css`、`manifest.json`。
 
-**入口文件**：`src/main.ts` — 导出 `ZENdianPlugin extends Plugin`
+## 架构总览
 
-**启动流程**：EventBus → SettingsManager.init() → ModuleManager.register(21 个模块) → loadAll() → 监听 css-change → 注册设置面板
+```
+src/main.ts       组合根：组装服务、注册模块/View/命令、生命周期清理
+src/core/         事件总线、设置管理、模块生命周期（无具体界面功能）
+src/modules/      24 个可独立加载/卸载的外观模块
+src/services/     跨功能数据服务（ActivityLog / TaskSync / ProjectMetadata）
+src/focus-clock/  专注时钟控制器
+src/homepage/     主页、项目控制台及约 20 个领域服务
+src/ui/           设置页、弹出表单、图标选择等 UI
+src/utils/        DOM / 日期 / 错误 / SVG / ZIP 等通用工具
+css/              分层 CSS 源文件（base / overlays / ui）
+```
 
-### 核心服务 (`src/core/`)
+边界：`main.ts` 只做组装；核心与模块不写具体业务；项目数据业务放在 `homepage/services/`，跨功能服务放 `src/services/`；TS 管理状态与 CSS 变量，最终视觉尽量由 CSS 完成。
 
-- **EventBus** — 发布/订阅模式，两个事件：`SETTINGS_CHANGED`、`THEME_CHANGED`
-- **SettingsManager** — 结构化设置持久化，防抖自动保存（200ms），支持从旧扁平键格式（`"groupId@@settingId"`）迁移
-- **ModuleManager** — 模块注册、生命周期管理（`load`/`unload`/`loadAll`/`unloadAll`）、事件分发
+## 核心接口
 
-### 模块系统 (`src/modules/`)
+### 功能模块（`IFeatureModule`）
 
-21 个功能模块，均实现 `IFeatureModule` 接口：
-- `id` / `name` — 标识和显示名
-- `load(ctx: ModuleContext)` — 初始化，应用设置到 DOM
-- `unload()` — 清理 DOM 修改、定时器、观察者
+所有 `src/modules/*.module.ts` 实现该接口：
+
+- `readonly id` / `readonly name` — 唯一标识与显示名
+- `load(ctx: ModuleContext): Promise<void>` — 初始化，应用设置到 DOM（须可安全调用一次）
+- `unload(): void` — 清理自己添加的 class、CSS 变量、DOM、事件、Timer、Observer（必须对称清理）
 - `onSettingsChanged?(changedKeys, settings)` — 响应设置变更
 - `onThemeChange?(isDark)` — 响应主题切换
 
-`ModuleContext` 提供：EventBus、设置获取器、CodeMirror 6 扩展注册器。
+`ModuleContext` 提供：`events`（事件总线）、`getSettings()`、`getSetting(key)`、`registerEditorExtension(ext)`（注册 CodeMirror 6 扩展）、`app`（Obsidian `App`）、`updateSettings(updates)`（批量更新 + 持久化 + 广播）。
 
-模块通过切换 `document.body` 上的 CSS 类名和注入/移除 CSS 自定义属性来工作，CSS 层消费这些类名和变量。
+### 事件（EventBus）
 
-### 设置系统 (`src/types/settings.types.ts`)
+`EventBus.on()` 返回取消订阅函数；处理器异常被隔离记录，不阻断其他监听器。预定义事件（`Events`）：
 
-`PluginSettings` 是结构化接口，包含 22 个模块级子接口（如 `AutoHideSettings`、`CardLayoutSettings`）。`DEFAULT_SETTINGS` 提供默认值。JS 设置面板（`src/ui/settings-tab.ts`）通过声明式 `MENU_CONFIG` 数组渲染 7 个标签页。
+| 事件 | 参数 | 触发时机 |
+| --- | --- | --- |
+| `settings:changed` | `changedKeys, settings` | 设置持久化后 |
+| `theme:changed` | `isDark` | Obsidian `css-change` 后 |
+| `activity:stats-changed` | — | 活动 / 专注统计变化后 |
+| `focus-mode:temporary-changed` | `shouldEnableTemporarily`（布尔） | 专注时钟临时切换编辑器专注模式 |
 
-### CSS 构建 (`scripts/build-css.mjs`)
+### 设置（SettingsManager）
 
-合并顺序：`border-settings.css` → `border-theme.css` → `phycat-overlay.css` → `style-settings-ui.css`。去重 `@settings` 块。输出：`dist/styles.css`。
+`PluginSettings` + `DEFAULT_SETTINGS`（`src/types/settings.types.ts`）是设置的唯一数据契约，含 **25 个顶层设置组**：24 个外观模块 + `homepage`。写入走 `settingsManager.update()` / `updateMultiple()`（200ms 防抖 + 串行队列），**不要绕过它直接改对象后保存**，否则模块收不到变更事件。卸载前调用 `flush()` 落盘。旧扁平键 `"groupId@@settingId"` 与旧结构在 `migrate()` 中迁移。
 
-CSS 使用 `@settings` 块（CSS 注释中的 YAML），供 Obsidian Style Settings 插件消费。
+## 数据与服务层
 
-### 颜色系统
+- **TaskSyncService** — 只读写 `项目主页.home` 里的 `tasks` 数组；对外优先级 `urgent/high/medium/low`，存储层 `P0/P1/P2/P3`，服务自动转换。
+- **ActivityLogService** — 笔记/任务活动、按日统计、专注会话持久化。
+- **ProjectMetadataService** — 项目元数据、标签、里程碑、交付物兼容 API。
+- **FocusClockController** — 状态栏专注时钟、会话状态机、休息、声音、记录。
 
-所有颜色源自三个 HSL CSS 变量：`--accent-h`、`--accent-s`、`--accent-l`。通过 `getComputedStyle()` 与 Obsidian 原生强调色同步。
+项目控制台通过单例 `getServiceManager(app, taskSyncService)` 访问领域服务（`projectData` / `timeline` / `statistics` / `fileWatcher` / `snapshot` 等）。**项目的「事实来源」是项目根目录下的 `项目主页.home`（JSON）**；整体更新必须走 `mutateProjectHome()`（按项目串行 + `Vault.process` 防并发覆盖），不要自行实现「先读后写」。
 
-## 关键开发经验
+## CSS 构建与颜色系统
 
-详细内容见 `.Codex/experence.md`。
+`scripts/build-css.mjs` 按固定顺序合并到 `dist/styles.css`，靠后的文件层叠优先级更高：
 
-- **Obsidian DOM 结构不能靠猜**。写选择器前必须用 DevTools 或用户提供的 DOM 片段确认真实结构。
-- **CSS 子代选择器（`>`）在 Obsidian 动态 DOM 中极脆弱**，因为存在多层 wrapper div。优先使用 JS 设置 per-element CSS 变量，CSS 负责消费。
-- **读取主题变量**：用 `getComputedStyle(document.body)`，而非 `element.style`（后者只读内联样式）。
-- **插件 `onload()` 执行时 DOM 可能未就绪**。用 `setInterval`（200ms，最多 50 次）轮询目标元素，找到后挂 MutationObserver。
-- **JS 只负责设置 CSS 变量**，不要直接操作 `element.style.backgroundColor` 等。CSS 通过 `var()` 消费变量。
-- **主题切换不会自动通知插件**。需监听 `app.workspace.on("css-change")`（未文档化事件）并广播给模块。
-- **MutationObserver 回调需要防抖**，用 `requestAnimationFrame` 包裹，避免高频 DOM 变更导致性能问题。
-- **线性透明度衰减在低值下失效**。使用指数衰减（`Math.pow(0.6, level)`）以确保层级间有可见差异。
+1. `css/design-system.css` — 设计令牌与共享组件基础
+2. `css/base/border-theme.css` — Border 风格主体
+3. `css/overlays/phycat-overlay.css` — 苹果风颜色叠加
+4. `css/overlays/graph.css` — 关系图谱美化
+5. `css/overlays/banner.css` — Banner
+6. `css/overlays/focus-clock.css` — 专注时钟
+7. `css/overlays/homepage.css` — 智能首页
+8. `css/overlays/console-enhanced.css` — 项目控制台
+9. `css/ui/style-settings-ui.css` — 插件设置页
+10. `css/ui/unified-ui.css` — 最终统一层
 
-## 添加新模块
+⚠️ 新增 CSS 文件必须显式加入 `CSS_MERGE_ORDER`，否则不会进入发布产物。
 
-1. 创建 `src/modules/<name>.module.ts`，实现 `IFeatureModule`
-2. 在 `src/types/settings.types.ts` 中添加设置子接口，并在 `DEFAULT_SETTINGS` 中设置默认值
-3. 在 `src/main.ts` 中导入并注册（`moduleManager.register(new NameModule())`）
-4. 在 `css/` 目录下添加对应 CSS 文件
+颜色派生自三个 HSL 变量 `--accent-h` / `--accent-s` / `--accent-l`，用 `getComputedStyle(document.body)` 与 Obsidian 原生强调色同步。
+
+## 关键开发经验（易错点）
+
+- 不要猜测 Obsidian DOM，写选择器前先用 DevTools 或真实 DOM 片段确认。
+- 动态 DOM 中避免依赖脆弱的子代选择器 `>`；优先 JS 设 per-element CSS 变量，CSS 用 `var()` 消费。
+- 主题变量从 `getComputedStyle(document.body)` 读，不要从 `element.style` 读。
+- `onload()` 时布局可能未就绪；需要 DOM 的功能用 `onLayoutReady()` 或有上限的轮询。
+- 高频 MutationObserver 回调用 `requestAnimationFrame` 合并。
+- JS 优先设 class / CSS 变量，避免直接写 `element.style.backgroundColor` 之类的视觉属性。
+- 所有用户输入路径必须规范化并限制在预期项目/插件目录内；删除 Vault 文件用 `app.vault.trash()` 而非永久删除。
+- 缓存返回可变对象时隔离引用；写操作后同步失效所有派生缓存。
+- 新代码必须通过 `strict`、`noUnusedLocals`、`noUnusedParameters` 和不可达代码检查。
+
+## 常见扩展方式
+
+### 新增外观模块
+
+1. 在 `src/modules/` 创建 `<name>.module.ts`，实现 `IFeatureModule`。
+2. 在 `settings.types.ts` 加设置接口、`PluginSettings` 字段和默认值。
+3. 在 `src/ui/settings-tab.ts` 加对应设置 UI。
+4. 在 `src/main.ts` 导入并 `moduleManager.register(new XxxModule())`。
+5. 视觉规则加入对应 CSS 源文件，或新建文件并更新 `CSS_MERGE_ORDER`。
+6. 运行 `npm run check`，并验证卸载后无遗留 class / 变量 / Observer / Timer。
+
+### 新增项目数据字段
+
+1. 更新 `ProjectConsoleData`（`src/homepage/types.ts`）。
+2. 在 `ProjectHomeStore.normalizeData()` 补默认值 / 迁移逻辑。
+3. 更新 `ProjectDataService` 的规范化与缓存失效范围。
+4. 更新创建项目的默认数据与相关 UI；若字段影响报告 / 统计 / 历史，同步更新对应服务。
+
+## 提交前检查
+
+```bash
+npm run check
+npm run build
+```
+
+并手工确认：插件启用/禁用/重载无异常；浅/深色切换后模块刷新正确；首页、`.home` 控制台、设置页可打开；新增事件 / Observer / Timer 在卸载后停止；旧设置 / 旧 `.home` 可迁移；`git status` 无 `dist/`、`node_modules/` 或本地测试产物。
+
+## 参考文档
+
+- [docs/开发者指南.md](docs/开发者指南.md) — 详细架构、完整文件职责索引、View/命令清单
+- [README.md](README.md) — 用户功能与安装说明
+- [CHANGELOG.md](CHANGELOG.md) / [notes/](notes/) — 版本变更与发布说明
+- [docs/项目数据与恢复.md](docs/项目数据与恢复.md) — 项目数据存储与恢复

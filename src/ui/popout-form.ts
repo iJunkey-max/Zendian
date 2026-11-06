@@ -24,34 +24,27 @@ interface PopoutFormSession extends PopoutFormOptions {
 }
 
 const sessions = new Map<string, PopoutFormSession>();
-let latestSessionId = "";
+const leafSessions = new WeakMap<WorkspaceLeaf, string>();
 
 export async function openPopoutForm(app: App, options: PopoutFormOptions): Promise<boolean> {
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  let leaf: WorkspaceLeaf | null = null;
   try {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     sessions.set(id, { ...options, id });
-    latestSessionId = id;
-    const display = window.screen as Screen & { availLeft?: number; availTop?: number };
-    const availLeft = display.availLeft ?? 0;
-    const availTop = display.availTop ?? 0;
-    const leaf = app.workspace.openPopoutLeaf({
-      size: options.size,
-      ...(options.position === "bottom-right" ? {
-        x: Math.max(availLeft, availLeft + display.availWidth - options.size.width - 24),
-        y: Math.max(availTop, availTop + display.availHeight - options.size.height - 24),
-      } : {}),
-    });
+    leaf = app.workspace.getLeaf("window");
+    leafSessions.set(leaf, id);
     await leaf.setViewState({
       type: VIEW_TYPE_ZENDIAN_FORM_POPOUT,
       active: true,
       state: { sessionId: id },
     });
     void app.workspace.revealLeaf(leaf);
-    if (options.position === "bottom-right") {
+    {
       const popoutWindow = leaf.view.containerEl.ownerDocument.defaultView;
       const settleWindow = (): void => {
         if (!popoutWindow || popoutWindow.closed) return;
         popoutWindow.resizeTo(options.size.width, options.size.height);
+        if (options.position !== "bottom-right") return;
         const currentDisplay = popoutWindow.screen as Screen & { availLeft?: number; availTop?: number };
         const currentLeft = currentDisplay.availLeft ?? 0;
         const currentTop = currentDisplay.availTop ?? 0;
@@ -67,6 +60,11 @@ export async function openPopoutForm(app: App, options: PopoutFormOptions): Prom
     }
     return true;
   } catch (error) {
+    sessions.delete(id);
+    if (leaf) {
+      leafSessions.delete(leaf);
+      try { await leaf.detach(); } catch (cleanupError) { console.warn("[ZENdian] Failed to close popout.", cleanupError); }
+    }
     console.warn("[ZENdian] Failed to open popout form.", error);
     return false;
   }
@@ -90,12 +88,7 @@ export class PopoutFormView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
-    let sessionId = String(this.leaf.getViewState().state?.sessionId || "");
-    if (!sessions.has(sessionId) && sessions.size === 1) {
-      sessionId = Array.from(sessions.keys())[0];
-    } else if (!sessions.has(sessionId) && latestSessionId && sessions.has(latestSessionId)) {
-      sessionId = latestSessionId;
-    }
+    const sessionId = leafSessions.get(this.leaf) || String(this.leaf.getViewState().state?.sessionId || "");
     this.sessionId = sessionId;
     this.session = sessions.get(sessionId) || null;
     const container = this.containerEl.children[1] as HTMLElement;
@@ -123,7 +116,7 @@ export class PopoutFormView extends ItemView {
     this.cleanup = null;
     const sessionId = this.sessionId || String(this.leaf.getViewState().state?.sessionId || "");
     if (sessionId) sessions.delete(sessionId);
-    if (latestSessionId === sessionId) latestSessionId = "";
+    leafSessions.delete(this.leaf);
     this.sessionId = "";
     const container = this.containerEl.children[1] as HTMLElement | undefined;
     container?.empty();
